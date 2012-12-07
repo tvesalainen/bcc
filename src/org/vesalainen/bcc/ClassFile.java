@@ -19,6 +19,7 @@ package org.vesalainen.bcc;
 import org.vesalainen.bcc.type.Descriptor;
 import org.vesalainen.bcc.type.ClassWrapper;
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
 import org.vesalainen.bcc.ConstantInfo.ConstantFloat;
@@ -137,6 +138,11 @@ public class ClassFile implements Writable
     public ClassFile(Class<?> cls) throws IOException
     {
         this(cls.getClassLoader().getResourceAsStream(cls.getName().replace('.', '/')+".class"));
+    }
+
+    public ClassFile(byte[] bytes) throws IOException
+    {
+        this(new ByteArrayInputStream(bytes));
     }
 
     public ClassFile(InputStream in) throws IOException
