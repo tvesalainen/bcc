@@ -26,14 +26,16 @@ import java.io.IOException;
  */
 public class FieldInfo implements Writable
 {
+    private ClassFile classFile;
     private int access_flags;
     private int name_index;
     private int descriptor_index;
     private int attributes_count;
     private AttributeInfo[] attributes;
 
-    public FieldInfo(int access_flags, int name_index, int descriptor_index, AttributeInfo... attributes)
+    public FieldInfo(ClassFile classFile, int access_flags, int name_index, int descriptor_index, AttributeInfo... attributes)
     {
+        this.classFile = classFile;
         this.access_flags = access_flags;
         this.name_index = name_index;
         this.descriptor_index = descriptor_index;
@@ -50,7 +52,7 @@ public class FieldInfo implements Writable
         attributes = new AttributeInfo[attributes_count];
         for (int ii=0;ii<attributes_count;ii++)
         {
-            attributes[ii] = new AttributeInfo(in);
+            attributes[ii] = new AttributeInfo(classFile, in);
         }
     }
 

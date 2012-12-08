@@ -881,9 +881,9 @@ public class MethodCompiler extends Assembler
         code.setMax_stack(ver.getMaxStack());
 
         int ani = subClass.resolveNameIndex("LocalVariableTable");
-        LocalVariableTable lvt = new LocalVariableTable(ani, bb.length);
+        LocalVariableTable lvt = new LocalVariableTable(subClass, ani, bb.length);
         ani = subClass.resolveNameIndex("LocalVariableTypeTable");
-        LocalVariableTypeTable lvtt = new LocalVariableTypeTable(ani, bb.length);
+        LocalVariableTypeTable lvtt = new LocalVariableTypeTable(subClass, ani, bb.length);
         int ii = 0;
         for (Type type : localVariables)
         {

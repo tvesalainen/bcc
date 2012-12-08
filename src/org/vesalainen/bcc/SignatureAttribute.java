@@ -26,9 +26,9 @@ public class SignatureAttribute extends AttributeInfo
 {
     private int signature_index;
 
-    public SignatureAttribute(int attribute_name_index, int signature_index)
+    public SignatureAttribute(ClassFile classFile, int attribute_name_index, int signature_index)
     {
-        super(attribute_name_index, 2);
+        super(classFile, attribute_name_index, 2);
         this.signature_index = signature_index;
     }
 

@@ -34,16 +34,16 @@ public class CodeAttribute extends AttributeInfo
     private ExceptionTable[] exception_table;
     private List<AttributeInfo> attributes;
 
-    public CodeAttribute(int attribute_name_index)
+    public CodeAttribute(ClassFile cf, int attribute_name_index)
     {
-        super(attribute_name_index, 0);
+        super(cf, attribute_name_index, 0);
         exception_table = new ExceptionTable[0];
         attributes = new ArrayList<>();
     }
 
     public CodeAttribute(ClassFile cf, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
-        super(attribute_name_index, attribute_length);
+        super(cf, attribute_name_index, attribute_length);
         max_stack = in.readUnsignedShort();
         max_locals = in.readUnsignedShort();
         int code_length = in.readInt();

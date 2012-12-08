@@ -27,9 +27,9 @@ public class SourceFileAttribute extends AttributeInfo
 {
     private int sourcefile_index;
 
-    public SourceFileAttribute(int attribute_name_index, int sourcefile_index)
+    public SourceFileAttribute(ClassFile classFile, int attribute_name_index, int sourcefile_index)
     {
-        super(attribute_name_index, 2);
+        super(classFile, attribute_name_index, 2);
         this.sourcefile_index = sourcefile_index;
     }
 

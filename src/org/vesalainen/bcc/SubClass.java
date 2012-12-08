@@ -84,7 +84,7 @@ public class SubClass extends ClassFile
             int nameIndex = resolveNameIndex("Signature");
             String signature = Signature.getClassSignature(thisClass);
             int signatureIndex = resolveNameIndex(signature);
-            SignatureAttribute sa = new SignatureAttribute(nameIndex, signatureIndex);
+            SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
             addAttribute(sa);
         }
     }
@@ -567,7 +567,7 @@ public class SubClass extends ClassFile
         String methodDescription = "()V";
         int descriptorIndex = resolveNameIndex(methodDescription);
         int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(codeIndex);
+        CodeAttribute code = new CodeAttribute(this, codeIndex);
         MethodInfo methodInfo = new MethodInfo(Modifier.STATIC, nameIndex, descriptorIndex, code);
         addMethodInfo(methodInfo);
         MethodCompiler mc = new MethodCompiler(this, Modifier.STATIC, code, new Type[]{}, void.class, methodName);
@@ -587,7 +587,7 @@ public class SubClass extends ClassFile
             int nameIndex = resolveNameIndex("Signature");
             String signature = Signature.getFieldSignature(type);
             int signatureIndex = resolveNameIndex(signature);
-            SignatureAttribute sa = new SignatureAttribute(nameIndex, signatureIndex);
+            SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
             defineField(modifier, fieldName, Descriptor.getFieldDesriptor(type), sa);
         }
         else
@@ -610,7 +610,7 @@ public class SubClass extends ClassFile
         String descriptor = Descriptor.getFieldDesriptor(int.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(attribute_name_index, constantvalue_index);
+        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
         defineField(modifier, fieldName, descriptor, constantValue);
     }
     /**
@@ -628,7 +628,7 @@ public class SubClass extends ClassFile
         String descriptor = Descriptor.getFieldDesriptor(long.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(attribute_name_index, constantvalue_index);
+        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
         defineField(modifier, fieldName, descriptor, constantValue);
     }
     /**
@@ -646,7 +646,7 @@ public class SubClass extends ClassFile
         String descriptor = Descriptor.getFieldDesriptor(float.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(attribute_name_index, constantvalue_index);
+        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
         defineField(modifier, fieldName, descriptor, constantValue);
     }
     /**
@@ -664,7 +664,7 @@ public class SubClass extends ClassFile
         String descriptor = Descriptor.getFieldDesriptor(double.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(attribute_name_index, constantvalue_index);
+        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
         defineField(modifier, fieldName, descriptor, constantValue);
     }
     /**
@@ -682,7 +682,7 @@ public class SubClass extends ClassFile
         String descriptor = Descriptor.getFieldDesriptor(String.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(attribute_name_index, constantvalue_index);
+        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
         defineField(modifier, fieldName, descriptor, constantValue);
     }
     private void defineField(int modifier, String fieldName, String descriptor, AttributeInfo... attributes)
@@ -690,7 +690,7 @@ public class SubClass extends ClassFile
         int nameIndex = resolveNameIndex(fieldName);
         int descriptorIndex = resolveNameIndex(descriptor);
         int fieldIndex = resolveFieldIndex(thisClass, fieldName, descriptor);
-        FieldInfo fieldInfo = new FieldInfo(modifier, nameIndex, descriptorIndex, attributes);
+        FieldInfo fieldInfo = new FieldInfo(this, modifier, nameIndex, descriptorIndex, attributes);
         addFieldInfo(fieldInfo);
     }
 
@@ -704,7 +704,7 @@ public class SubClass extends ClassFile
             int nameIndex2 = resolveNameIndex("Signature");
             String signature = Signature.getMethodSignature(mw);
             int signatureIndex = resolveNameIndex(signature);
-            sa = new SignatureAttribute(nameIndex2, signatureIndex);
+            sa = new SignatureAttribute(this, nameIndex2, signatureIndex);
         }
         
         int nameIndex = resolveNameIndex(methodName);
@@ -727,7 +727,7 @@ public class SubClass extends ClassFile
         else
         {
             int codeIndex = resolveNameIndex("Code");
-            CodeAttribute code = new CodeAttribute(codeIndex);
+            CodeAttribute code = new CodeAttribute(this, codeIndex);
             if (sa != null)
             {
                 methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, sa);
@@ -761,7 +761,7 @@ public class SubClass extends ClassFile
         String methodDescription = Descriptor.getMethodDesriptor(constructor);
         int descriptorIndex = resolveNameIndex(methodDescription);
         int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(codeIndex);
+        CodeAttribute code = new CodeAttribute(this, codeIndex);
         MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(constructor);
@@ -786,7 +786,7 @@ public class SubClass extends ClassFile
         String methodDescription = Descriptor.getMethodDesriptor(method);
         int descriptorIndex = resolveNameIndex(methodDescription);
         int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(codeIndex);
+        CodeAttribute code = new CodeAttribute(this, codeIndex);
         MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(method);   //thisClass, methodName, methodDescription, false);
@@ -853,7 +853,7 @@ public class SubClass extends ClassFile
             for (MethodInfo mi : getMethodInfos())
             {
                 CodeAttribute code = mi.getCodeAttribute();
-                LineNumberTable lnt = new LineNumberTable(ani);
+                LineNumberTable lnt = new LineNumberTable(this, ani);
                 ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
                 dump.print(mi.getMc(), lnt);
                 mi.getCodeAttribute().addAttribute(lnt);
@@ -862,7 +862,7 @@ public class SubClass extends ClassFile
         }
         ani = resolveNameIndex("SourceFile");
         int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
-        SourceFileAttribute sfa = new SourceFileAttribute(ani, sfi);
+        SourceFileAttribute sfa = new SourceFileAttribute(this, ani, sfi);
         addAttribute(sfa);
     }
     public void dump() throws IOException
@@ -874,7 +874,7 @@ public class SubClass extends ClassFile
             for (MethodInfo mi : getMethodInfos())
             {
                 CodeAttribute code = mi.getCodeAttribute();
-                LineNumberTable lnt = new LineNumberTable(ani);
+                LineNumberTable lnt = new LineNumberTable(this, ani);
                 ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
                 dump.print(mi.getMc(), lnt);
                 mi.getCodeAttribute().addAttribute(lnt);
@@ -882,7 +882,7 @@ public class SubClass extends ClassFile
         }
         ani = resolveNameIndex("SourceFile");
         int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
-        SourceFileAttribute sfa = new SourceFileAttribute(ani, sfi);
+        SourceFileAttribute sfa = new SourceFileAttribute(this, ani, sfi);
         addAttribute(sfa);
     }
     /**

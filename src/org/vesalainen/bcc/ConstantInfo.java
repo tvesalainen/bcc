@@ -324,7 +324,7 @@ public abstract class ConstantInfo implements Writable
         }
 
         @Override
-        public java.lang.String toString()
+        public String toString()
         {
             return "String{" + "string_index=" + string_index + '}';
         }

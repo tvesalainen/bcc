@@ -28,18 +28,19 @@ import java.util.List;
  */
 public class LocalVariableTable extends AttributeInfo
 {
+    private ClassFile classFile;
     private List<LocalVariable> localVariables = new ArrayList<>();
     private int length;
 
-    public LocalVariableTable(int attribute_name_index, int codelength)
+    public LocalVariableTable(ClassFile classFile, int attribute_name_index, int codelength)
     {
-        super(attribute_name_index, 0);
+        super(classFile, attribute_name_index, 0);
         this.length = codelength;
     }
 
-    LocalVariableTable(int attribute_name_index, int attribute_length, DataInput in) throws IOException
+    LocalVariableTable(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
-        super(attribute_name_index, attribute_length);
+        super(classFile, attribute_name_index, attribute_length);
         int localVariablesCount = in.readShort();
         for (int ii=0;ii<localVariablesCount;ii++)
         {

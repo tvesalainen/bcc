@@ -16,6 +16,7 @@
  */
 package org.vesalainen.bcc;
 
+import org.vesalainen.bcc.annotation.RuntimeVisibleAnnotations;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.io.IOException;
  */
 public class AttributeInfo implements Writable
 {
+    protected ClassFile classFile;
     protected int attribute_name_index;
     protected int attribute_length;
     private byte info[];
@@ -40,9 +42,15 @@ public class AttributeInfo implements Writable
             case "Code":
                 return new CodeAttribute(cf, attribute_name_index, attribute_length, in);
             case "LocalVariableTable":
-                return new LocalVariableTable(attribute_name_index, attribute_length, in);
+                return new LocalVariableTable(cf, attribute_name_index, attribute_length, in);
+                /*
+            case "LocalVariableTypeTable":
+                return new LocalVariableTypeTable(attribute_name_index, attribute_length, in);
+                */
+            case "RuntimeVisibleAnnotations":
+                return new RuntimeVisibleAnnotations(cf, attribute_name_index, attribute_length, in);
             default:
-                return new AttributeInfo(attribute_name_index, attribute_length, in);
+                return new AttributeInfo(cf, attribute_name_index, attribute_length, in);
         }
     }
     
@@ -52,22 +60,25 @@ public class AttributeInfo implements Writable
         return type.equals(name);
     }
 
-    public AttributeInfo(int attribute_name_index, int attribute_length)
+    public AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length)
     {
+        this.classFile = classFile;
         this.attribute_name_index = attribute_name_index;
         this.attribute_length = attribute_length;
     }
 
-    public AttributeInfo(DataInput in) throws IOException
+    public AttributeInfo(ClassFile classFile, DataInput in) throws IOException
     {
+        this.classFile = classFile;
         attribute_name_index = in.readUnsignedShort();
         attribute_length = in.readInt();
         info = new byte[attribute_length];
         in.readFully(info);
     }
 
-    public AttributeInfo(int attribute_name_index, int attribute_length, DataInput in) throws IOException
+    public AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
+        this.classFile = classFile;
         this.attribute_name_index = attribute_name_index;
         this.attribute_length = attribute_length;
         info = new byte[attribute_length];

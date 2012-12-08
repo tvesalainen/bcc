@@ -30,15 +30,15 @@ public class LocalVariableTypeTable extends AttributeInfo
     private List<LocalTypeVariable> localTypeVariables = new ArrayList<>();
     private int length;
     
-    public LocalVariableTypeTable(int attribute_name_index, int codelength)
+    public LocalVariableTypeTable(ClassFile classFile, int attribute_name_index, int codelength)
     {
-        super(attribute_name_index, 0);
+        super(classFile, attribute_name_index, 0);
         this.length = codelength;
     }
 
-    LocalVariableTypeTable(int attribute_name_index, int attribute_length, DataInput in)
+    LocalVariableTypeTable(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in)
     {
-        super(attribute_name_index, attribute_length);
+        super(classFile, attribute_name_index, attribute_length);
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

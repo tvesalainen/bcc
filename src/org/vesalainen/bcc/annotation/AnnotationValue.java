@@ -14,28 +14,48 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.vesalainen.bcc;
 
+package org.vesalainen.bcc.annotation;
+
+import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import org.vesalainen.bcc.ClassFile;
 
 /**
  * @author Timo Vesalainen
  */
-public class ConstantValue extends AttributeInfo
+public class AnnotationValue extends ElementValue 
 {
-    private int constantvalue_index;
-    public ConstantValue(ClassFile cf, int attribute_name_index, int constantvalue_index)
+    private final Annotation annotation;
+
+    public AnnotationValue(ClassFile classFile, int tag, DataInput in) throws IOException
     {
-        super(cf, attribute_name_index, 2);
-        this.constantvalue_index = constantvalue_index;
+        super(classFile, tag);
+        annotation = new Annotation(classFile, in);
     }
-    
+
     @Override
     public void write(DataOutput out) throws IOException
     {
-        out.writeShort(attribute_name_index );
-        out.writeInt(2);
-        out.writeShort(constantvalue_index);
+        out.writeByte(tag);
+        annotation.write(out);
+    }
+
+    public Annotation getAnnotation()
+    {
+        return annotation;
+    }
+
+    @Override
+    public int getLength()
+    {
+        return 1 + annotation.getLength();
+    }
+
+    @Override
+    public String toString()
+    {
+        return annotation.toString();
     }
 }
