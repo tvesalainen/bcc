@@ -53,6 +53,7 @@ public class MethodCompiler extends Assembler
     private boolean optimize = true;
     private int modifier;
     private boolean dump;
+    private List<ExceptionTable> exceptionTableList = new ArrayList<>();
 
     public MethodCompiler(SubClass subClass, int modifier, CodeAttribute codeAttribute, Type[] parameters, Type returnType, String name)
     {
@@ -880,7 +881,7 @@ public class MethodCompiler extends Assembler
         }
         ByteCodeVerifier ver = new ByteCodeVerifier(bb, subClass, this);
         ver.verify();
-        code.setCode(bb);
+        code.setCode(bb, exceptionTableList.toArray(new ExceptionTable[exceptionTableList.size()]));
         code.setMax_locals(localVariables.size()+1);
         code.setMax_stack(ver.getMaxStack());
 
