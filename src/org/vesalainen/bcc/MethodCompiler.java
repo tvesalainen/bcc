@@ -859,6 +859,10 @@ public class MethodCompiler extends Assembler
         assert !compiled;
         compiled =true;
         byte[] bb = getCode();
+        if (bb.length > 0xfffe)
+        {
+            throw new IllegalArgumentException("code size "+bb.length+" > 65534");
+        }
         try
         {
             fixLabels(bb);
