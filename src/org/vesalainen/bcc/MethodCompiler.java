@@ -1472,14 +1472,11 @@ public class MethodCompiler extends Assembler
      * @param catchTypes Throwable objects which are caught. If none is present then 
      * all throwables are caught. Note! This is not the same as finally!
      */
-    public void addExceptionHandler(Block block, String handler, Class<? extends Throwable>... catchTypes)
+    public void addExceptionHandler(Block block, String handler, Class<? extends Throwable> catchType)
     {
-        if (catchTypes.length > 0)
+        if (catchType != null)
         {
-            for (Class<? extends Throwable> catchType : catchTypes)
-            {
-                exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.getClassIndex(catchType)));
-            }
+            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.getClassIndex(catchType)));
         }
         else
         {

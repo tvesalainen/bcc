@@ -42,10 +42,6 @@ public class Block
 
     public int getEnd()
     {
-        if (end == -1)
-        {
-            throw new IllegalArgumentException("end of block not set");
-        }
         return end;
     }
     

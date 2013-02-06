@@ -49,6 +49,14 @@ public class ExceptionTable implements Writable
     @Override
     public void write(DataOutput out) throws IOException
     {
+        if (block.getEnd() == -1)
+        {
+            throw new IllegalArgumentException("block end not set");
+        }
+        if (label.getAddress() == -1)
+        {
+            throw new IllegalArgumentException("label address not set");
+        }
         out.writeShort(block.getStart());
         out.writeShort(block.getEnd());
         out.writeShort(label.getAddress());
