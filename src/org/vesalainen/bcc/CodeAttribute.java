@@ -37,7 +37,6 @@ public class CodeAttribute extends AttributeInfo
     public CodeAttribute(ClassFile cf, int attribute_name_index)
     {
         super(cf, attribute_name_index, 0);
-        exception_table = new ExceptionTable[0];
         attributes = new ArrayList<>();
     }
 
@@ -98,9 +97,10 @@ public class CodeAttribute extends AttributeInfo
         return code;
     }
 
-    public void setCode(byte[] code)
+    public void setCode(byte[] code, ExceptionTable... exception_table)
     {
         this.code = code;
+        this.exception_table = exception_table;
     }
 
     public int getMax_locals()
@@ -143,30 +143,5 @@ public class CodeAttribute extends AttributeInfo
             length += ai.getAttributeSize();
         }
         return length;
-    }
-
-    public static class ExceptionTable implements Writable
-    {
-        private int start_pc;
-        private int end_pc;
-        private int handler_pc;
-        private int catch_type;
-
-        public ExceptionTable(DataInput in) throws IOException
-        {
-            start_pc = in.readUnsignedShort();
-            end_pc = in.readUnsignedShort();
-            handler_pc = in.readUnsignedShort();
-            catch_type = in.readUnsignedShort();
-        }
-
-        public void write(DataOutput out) throws IOException
-        {
-            out.writeShort(start_pc);
-            out.writeShort(end_pc);
-            out.writeShort(handler_pc);
-            out.writeShort(catch_type);
-        }
-
     }
 }
