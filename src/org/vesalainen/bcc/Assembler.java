@@ -166,9 +166,9 @@ public class Assembler implements OpCode
     
     public void fixLabels(byte[] code)
     {
-        if (code.length > 0xffff)
+        if (code.length > 0xfffe)
         {
-            throw new BranchException("code size "+code.length+" > 65535");
+            throw new BranchException("code size "+code.length+" > 65534");
         }
         for (Label label : labels.values())
         {
