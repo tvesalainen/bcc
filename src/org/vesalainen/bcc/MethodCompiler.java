@@ -879,9 +879,10 @@ public class MethodCompiler extends Assembler
             ByteCodeDump bcd = new ByteCodeDump(bb, subClass);
             bcd.print(this);
         }
-        ByteCodeVerifier ver = new ByteCodeVerifier(bb, subClass, this);
+        ExceptionTable[] exceptionTable = exceptionTableList.toArray(new ExceptionTable[exceptionTableList.size()]);
+        ByteCodeVerifier ver = new ByteCodeVerifier(bb, exceptionTable, subClass, this);
         ver.verify();
-        code.setCode(bb, exceptionTableList.toArray(new ExceptionTable[exceptionTableList.size()]));
+        code.setCode(bb, exceptionTable);
         code.setMax_locals(localVariables.size()+1);
         code.setMax_stack(ver.getMaxStack());
 
@@ -1476,7 +1477,7 @@ public class MethodCompiler extends Assembler
     {
         if (catchType != null)
         {
-            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.getClassIndex(catchType)));
+            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.resolveClassIndex(catchType)));
         }
         else
         {

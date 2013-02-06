@@ -260,10 +260,7 @@ public class ClassFile implements Writable
     }
     /**
      * Returns the constant map index to method
-     * @param clazz
-     * @param methodName
-     * @param descriptor
-     * @param interf
+     * @param method
      * @return
      */
     public int getMethodIndex(Member method)

@@ -63,4 +63,8 @@ public class ExceptionTable implements Writable
         out.writeShort(catch_type);
     }
 
+    int getHandler()
+    {
+        return label.getAddress();
+    }
 }

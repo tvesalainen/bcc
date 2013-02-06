@@ -49,17 +49,20 @@ public class ByteCodeVerifier extends OpCodeUtil
     private int maxLocal;
     private int maxStack;
     private byte[] code;
+    private ExceptionTable[] exceptionTable;
     private MethodCompiler mc;
     private boolean[] coverage; // TODO evaluate BitSet!
     private Type[] lvType;
 
     public ByteCodeVerifier(
             byte[] code,
+            ExceptionTable[] exceptionTable,
             ClassFile classFile,
             MethodCompiler mc
             )
     {
         this.code = code;
+        this.exceptionTable = exceptionTable;
         this.in = new CodeDataInput(code);
         this.cf = classFile;
         this.mc = mc;
@@ -91,6 +94,12 @@ public class ByteCodeVerifier extends OpCodeUtil
         try
         {
             branch.add(new Context(0, new OperandStack(), lvType));
+            for (ExceptionTable et : exceptionTable)
+            {
+                OperandStack os = new OperandStack();
+                os.add(Throwable.class);
+                branch.add(new Context(et.getHandler(), os, lvType));
+            }
             while (!branch.isEmpty())
             {
                 Context ctx = branch.pop();
