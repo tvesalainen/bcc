@@ -30,7 +30,7 @@ import org.vesalainen.bcc.ClassFile;
  */
 public class RuntimeVisibleAnnotations extends AttributeInfo 
 {
-    private List<Annotation> annotations = new ArrayList<>();
+    private List<AnnotationWrapper> annotations = new ArrayList<>();
     
     public RuntimeVisibleAnnotations(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
@@ -38,7 +38,7 @@ public class RuntimeVisibleAnnotations extends AttributeInfo
         int numAnnotations = in.readUnsignedShort();
         for (int ii=0;ii<numAnnotations;ii++)
         {
-            annotations.add(new Annotation(classFile, in));
+            annotations.add(new AnnotationWrapper(classFile, in));
         }
         assert attribute_length == getLength();
     }
@@ -49,21 +49,21 @@ public class RuntimeVisibleAnnotations extends AttributeInfo
         out.writeShort(attribute_name_index);
         attribute_length = getLength();
         out.writeInt(attribute_length);
-        for (Annotation annotation : annotations)
+        for (AnnotationWrapper annotation : annotations)
         {
             annotation.write(out);
         }
     }
 
-    public List<Annotation> getAnnotations()
+    public List<AnnotationWrapper> getAnnotations()
     {
         return annotations;
     }
     
     private int getLength()
     {
-        int length = 0;
-        for (Annotation annotation : annotations)
+        int length = 2;
+        for (AnnotationWrapper annotation : annotations)
         {
             length += annotation.getLength();
         }

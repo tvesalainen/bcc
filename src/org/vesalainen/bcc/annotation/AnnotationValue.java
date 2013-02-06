@@ -27,12 +27,12 @@ import org.vesalainen.bcc.ClassFile;
  */
 public class AnnotationValue extends ElementValue 
 {
-    private final Annotation annotation;
+    private final AnnotationWrapper annotation;
 
     public AnnotationValue(ClassFile classFile, int tag, DataInput in) throws IOException
     {
         super(classFile, tag);
-        annotation = new Annotation(classFile, in);
+        annotation = new AnnotationWrapper(classFile, in);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class AnnotationValue extends ElementValue
         annotation.write(out);
     }
 
-    public Annotation getAnnotation()
+    public AnnotationWrapper getAnnotation()
     {
         return annotation;
     }

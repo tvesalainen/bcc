@@ -28,13 +28,13 @@ import org.vesalainen.bcc.Writable;
 /**
  * @author Timo Vesalainen
  */
-public class Annotation implements Writable 
+public class AnnotationWrapper implements Writable 
 {
     private ClassFile classFile;
     private int typeIndex;
     private List<ElementValuePair> elementValuePairs = new ArrayList<>();
 
-    public Annotation(ClassFile classFile, DataInput in) throws IOException
+    public AnnotationWrapper(ClassFile classFile, DataInput in) throws IOException
     {
         this.classFile = classFile;
         typeIndex = in.readUnsignedShort();
@@ -55,6 +55,18 @@ public class Annotation implements Writable
         return elementValuePairs;
     }
 
+    public ElementValue getElement(String name)
+    {
+        for (ElementValuePair evp : elementValuePairs)
+        {
+            if (name.equals(evp.getName()))
+            {
+                return evp.getValue();
+            }
+        }
+        return null;
+    }
+    
     public int getLength()
     {
         int length = 4;

@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -51,6 +52,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.LocalVariableTable.LocalVariable;
+import org.vesalainen.bcc.annotation.AnnotationWrapper;
+import org.vesalainen.bcc.annotation.RuntimeVisibleAnnotations;
 import org.vesalainen.bcc.type.Generics;
 
 /**
@@ -203,6 +206,26 @@ public class ClassFile implements Writable
         thisClass = ClassWrapper.fromInternalForm(getString(clazz.getName_index()), superClass);
     }
 
+    public AnnotationWrapper getAnnotation(Class<? extends Annotation> type)
+    {
+        String fieldDesriptor = Descriptor.getFieldDesriptor(type);
+        for (AttributeInfo at : attributes)
+        {
+            if (at instanceof RuntimeVisibleAnnotations)
+            {
+                RuntimeVisibleAnnotations rva = (RuntimeVisibleAnnotations) at;
+                for (AnnotationWrapper aw : rva.getAnnotations())
+                {
+                    if (fieldDesriptor.equals(aw.getType()))
+                    {
+                        return aw;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
     public Type getThisClass()
     {
         return thisClass;
