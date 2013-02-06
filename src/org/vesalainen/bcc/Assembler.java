@@ -132,6 +132,17 @@ public class Assembler implements OpCode
         labelMap.put(pos, label);
     }
 
+    public Label getLabel(String name)
+    {
+        Label label = labels.get(name);
+        if (label == null)
+        {
+            label = new Label(name);
+            labels.put(name, label);
+        }
+        return label;
+    }
+    
     public Label labelForAddress(int address)
     {
         return labelMap.get(address);
@@ -2224,4 +2235,13 @@ public class Assembler implements OpCode
         return "branch"+nextBranch;
     }
 
+    public Block startBlock() throws IOException
+    {
+        return new Block(position());
+    }
+    
+    public void endBlock(Block block) throws IOException
+    {
+        block.setEnd(position());
+    }
 }

@@ -1463,5 +1463,27 @@ public class MethodCompiler extends Assembler
             throw new IllegalArgumentException("local variable "+name+" not found");
         }
     }
-
+    /**
+     * Adds an exception handler. If one of catchTypes is thrown inside block the
+     * execution continues at handler address. Thrown object is pushed in stack.
+     * 
+     * @param block 
+     * @param handler
+     * @param catchTypes Throwable objects which are caught. If none is present then 
+     * all throwables are caught. Note! This is not the same as finally!
+     */
+    public void addExceptionHandler(Block block, String handler, Class<? extends Throwable>... catchTypes)
+    {
+        if (catchTypes.length > 0)
+        {
+            for (Class<? extends Throwable> catchType : catchTypes)
+            {
+                exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.getClassIndex(catchType)));
+            }
+        }
+        else
+        {
+            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), 0));
+        }
+    }
 }

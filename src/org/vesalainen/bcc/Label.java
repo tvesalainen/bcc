@@ -54,6 +54,10 @@ public class Label
 
     public int getAddress()
     {
+        if (address == -1)
+        {
+            throw new IllegalArgumentException("address not set");
+        }
         return address;
     }
 

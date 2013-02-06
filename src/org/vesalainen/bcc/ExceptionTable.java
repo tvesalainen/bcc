@@ -26,24 +26,32 @@ import java.io.IOException;
  */
 public class ExceptionTable implements Writable 
 {
-    private int start_pc;
-    private int end_pc;
-    private int handler_pc;
+    private Block block;
+    private Label label;
     private int catch_type;
+
+    public ExceptionTable(Block block, Label label, int catch_type)
+    {
+        this.block = block;
+        this.label = label;
+        this.catch_type = catch_type;
+    }
 
     public ExceptionTable(DataInput in) throws IOException
     {
-        start_pc = in.readUnsignedShort();
-        end_pc = in.readUnsignedShort();
-        handler_pc = in.readUnsignedShort();
+        block = new Block(in.readUnsignedShort());
+        block.setEnd(in.readUnsignedShort());
+        label = new Label("");
+        label.setAddress(in.readUnsignedShort());
         catch_type = in.readUnsignedShort();
     }
 
+    @Override
     public void write(DataOutput out) throws IOException
     {
-        out.writeShort(start_pc);
-        out.writeShort(end_pc);
-        out.writeShort(handler_pc);
+        out.writeShort(block.getStart());
+        out.writeShort(block.getEnd());
+        out.writeShort(label.getAddress());
         out.writeShort(catch_type);
     }
 
