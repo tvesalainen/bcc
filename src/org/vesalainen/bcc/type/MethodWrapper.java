@@ -245,19 +245,22 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
     }
     public void setExceptions(Type... exceptions)
     {
-        for (Type e : exceptions)
+        if (exceptions != null)
         {
-            if (e instanceof Class)
+            for (Type e : exceptions)
             {
-                Class cls = (Class) e;
-                if (!Throwable.class.isAssignableFrom(cls))
+                if (e instanceof Class)
                 {
-                    throw new IllegalArgumentException(e+" not exception type");
+                    Class cls = (Class) e;
+                    if (!Throwable.class.isAssignableFrom(cls))
+                    {
+                        throw new IllegalArgumentException(e+" not exception type");
+                    }
                 }
-            }
-            else
-            {
-                throw new IllegalArgumentException(e+" not valid exception type");
+                else
+                {
+                    throw new IllegalArgumentException(e+" not valid exception type");
+                }
             }
         }
         genericExceptionTypes = exceptions;

@@ -207,6 +207,35 @@ public class Generics
         }
     }
 
+    public static Type[] getGenericExceptionTypes(Member method)
+    {
+        if (method instanceof Method)
+        {
+            Method m = (Method) method;
+            return m.getGenericExceptionTypes();
+        }
+        else
+        {
+            if (method instanceof Constructor)
+            {
+                Constructor c = (Constructor) method;
+                return c.getGenericExceptionTypes();
+            }
+            else
+            {
+                if (method instanceof MethodWrapper)
+                {
+                    MethodWrapper m = (MethodWrapper) method;
+                    return m.getGenericExceptionTypes();
+                }
+                else
+                {
+                    throw new IllegalArgumentException(method+" not class type");
+                }
+            }
+        }
+    }
+
     public static Type getReturnType(Member method)
     {
         if (method instanceof Method)

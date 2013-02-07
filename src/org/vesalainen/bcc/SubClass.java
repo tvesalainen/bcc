@@ -754,7 +754,8 @@ public class SubClass extends ClassFile
         int descriptorIndex = resolveNameIndex(methodDescription);
         int codeIndex = resolveNameIndex("Code");
         CodeAttribute code = new CodeAttribute(this, codeIndex);
-        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code);
+        ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(constructor));
+        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, ea);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(constructor);
         Type[] parameters = Generics.getParameterTypes(constructor);
@@ -779,7 +780,8 @@ public class SubClass extends ClassFile
         int descriptorIndex = resolveNameIndex(methodDescription);
         int codeIndex = resolveNameIndex("Code");
         CodeAttribute code = new CodeAttribute(this, codeIndex);
-        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code);
+        ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(method));
+        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, ea);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(method);   //thisClass, methodName, methodDescription, false);
         Type[] parameters = Generics.getParameterTypes(method);
@@ -899,7 +901,18 @@ public class SubClass extends ClassFile
 
     private ExceptionsAttribute createExceptionsAttribute(Type[] exceptionTypes)
     {
-        return null;
+        if (exceptionTypes == null || exceptionTypes.length == 0)
+        {
+            return null;
+        }
+        int[] indexes = new int[exceptionTypes.length];
+        int index = 0;
+        for (Type t : exceptionTypes)
+        {
+            indexes[index++] = resolveClassIndex(t);
+        }
+        int ni = this.resolveNameIndex("Exceptions");
+        return new ExceptionsAttribute(this, ni, indexes);
     }
 
 }
