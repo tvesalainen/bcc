@@ -55,7 +55,7 @@ public class MethodCompiler extends Assembler
     private boolean dump;
     private List<ExceptionTable> exceptionTableList = new ArrayList<>();
 
-    public MethodCompiler(SubClass subClass, int modifier, CodeAttribute codeAttribute, Type[] parameters, Type returnType, String name)
+    MethodCompiler(SubClass subClass, int modifier, CodeAttribute codeAttribute, Type[] parameters, Type returnType, String name)
     {
         this.subClass = subClass;
         this.modifier = modifier;

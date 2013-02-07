@@ -611,7 +611,7 @@ public class Signature extends Descriptor
 
     private static void getThrowsSignature(StringBuilder sb, Type param)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        // If the throws clause of a method or constructor does not involve type variables, the ThowsSignature may be elided from the MethodTypeSignature.
     }
 
     

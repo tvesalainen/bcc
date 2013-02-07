@@ -243,6 +243,25 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
             index++;
         }
     }
+    public void setExceptions(Type... exceptions)
+    {
+        for (Type e : exceptions)
+        {
+            if (e instanceof Class)
+            {
+                Class cls = (Class) e;
+                if (!Throwable.class.isAssignableFrom(cls))
+                {
+                    throw new IllegalArgumentException(e+" not exception type");
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException(e+" not valid exception type");
+            }
+        }
+        genericExceptionTypes = exceptions;
+    }
     public void addParameterAnnotation(int index, Annotation annotation)
     {
         parameterAnnotations[index] = Arrays.copyOf(parameterAnnotations[index], parameterAnnotations[index].length+1);
@@ -305,11 +324,11 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
     {
         if (implementor == null)
         {
-            subClass.defineMethod(Modifier.ABSTRACT | modifiers, name, returnType, parameters);
+            subClass.defineMethod(Modifier.ABSTRACT | modifiers, name, returnType, genericExceptionTypes, parameters);
         }
         else
         {
-            MethodCompiler mc = subClass.defineMethod(modifiers & ~Modifier.ABSTRACT, name, returnType, parameters);
+            MethodCompiler mc = subClass.defineMethod(modifiers & ~Modifier.ABSTRACT, name, returnType, genericExceptionTypes, parameters);
             mc.setWideIndex(wideIndex);
             implementor.implement(mc, this);
         }

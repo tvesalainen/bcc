@@ -31,13 +31,19 @@ public class MethodInfo implements Writable
     private int descriptor_index;
     private AttributeInfo[] attributes;
     private MethodCompiler mc;
-
+    /**
+     * 
+     * @param access_flags
+     * @param name_index
+     * @param descriptor_index
+     * @param attributes If array member is null it is removed.
+     */
     public MethodInfo(int access_flags, int name_index, int descriptor_index, AttributeInfo... attributes)
     {
         this.access_flags = access_flags;
         this.name_index = name_index;
         this.descriptor_index = descriptor_index;
-        this.attributes = attributes;
+        this.attributes = filterNulls(attributes);
     }
 
     public MethodInfo(ClassFile cf, DataInput in) throws IOException
@@ -136,6 +142,32 @@ public class MethodInfo implements Writable
         hash = 61 * hash + this.name_index;
         hash = 61 * hash + this.descriptor_index;
         return hash;
+    }
+
+    private AttributeInfo[] filterNulls(AttributeInfo[] attributes)
+    {
+        int len = 0;
+        for (AttributeInfo ai : attributes)
+        {
+            if (ai != null)
+            {
+                len++;
+            }
+        }
+        if (len == attributes.length)
+        {
+            return attributes;
+        }
+        AttributeInfo[] aia = new AttributeInfo[len] ;
+        int index = 0;
+        for (AttributeInfo ai : attributes)
+        {
+            if (ai != null)
+            {
+                aia[index++] = ai;
+            }
+        }
+        return aia;
     }
     
 }

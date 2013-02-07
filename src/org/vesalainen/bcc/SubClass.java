@@ -696,9 +696,15 @@ public class SubClass extends ClassFile
 
     public MethodCompiler defineMethod(int modifier, String methodName, Type returnType, Type... parameters)
     {
+        return defineMethod(modifier, methodName, returnType, null, parameters);
+    }
+    public MethodCompiler defineMethod(int modifier, String methodName, Type returnType, Type[] exceptionTypes, Type... parameters)
+    {
         MethodInfo methodInfo = null;
         SignatureAttribute sa = null;
+        ExceptionsAttribute ea = createExceptionsAttribute(exceptionTypes);
         MethodWrapper mw = new MethodWrapper(modifier, superClass, methodName, returnType, parameters);
+        mw.setExceptions(exceptionTypes);
         if (Signature.needsSignature(mw))
         {
             int nameIndex2 = resolveNameIndex("Signature");
@@ -713,14 +719,7 @@ public class SubClass extends ClassFile
         int methodIndex = resolveMethodIndex(thisClass, methodName, methodDescription, false);
         if (Modifier.isAbstract(modifier))
         {
-            if (sa != null)
-            {
-                methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, sa);
-            }
-            else
-            {
-                methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex);
-            }
+            methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, sa, ea);
             addMethodInfo(methodInfo);
             return null;
         }
@@ -728,14 +727,7 @@ public class SubClass extends ClassFile
         {
             int codeIndex = resolveNameIndex("Code");
             CodeAttribute code = new CodeAttribute(this, codeIndex);
-            if (sa != null)
-            {
-                methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, sa);
-            }
-            else
-            {
-                methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code);
-            }
+            methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, sa, ea);
             addMethodInfo(methodInfo);
             MethodCompiler mc = new MethodCompiler(this, modifier, code, parameters, returnType, methodName);
             methodInfo.setMc(mc);
@@ -903,6 +895,11 @@ public class SubClass extends ClassFile
     public Type getSuperClass()
     {
         return superClass;
+    }
+
+    private ExceptionsAttribute createExceptionsAttribute(Type[] exceptionTypes)
+    {
+        return null;
     }
 
 }
