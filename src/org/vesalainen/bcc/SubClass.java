@@ -833,7 +833,7 @@ public class SubClass extends ClassFile
         catch (Error er)
         {
             dump();
-            throw er;
+            throw new IOException(er);
         }
     }
 
@@ -862,17 +862,15 @@ public class SubClass extends ClassFile
     public void dump() throws IOException
     {
         int ani;
-        try (LineNumberPrintStream out = new LineNumberPrintStream(System.err))
+        LineNumberPrintStream out = new LineNumberPrintStream(System.err);
+        ani = resolveNameIndex("LineNumberTable");
+        for (MethodInfo mi : getMethodInfos())
         {
-            ani = resolveNameIndex("LineNumberTable");
-            for (MethodInfo mi : getMethodInfos())
-            {
-                CodeAttribute code = mi.getCodeAttribute();
-                LineNumberTable lnt = new LineNumberTable(this, ani);
-                ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
-                dump.print(mi.getMc(), lnt);
-                mi.getCodeAttribute().addAttribute(lnt);
-            }
+            CodeAttribute code = mi.getCodeAttribute();
+            LineNumberTable lnt = new LineNumberTable(this, ani);
+            ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
+            dump.print(mi.getMc(), lnt);
+            mi.getCodeAttribute().addAttribute(lnt);
         }
         ani = resolveNameIndex("SourceFile");
         int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
