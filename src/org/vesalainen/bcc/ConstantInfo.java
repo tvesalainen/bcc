@@ -74,7 +74,24 @@ public abstract class ConstantInfo implements Writable
 
     public ConstantInfo(int tag)
     {
-        this.tag = tag;
+        switch (tag)
+        {
+            case CONSTANT_Class:
+            case CONSTANT_Fieldref:
+            case CONSTANT_Methodref:
+            case CONSTANT_InterfaceMethodref:
+            case CONSTANT_String:
+            case CONSTANT_Integer:
+            case CONSTANT_Float:
+            case CONSTANT_Long:
+            case CONSTANT_Double:
+            case CONSTANT_NameAndType:
+            case CONSTANT_Utf8:
+                this.tag = tag;
+                break;
+            default:
+                throw new IllegalArgumentException("unknown constant info tag="+tag);
+        }
     }
 
     public ConstantInfo(int tag, DataInput in) throws IOException
@@ -788,13 +805,19 @@ public abstract class ConstantInfo implements Writable
 
         public Filler()
         {
-            super(0);
+            super(1); // must be valid but is considered unusable.
         }
 
         @Override
         protected void initialize(DataInput in) throws IOException
         {
         }
+
+        @Override
+        public void write(DataOutput out) throws IOException
+        {
+        }
+        
     }
 
 }

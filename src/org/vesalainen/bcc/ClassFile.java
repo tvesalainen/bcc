@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.vesalainen.bcc.ConstantInfo.Filler;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.LocalVariableTable.LocalVariable;
 import org.vesalainen.bcc.annotation.AnnotationWrapper;
@@ -579,7 +580,7 @@ public class ClassFile implements Writable
         index = constant_pool.size();
         if (ci instanceof ConstantInfo.ConstantDouble || ci instanceof ConstantInfo.ConstantLong)
         {
-            constant_pool.add(new ConstantInfo.Filler());
+            constant_pool.add(new Filler());
         }
         List<ConstantInfo> list = constantPoolMap.get(ci.getClass());
         if (list == null)
