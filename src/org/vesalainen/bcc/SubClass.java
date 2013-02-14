@@ -830,10 +830,10 @@ public class SubClass extends ClassFile
             Class<?> cls = cl.load(Generics.getFullyQualifiedForm(thisClass), baos.toByteArray());
             return cls;
         }
-        catch (VerifyError ve)
+        catch (Error er)
         {
             dump();
-            throw ve;
+            throw er;
         }
     }
 
