@@ -536,7 +536,12 @@ public class Assembler implements OpCode
     {
         asm.taload();
     }
-
+    /**
+     * Load from array
+     * <p>Stack: ..., arrayref, index =&gt; ..., value
+     * @param type
+     * @throws IOException
+     */
     public void taload(Type type) throws IOException
     {
         pushType(type);
@@ -2243,5 +2248,146 @@ public class Assembler implements OpCode
     public void endBlock(Block block) throws IOException
     {
         block.setEnd(position());
+    }
+    
+    public void convert(Type from, Type to) throws IOException
+    {
+        if (int.class.equals(from))
+        {
+            if (int.class.equals(to))
+            {
+            }
+            else
+            {
+                if (long.class.equals(to))
+                {
+                    i2d();
+                }
+                else
+                {
+                    if (float.class.equals(to))
+                    {
+                        i2f();
+                    }
+                    else
+                    {
+                        if (double.class.equals(to))
+                        {
+                            i2d();
+                        }
+                        else
+                        {
+                            throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (long.class.equals(from))
+            {
+                if (int.class.equals(to))
+                {
+                    l2i();
+                }
+                else
+                {
+                    if (long.class.equals(to))
+                    {
+                    }
+                    else
+                    {
+                        if (float.class.equals(to))
+                        {
+                            l2f();
+                        }
+                        else
+                        {
+                            if (double.class.equals(to))
+                            {
+                                l2d();
+                            }
+                            else
+                            {
+                                throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (float.class.equals(from))
+                {
+                    if (int.class.equals(to))
+                    {
+                        f2i();
+                    }
+                    else
+                    {
+                        if (long.class.equals(to))
+                        {
+                            f2l();
+                        }
+                        else
+                        {
+                            if (float.class.equals(to))
+                            {
+                            }
+                            else
+                            {
+                                if (double.class.equals(to))
+                                {
+                                    f2d();
+                                }
+                                else
+                                {
+                                    throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (double.class.equals(from))
+                    {
+                        if (int.class.equals(to))
+                        {
+                            d2i();
+                        }
+                        else
+                        {
+                            if (long.class.equals(to))
+                            {
+                                d2l();
+                            }
+                            else
+                            {
+                                if (float.class.equals(to))
+                                {
+                                    d2f();
+                                }
+                                else
+                                {
+                                    if (double.class.equals(to))
+                                    {
+                                    }
+                                    else
+                                    {
+                                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                    }
+                }
+            }
+        }
     }
 }
