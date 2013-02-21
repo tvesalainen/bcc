@@ -2075,7 +2075,7 @@ public class Assembler implements OpCode
      */
     public void i2l() throws IOException
     {
-        i.i2l();
+        l.i2t();
     }
 
     /**
@@ -2085,7 +2085,7 @@ public class Assembler implements OpCode
      */
     public void i2f() throws IOException
     {
-        i.i2f();
+        f.i2t();
     }
 
     /**
@@ -2095,7 +2095,7 @@ public class Assembler implements OpCode
      */
     public void i2d() throws IOException
     {
-        i.i2d();
+        d.i2t();
     }
 
     /**
@@ -2105,7 +2105,7 @@ public class Assembler implements OpCode
      */
     public void l2i() throws IOException
     {
-        l.l2i();
+        i.l2t();
     }
 
     /**
@@ -2115,7 +2115,7 @@ public class Assembler implements OpCode
      */
     public void l2f() throws IOException
     {
-        l.l2f();
+        f.l2t();
     }
 
     /**
@@ -2125,7 +2125,7 @@ public class Assembler implements OpCode
      */
     public void l2d() throws IOException
     {
-        l.l2d();
+        d.l2t();
     }
 
     /**
@@ -2135,7 +2135,7 @@ public class Assembler implements OpCode
      */
     public void f2i() throws IOException
     {
-        f.f2i();
+        i.f2t();
     }
 
     /**
@@ -2145,7 +2145,7 @@ public class Assembler implements OpCode
      */
     public void f2l() throws IOException
     {
-        f.f2l();
+        l.f2t();
     }
 
     /**
@@ -2155,7 +2155,7 @@ public class Assembler implements OpCode
      */
     public void f2d() throws IOException
     {
-        f.f2d();
+        d.f2t();
     }
 
     /**
@@ -2165,7 +2165,7 @@ public class Assembler implements OpCode
      */
     public void d2i() throws IOException
     {
-        d.d2i();
+        i.d2t();
     }
 
     /**
@@ -2175,7 +2175,7 @@ public class Assembler implements OpCode
      */
     public void d2l() throws IOException
     {
-        d.d2l();
+        l.d2t();
     }
 
     /**
@@ -2185,7 +2185,7 @@ public class Assembler implements OpCode
      */
     public void d2f() throws IOException
     {
-        d.d2f();
+        f.d2t();
     }
 
     /**
@@ -2195,7 +2195,7 @@ public class Assembler implements OpCode
      */
     public void i2b() throws IOException
     {
-        i.i2b();
+        b.i2t();
     }
 
     /**
@@ -2205,7 +2205,7 @@ public class Assembler implements OpCode
      */
     public void i2s() throws IOException
     {
-        i.i2s();
+        s.i2t();
     }
     /**
      * Return true if type is byte, char, short, int or float
