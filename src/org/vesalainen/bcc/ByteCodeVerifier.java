@@ -1030,7 +1030,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case D2L:
                     verify(double.class, s.pop());
-                    s.push(float.class);
+                    s.push(long.class);
                     break;
                 case D2F:
                     verify(double.class, s.pop());
