@@ -2261,7 +2261,7 @@ public class Assembler implements OpCode
             {
                 if (long.class.equals(to))
                 {
-                    i2d();
+                    i2l();
                 }
                 else
                 {
