@@ -33,6 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+import javax.annotation.processing.Filer;
+import javax.tools.JavaFileObject;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
 import org.vesalainen.bcc.ConstantInfo.ConstantFloat;
@@ -837,11 +839,11 @@ public class SubClass extends ClassFile
         }
     }
 
-    public void createSourceFile(File src) throws IOException
+    public void createSourceFile(Filer filer) throws IOException
     {
-        File file = Generics.getFileForClass(thisClass, src, ".jasm");
+        JavaFileObject sourceFile = filer.createSourceFile(Generics.getInternalForm(thisClass)+".jasm");
         int ani;
-        try (LineNumberPrintStream out = new LineNumberPrintStream(new FileOutputStream(file)))
+        try (LineNumberPrintStream out = new LineNumberPrintStream(sourceFile.openOutputStream()))
         {
             ani = resolveNameIndex("LineNumberTable");
             for (MethodInfo mi : getMethodInfos())
@@ -882,11 +884,10 @@ public class SubClass extends ClassFile
      * @param classpath
      * @throws IOException
      */
-    public void save(File classpath) throws IOException
+    public void save(Filer filer) throws IOException
     {
-        File file = Generics.getClassFile(thisClass, classpath);
-        FileOutputStream fos = new FileOutputStream(file);
-        BufferedOutputStream bos = new BufferedOutputStream(fos);
+        JavaFileObject sourceFile = filer.createClassFile(Generics.getInternalForm(thisClass)+".class");
+        BufferedOutputStream bos = new BufferedOutputStream(sourceFile.openOutputStream());
         DataOutputStream dos = new DataOutputStream(bos);
         write(dos);
         dos.close();

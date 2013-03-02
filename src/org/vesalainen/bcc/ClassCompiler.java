@@ -18,6 +18,7 @@ package org.vesalainen.bcc;
 
 import java.io.File;
 import java.io.IOException;
+import javax.annotation.processing.Filer;
 
 /**
  *
@@ -26,15 +27,10 @@ import java.io.IOException;
 public interface ClassCompiler
 {
     /**
-     * Set the directory for class files
+     * Set the Filer
      * @param classDir 
      */
-    void setClassDir(File classDir);
-    /**
-     * Set the directory for source files and documents
-     * @param srcDir 
-     */
-    void setSrcDir(File srcDir);
+    void setFiler(Filer filer);
     /**
      * Compile classfile
      * @throws IOException

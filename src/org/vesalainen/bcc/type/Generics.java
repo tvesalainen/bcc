@@ -26,6 +26,9 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import javax.annotation.processing.Filer;
+import javax.tools.FileObject;
+import javax.tools.JavaFileObject;
 import org.vesalainen.bcc.MethodImplementor;
 import org.vesalainen.bcc.SubClass;
 
@@ -745,22 +748,44 @@ public class Generics
         return intForm+".jasm";
     }
     /**
-     * Return class file. Missing directories are created
+     * Return class file.
      * @param type
-     * @param classpath
+     * @param filer
      * @return 
      */
-    public static File getClassFile(Type type, File classpath)
+    public static JavaFileObject createClassFile(Type type, Filer filer) throws IOException
     {
-        File file = new File(classpath, getInternalForm(type)+".class");
-        File parent = file.getParentFile();
-        if (parent != null)
-        {
-            parent.mkdirs();
-        }
-        return file;
+        return filer.createClassFile(getInternalForm(type)+".class");
     }
 
+    public static FileObject createSourceFile(Type type, Filer filer) throws IOException
+    {
+        return filer.createSourceFile(getInternalForm(type)+".jasm");
+    }
+
+    /**
+     * Creates a File object for Class
+     * @param type Class
+     * @param filer source directory
+     * @param suffix File suffix.
+     * @return 
+     */
+    public static FileObject createFileForClass(Type type, Filer filer, String suffix) throws IOException
+    {
+        return filer.createSourceFile(getInternalForm(type)+suffix);
+    }
+
+    public static String getPackage(Type type)
+    {
+        String internalForm = getInternalForm(type);
+        String pkg = "";
+        int idx = internalForm.lastIndexOf('/');
+        if (idx != -1)
+        {
+            pkg = internalForm.substring(0, idx);
+        }
+        return pkg;
+    }
     public static ClassLoader getClassLoader(Type type)
     {
         if (type instanceof Class<?>)
@@ -781,24 +806,6 @@ public class Generics
             }
         }
     }
-    /**
-     * Creates a File object for Class
-     * @param type Class
-     * @param srcDir source directory
-     * @param suffix File suffix.
-     * @return 
-     */
-    public static File getFileForClass(Type type, File srcDir, String suffix)
-    {
-        File file = new File(srcDir, getInternalForm(type)+suffix);
-        File parent = file.getParentFile();
-        if (parent != null)
-        {
-            parent.mkdirs();
-        }
-        return file;
-    }
-
     private static Type[] getInterfaces(Type type)
     {
         if (type instanceof Class<?>)
