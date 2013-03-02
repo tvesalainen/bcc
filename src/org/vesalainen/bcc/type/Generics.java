@@ -29,6 +29,7 @@ import java.lang.reflect.TypeVariable;
 import javax.annotation.processing.Filer;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 import org.vesalainen.bcc.MethodImplementor;
 import org.vesalainen.bcc.SubClass;
 
@@ -755,12 +756,12 @@ public class Generics
      */
     public static JavaFileObject createClassFile(Type type, Filer filer) throws IOException
     {
-        return filer.createClassFile(getInternalForm(type)+".class");
+        return filer.createClassFile(getFullyQualifiedForm(type));
     }
 
     public static FileObject createSourceFile(Type type, Filer filer) throws IOException
     {
-        return filer.createSourceFile(getInternalForm(type)+".jasm");
+        return filer.createSourceFile(getFullyQualifiedForm(type));
     }
 
     /**
@@ -772,17 +773,17 @@ public class Generics
      */
     public static FileObject createFileForClass(Type type, Filer filer, String suffix) throws IOException
     {
-        return filer.createSourceFile(getInternalForm(type)+suffix);
+        return filer.createResource(StandardLocation.SOURCE_OUTPUT, getPackage(type), Generics.getSimpleName(type)+suffix);
     }
 
     public static String getPackage(Type type)
     {
-        String internalForm = getInternalForm(type);
+        String fqForm = getFullyQualifiedForm(type);
         String pkg = "";
-        int idx = internalForm.lastIndexOf('/');
+        int idx = fqForm.lastIndexOf('.');
         if (idx != -1)
         {
-            pkg = internalForm.substring(0, idx);
+            pkg = fqForm.substring(0, idx);
         }
         return pkg;
     }
@@ -1014,12 +1015,27 @@ public class Generics
             Float.class.equals(cls) ||
             Double.class.equals(cls);
     }
-    /**
-     * Return true if param is assignable from return type
-     * @param param
-     * @param member
-     * @return 
-     */
+    public static TypeVariable<?>[] getTypeParameters(Type type)
+    {
+        if (type instanceof Class<?>)
+        {
+            Class<?> m = (Class<?>) type;
+            return m.getTypeParameters();
+        }
+        else
+        {
+            if (type instanceof ClassWrapper)
+            {
+                ClassWrapper m = (ClassWrapper) type;
+                return m.getTypeParameters();
+            }
+            else
+            {
+                throw new IllegalArgumentException(type+" not GenericDeclaration type");
+            }
+        }
+    }
+
     public static TypeVariable<?>[] getTypeParameters(Member member)
     {
         if (member instanceof Method)
@@ -1043,7 +1059,7 @@ public class Generics
                 }
                 else
                 {
-                    throw new IllegalArgumentException(member+" not class type");
+                    throw new IllegalArgumentException(member+" not GenericDeclaration type");
                 }
             }
         }

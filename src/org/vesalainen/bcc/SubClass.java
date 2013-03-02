@@ -21,19 +21,17 @@ import org.vesalainen.bcc.type.ClassWrapper;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import javax.annotation.processing.Filer;
+import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
@@ -841,7 +839,7 @@ public class SubClass extends ClassFile
 
     public void createSourceFile(Filer filer) throws IOException
     {
-        JavaFileObject sourceFile = filer.createSourceFile(Generics.getInternalForm(thisClass)+".jasm");
+        FileObject sourceFile = Generics.createFileForClass(thisClass, filer, ".jasm");
         int ani;
         try (LineNumberPrintStream out = new LineNumberPrintStream(sourceFile.openOutputStream()))
         {
@@ -886,7 +884,7 @@ public class SubClass extends ClassFile
      */
     public void save(Filer filer) throws IOException
     {
-        JavaFileObject sourceFile = filer.createClassFile(Generics.getInternalForm(thisClass)+".class");
+        JavaFileObject sourceFile = Generics.createClassFile(thisClass, filer);
         BufferedOutputStream bos = new BufferedOutputStream(sourceFile.openOutputStream());
         DataOutputStream dos = new DataOutputStream(bos);
         write(dos);

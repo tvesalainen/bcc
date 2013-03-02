@@ -134,7 +134,7 @@ public class ClassWrapper implements Serializable, AnnotatedElement, GenericDecl
             }
             else
             {
-                cw = new ClassWrapper(fullyQualifiedForm, new TypeVariable[]{}, superClass, interfaces);
+                cw = new ClassWrapper(fullyQualifiedForm, Generics.getTypeParameters(superClass), superClass, interfaces);
             }
             fqnMap.put(fullyQualifiedForm, cw);
         }
