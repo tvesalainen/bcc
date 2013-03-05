@@ -17,40 +17,52 @@
 
 package org.vesalainen.bcc.model;
 
-import javax.lang.model.type.ArrayType;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.TypeVisitor;
 
 /**
  * @author Timo Vesalainen
  */
-public class ArraySymbol implements ArrayType
+public class TypeVariableImpl implements TypeVariable
 {
-    private Class<?> cls;
+    private java.lang.reflect.TypeVariable typeVariable;
 
-    public ArraySymbol(Class<?> cls)
+    public TypeVariableImpl(java.lang.reflect.TypeVariable typeVariable)
     {
-        assert cls.isArray();
-        this.cls = cls;
+        this.typeVariable = typeVariable;
     }
     
     @Override
-    public TypeMirror getComponentType()
+    public Element asElement()
     {
-        return TypeFactory.get(cls.getComponentType());
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public TypeMirror getUpperBound()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public TypeMirror getLowerBound()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public TypeKind getKind()
     {
-        return TypeKind.ARRAY;
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
-        return v.visitArray(this, p);
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
 }

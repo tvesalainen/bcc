@@ -37,12 +37,12 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-class TypeParameterSymbol implements TypeParameterElement 
+class TypeParameterElementImpl implements TypeParameterElement 
 {
     private GenericDeclaration genericDeclaration;
     private TypeVariable typeVariable;
     private List<TypeMirror> bounds;
-    public TypeParameterSymbol(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
+    public TypeParameterElementImpl(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
     {
         this.genericDeclaration = genericDeclaration;
         this.typeVariable = typeVariable;
@@ -51,7 +51,7 @@ class TypeParameterSymbol implements TypeParameterElement
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(typeVariable);
+        return TypeMirrorFactory.get(typeVariable);
     }
 
     @Override
@@ -93,7 +93,7 @@ class TypeParameterSymbol implements TypeParameterElement
             bounds = new ArrayList<>();
             for (Type b : typeVariable.getBounds())
             {
-                bounds.add(TypeFactory.get(b));
+                bounds.add(TypeMirrorFactory.get(b));
             }
         }
         return bounds;

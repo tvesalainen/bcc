@@ -38,12 +38,12 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-class MethodSymbol extends AbstractParameterizableSymbol implements ExecutableElement 
+class ExecutableElementMethodImpl extends AbstractParameterizableSymbol implements ExecutableElement 
 {
     private Method method;
     private List<VariableElement> parameters;
     private List<TypeMirror> thrownTypes;
-    public MethodSymbol(Method method)
+    public ExecutableElementMethodImpl(Method method)
     {
         super(method);
         this.method = method;
@@ -52,7 +52,7 @@ class MethodSymbol extends AbstractParameterizableSymbol implements ExecutableEl
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(method.getGenericReturnType());
+        return TypeMirrorFactory.get(method.getGenericReturnType());
     }
 
     @Override
@@ -83,7 +83,7 @@ class MethodSymbol extends AbstractParameterizableSymbol implements ExecutableEl
     @Override
     public TypeMirror getReturnType()
     {
-        return TypeFactory.get(method.getGenericReturnType());
+        return TypeMirrorFactory.get(method.getGenericReturnType());
     }
 
     @Override
@@ -117,7 +117,7 @@ class MethodSymbol extends AbstractParameterizableSymbol implements ExecutableEl
             thrownTypes = new ArrayList<>();
             for (Type type : method.getGenericExceptionTypes())
             {
-                thrownTypes.add(TypeFactory.get(type));
+                thrownTypes.add(TypeMirrorFactory.get(type));
             }
         }
         return thrownTypes;
@@ -126,7 +126,7 @@ class MethodSymbol extends AbstractParameterizableSymbol implements ExecutableEl
     @Override
     public AnnotationValue getDefaultValue()
     {
-        return new AnnotationValueSymbol(method.getDefaultValue());
+        return new AnnotationValueImpl(method.getDefaultValue());
     }
 
 }

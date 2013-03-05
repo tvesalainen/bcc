@@ -48,99 +48,100 @@ public class ElementFactory
     private static Map<TypeVariable,TypeParameterElement> typeParameterMap = new HashMap<>();
     private static Map<Annotation,AnnotationMirror> annotationMap = new HashMap<>();
     private static Map<Object,AnnotationValue> annotationValueMap = new HashMap<>();
-    static TypeElement get(Class<?> type)
+    
+    public static TypeElement get(Class<?> type)
     {
         TypeElement te = classMap.get(type);
         if (te == null)
         {
-            te = new ClassSymbol(type);
+            te = new TypeElementImpl(type);
             classMap.put(type, te);
         }
         return te;
     }
 
-    static VariableElement get(Field field)
+    public static VariableElement get(Field field)
     {
         VariableElement ve = fieldMap.get(field);
         if (ve == null)
         {
-            ve = new FieldSymbol(field);
+            ve = new VariableElementFieldImpl(field);
             fieldMap.put(field, ve);
         }
         return ve;
     }
-    static ExecutableElement get(Constructor constructor)
+    public static ExecutableElement get(Constructor constructor)
     {
         ExecutableElement ee = constructorMap.get(constructor);
         if (ee == null)
         {
-            ee = new ConstructorSymbol(constructor);
+            ee = new ExecutableElementConstructorImpl(constructor);
             constructorMap.put(constructor, ee);
         }
         return ee;
     }
-    static ExecutableElement get(Method method)
+    public static ExecutableElement get(Method method)
     {
         ExecutableElement ee = methodMap.get(method);
         if (ee == null)
         {
-            ee = new MethodSymbol(method);
+            ee = new ExecutableElementMethodImpl(method);
             methodMap.put(method, ee);
         }
         return ee;
     }
-    static TypeElement get(Annotation annotation)
+    public static TypeElement get(Annotation annotation)
     {
         return get(annotation.annotationType());    // TODO does this work???
     }
-    static PackageElement get(Package pkg)
+    public static PackageElement get(Package pkg)
     {
         PackageElement pe = packageMap.get(pkg);
         if (pe == null)
         {
-            pe = new PackageSymbol(pkg);
+            pe = new PackageElementImpl(pkg);
             packageMap.put(pkg, pe);
         }
         return pe;
     }
-    static TypeParameterElement get(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
+    public static TypeParameterElement get(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
     {
         TypeParameterElement tpe = typeParameterMap.get(typeVariable);
         if (tpe == null)
         {
-            tpe = new TypeParameterSymbol(genericDeclaration, typeVariable);
+            tpe = new TypeParameterElementImpl(genericDeclaration, typeVariable);
             typeParameterMap.put(typeVariable, tpe);
         }
         return tpe;
     }
 
-    static AnnotationMirror getAnnotationMirror(Annotation annotation)
+    public static AnnotationMirror getAnnotationMirror(Annotation annotation)
     {
         AnnotationMirror am = annotationMap.get(annotation);
         if (am == null)
         {
-            am = new AnnotationMirrorSymbol(annotation);
+            am = new AnnotationMirrorImpl(annotation);
             annotationMap.put(annotation, am);
         }
         return am;
     }
 
-    static AnnotationValue getAnnotationValue(Object value)
+    public static AnnotationValue getAnnotationValue(Object value)
     {
         AnnotationValue av = annotationValueMap.get(value);
         if (av == null)
         {
-            av = new AnnotationValueSymbol(value);
+            av = new AnnotationValueImpl(value);
             annotationValueMap.put(value, av);
         }
         return av;
     }
 
-    static VariableElement getVariableElement(Type param, Annotation[] annotation)
+    public static VariableElement getVariableElement(Type param, Annotation[] annotation)
     {
-        return new ParameterSymbol(param, annotation);
+        return new VariableElementParameterImpl(param, annotation);
     }
-    static Element get(GenericDeclaration genericDeclaration)
+    public static Element get(GenericDeclaration genericDeclaration)
     {
         if (genericDeclaration instanceof Class)
         {
@@ -160,9 +161,9 @@ public class ElementFactory
         throw new UnsupportedOperationException(genericDeclaration+" Not implemented");
     }
 
-    static VariableElement getVariableElement(Enum en)
+    public static VariableElement getVariableElement(Enum en)
     {
-        return new EnumSymbol(en);
+        return new VariableElementEnumImpl(en);
     }
 
 }

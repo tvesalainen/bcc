@@ -33,10 +33,10 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-class EnumSymbol implements VariableElement
+class VariableElementEnumImpl implements VariableElement
 {
     private Enum en;
-    public EnumSymbol(Enum en)
+    public VariableElementEnumImpl(Enum en)
     {
         this.en = en;
     }
@@ -44,7 +44,7 @@ class EnumSymbol implements VariableElement
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(en);
+        return TypeMirrorFactory.get(en);
     }
 
     @Override

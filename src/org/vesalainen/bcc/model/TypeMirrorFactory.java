@@ -18,43 +18,37 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 
 /**
  * @author Timo Vesalainen
  */
-public class TypeFactory 
+public class TypeMirrorFactory 
 {
 
-    static TypeMirror get(Type type)
+    public static TypeMirror get(Type type)
     {
-        if (type instanceof GenericArrayType)
+        if (type instanceof java.lang.reflect.GenericArrayType)
         {
-            GenericArrayType gat = (GenericArrayType) type;
+            java.lang.reflect.GenericArrayType gat = (java.lang.reflect.GenericArrayType) type;
             return getGenericArrayType(gat);
         }
-        if (type instanceof ParameterizedType)
+        if (type instanceof java.lang.reflect.ParameterizedType)
         {
-            ParameterizedType pt = (ParameterizedType) type;
+            java.lang.reflect.ParameterizedType pt = (java.lang.reflect.ParameterizedType) type;
             return getParameterizedType(pt);
         }
-        if (type instanceof TypeVariable)
+        if (type instanceof java.lang.reflect.TypeVariable)
         {
-            TypeVariable tv = (TypeVariable) type;
+            java.lang.reflect.TypeVariable tv = (java.lang.reflect.TypeVariable) type;
             return getTypeVariable(tv);
         }
-        if (type instanceof WildcardType)
+        if (type instanceof java.lang.reflect.WildcardType)
         {
-            WildcardType wt = (WildcardType) type;
+            java.lang.reflect.WildcardType wt = (java.lang.reflect.WildcardType) type;
             return getWildcardType(wt);
         }
         if (type instanceof Class)
@@ -65,47 +59,47 @@ public class TypeFactory
         throw new UnsupportedOperationException(type+" Not implemented");
     }
 
-    static DeclaredType get(Annotation annotation)
+    public static DeclaredType get(Annotation annotation)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    static DeclaredType get(Enum en)
+    public static DeclaredType get(Enum en)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private static TypeMirror getGenericArrayType(GenericArrayType gat)
+    public static TypeMirror getGenericArrayType(java.lang.reflect.GenericArrayType gat)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private static TypeMirror getParameterizedType(ParameterizedType pt)
+    public static TypeMirror getParameterizedType(java.lang.reflect.ParameterizedType pt)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private static TypeMirror getTypeVariable(TypeVariable pt)
+    public static TypeVariable getTypeVariable(java.lang.reflect.TypeVariable tv)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private static TypeMirror getWildcardType(WildcardType wt)
+    public static TypeMirror getWildcardType(java.lang.reflect.WildcardType wt)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private static TypeMirror getClassType(Class<?> cls)
+    public static TypeMirror getClassType(Class<?> cls)
     {
         if (cls.isArray())
         {
-            return new ArraySymbol(cls);
+            return new ArrayTypeImpl(cls);
         }
         if (cls.isPrimitive())
         {
-            return new PrimitiveSymbol(cls);
+            return new PrimitiveTypeImpl(cls);
         }
-        return new DeclaredSymbol(cls);
+        return new DeclaredTypeImpl(cls);
     }
 
 }

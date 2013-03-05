@@ -37,12 +37,12 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-class ConstructorSymbol extends AbstractParameterizableSymbol implements ExecutableElement 
+class ExecutableElementConstructorImpl extends AbstractParameterizableSymbol implements ExecutableElement 
 {
     private Constructor constructor;
     private List<VariableElement> parameters;
     private List<TypeMirror> thrownTypes;
-    public ConstructorSymbol(Constructor constructor)
+    public ExecutableElementConstructorImpl(Constructor constructor)
     {
         super(constructor);
         this.constructor = constructor;
@@ -116,7 +116,7 @@ class ConstructorSymbol extends AbstractParameterizableSymbol implements Executa
             thrownTypes = new ArrayList<>();
             for (Type type : constructor.getGenericExceptionTypes())
             {
-                thrownTypes.add(TypeFactory.get(type));
+                thrownTypes.add(TypeMirrorFactory.get(type));
             }
         }
         return thrownTypes;

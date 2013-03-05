@@ -29,11 +29,11 @@ import javax.lang.model.type.TypeVisitor;
 /**
  * @author Timo Vesalainen
  */
-public class DeclaredSymbol implements DeclaredType
+public class DeclaredTypeImpl implements DeclaredType
 {
     private Class<?> cls;
     private List<TypeMirror> typeArguments;
-    public DeclaredSymbol(Class<?> cls)
+    public DeclaredTypeImpl(Class<?> cls)
     {
         this.cls = cls;
     }
@@ -54,7 +54,7 @@ public class DeclaredSymbol implements DeclaredType
         }
         else
         {
-            return TypeFactory.get(enclosingClass);
+            return TypeMirrorFactory.get(enclosingClass);
         }
     }
 
@@ -66,7 +66,7 @@ public class DeclaredSymbol implements DeclaredType
             typeArguments = new ArrayList<>();
             for (TypeVariable tv : cls.getTypeParameters())
             {
-                typeArguments.add(TypeFactory.get(tv));
+                typeArguments.add(TypeMirrorFactory.get(tv));
             }
         }
         return typeArguments;

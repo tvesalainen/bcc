@@ -35,13 +35,13 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class ParameterSymbol implements VariableElement
+public class VariableElementParameterImpl implements VariableElement
 {
     private Type param;
     private Annotation[] annotation;
     private List<AnnotationMirror> annotationMirrors;
 
-    public ParameterSymbol(Type param, Annotation[] annotation)
+    public VariableElementParameterImpl(Type param, Annotation[] annotation)
     {
         this.param = param;
         this.annotation = annotation;
@@ -56,7 +56,7 @@ public class ParameterSymbol implements VariableElement
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(param);
+        return TypeMirrorFactory.get(param);
     }
 
     @Override
@@ -80,6 +80,7 @@ public class ParameterSymbol implements VariableElement
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <A extends Annotation> A getAnnotation(Class<A> annotationType)
     {
         for (Annotation a : annotation)

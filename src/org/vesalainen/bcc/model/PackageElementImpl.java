@@ -17,76 +17,69 @@
 
 package org.vesalainen.bcc.model;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.AnnotatedElement;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.PackageElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 /**
  * @author Timo Vesalainen
  */
-public class FieldSymbol extends AbstractSymbol implements VariableElement
+public class PackageElementImpl extends AbstractSymbol implements PackageElement
 {
-    private Field field;
-    public FieldSymbol(Field field)
+    private Package pkg;
+    public PackageElementImpl(Package pkg)
     {
-        super(field, field.getModifiers(), field.getName());
-        this.field = field;
+        super(pkg, 0, pkg.getName());
     }
 
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(field.getGenericType());
+        return new NoTypeImpl(TypeKind.NONE);
     }
 
     @Override
     public ElementKind getKind()
     {
-        return ElementKind.FIELD;
+        return ElementKind.PACKAGE;
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        return ElementFactory.get(field.getDeclaringClass());
+        return null;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public List<? extends Element> getEnclosedElements()
     {
-        return Collections.EMPTY_LIST;
+        return Collections.EMPTY_LIST;  // no support in reflection
     }
 
     @Override
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
-        return v.visitVariable(this, p);
+        return v.visitPackage(this, p);
     }
 
     @Override
-    public Object getConstantValue()
+    public Name getQualifiedName()
     {
-        if (
-                Modifier.isFinal(field.getModifiers()) &&
-                Modifier.isStatic(field.getModifiers()) 
-                )
-        {
-            try
-            {
-                return field.get(null);
-            }
-            catch (IllegalArgumentException | IllegalAccessException ex)
-            {
-            }
-        }
-        return null;
+        return new NameImpl(pkg.getName());
+    }
+
+    @Override
+    public boolean isUnnamed()
+    {
+        return pkg.getName().isEmpty();
     }
 
 }

@@ -37,13 +37,13 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class ClassSymbol extends AbstractParameterizableSymbol implements TypeElement
+public class TypeElementImpl extends AbstractParameterizableSymbol implements TypeElement
 {
     private Class<?> type;
     private List<Element> enclosedElements;
     private List<TypeMirror> interfaces;
 
-    public ClassSymbol(Class<?> type)
+    public TypeElementImpl(Class<?> type)
     {
         super(type);
         this.type = type;
@@ -115,7 +115,7 @@ public class ClassSymbol extends AbstractParameterizableSymbol implements TypeEl
     @Override
     public TypeMirror getSuperclass()
     {
-        return TypeFactory.get(type.getGenericSuperclass());
+        return TypeMirrorFactory.get(type.getGenericSuperclass());
     }
 
     @Override
@@ -126,7 +126,7 @@ public class ClassSymbol extends AbstractParameterizableSymbol implements TypeEl
             interfaces = new ArrayList<>();
             for (Type intf : type.getGenericInterfaces())
             {
-                interfaces.add(TypeFactory.get(intf));
+                interfaces.add(TypeMirrorFactory.get(intf));
             }
         }
         return interfaces;
@@ -149,7 +149,7 @@ public class ClassSymbol extends AbstractParameterizableSymbol implements TypeEl
     @Override
     public TypeMirror asType()
     {
-        return TypeFactory.get(type);
+        return TypeMirrorFactory.get(type);
     }
 
     @Override

@@ -28,10 +28,10 @@ import javax.lang.model.element.AnnotationValueVisitor;
 /**
  * @author Timo Vesalainen
  */
-class AnnotationValueSymbol implements AnnotationValue 
+class AnnotationValueImpl implements AnnotationValue 
 {
     private Object value;
-    public AnnotationValueSymbol(Object value)
+    public AnnotationValueImpl(Object value)
     {
         this.value = value;
     }
@@ -53,7 +53,7 @@ class AnnotationValueSymbol implements AnnotationValue
         }
         if (Class.class.equals(returnType))
         {
-            return TypeFactory.get((Type)value);
+            return TypeMirrorFactory.get((Type)value);
         }
         if (returnType.isEnum())
         {

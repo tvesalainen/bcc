@@ -24,11 +24,11 @@ import javax.lang.model.type.TypeVisitor;
 /**
  * @author Timo Vesalainen
  */
-public class PrimitiveSymbol implements PrimitiveType
+public class PrimitiveTypeImpl implements PrimitiveType
 {
     private Class<?> cls;
 
-    public PrimitiveSymbol(Class<?> cls)
+    public PrimitiveTypeImpl(Class<?> cls)
     {
         assert cls.isPrimitive();
         this.cls = cls;

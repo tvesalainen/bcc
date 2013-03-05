@@ -29,12 +29,12 @@ import javax.lang.model.type.DeclaredType;
 /**
  * @author Timo Vesalainen
  */
-public class AnnotationMirrorSymbol implements AnnotationMirror
+public class AnnotationMirrorImpl implements AnnotationMirror
 {
     private Annotation annotation;
     private Map<ExecutableElement,AnnotationValue> elementValues;
 
-    public AnnotationMirrorSymbol(Annotation annotation)
+    public AnnotationMirrorImpl(Annotation annotation)
     {
         this.annotation = annotation;
     }
@@ -42,7 +42,7 @@ public class AnnotationMirrorSymbol implements AnnotationMirror
     @Override
     public DeclaredType getAnnotationType()
     {
-        return TypeFactory.get(annotation);
+        return TypeMirrorFactory.get(annotation);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class AnnotationMirrorSymbol implements AnnotationMirror
             elementValues = new HashMap<>();
             for (Method method : annotation.annotationType().getDeclaredMethods())
             {
-                elementValues.put(ElementFactory.get(method), new AnnotationValueSymbol(method.getDefaultValue()));
+                elementValues.put(ElementFactory.get(method), new AnnotationValueImpl(method.getDefaultValue()));
             }
         }
         return elementValues;

@@ -17,69 +17,76 @@
 
 package org.vesalainen.bcc.model;
 
-import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.Name;
-import javax.lang.model.element.PackageElement;
-import javax.lang.model.type.TypeKind;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 
 /**
  * @author Timo Vesalainen
  */
-public class PackageSymbol extends AbstractSymbol implements PackageElement
+public class VariableElementFieldImpl extends AbstractSymbol implements VariableElement
 {
-    private Package pkg;
-    public PackageSymbol(Package pkg)
+    private Field field;
+    public VariableElementFieldImpl(Field field)
     {
-        super(pkg, 0, pkg.getName());
+        super(field, field.getModifiers(), field.getName());
+        this.field = field;
     }
 
     @Override
     public TypeMirror asType()
     {
-        return new NoTypeImpl(TypeKind.NONE);
+        return TypeMirrorFactory.get(field.getGenericType());
     }
 
     @Override
     public ElementKind getKind()
     {
-        return ElementKind.PACKAGE;
+        return ElementKind.FIELD;
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        return null;
+        return ElementFactory.get(field.getDeclaringClass());
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public List<? extends Element> getEnclosedElements()
     {
-        return Collections.EMPTY_LIST;  // no support in reflection
+        return Collections.EMPTY_LIST;
     }
 
     @Override
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
-        return v.visitPackage(this, p);
+        return v.visitVariable(this, p);
     }
 
     @Override
-    public Name getQualifiedName()
+    public Object getConstantValue()
     {
-        return new NameImpl(pkg.getName());
-    }
-
-    @Override
-    public boolean isUnnamed()
-    {
-        return pkg.getName().isEmpty();
+        if (
+                Modifier.isFinal(field.getModifiers()) &&
+                Modifier.isStatic(field.getModifiers()) 
+                )
+        {
+            try
+            {
+                return field.get(null);
+            }
+            catch (IllegalArgumentException | IllegalAccessException ex)
+            {
+            }
+        }
+        return null;
     }
 
 }
