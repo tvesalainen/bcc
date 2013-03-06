@@ -33,6 +33,7 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Dump;
 
 /**
  * @author Timo Vesalainen
@@ -91,7 +92,7 @@ class ExecutableElementConstructorImpl extends AbstractParameterizableSymbol imp
         if (parameters == null)
         {
             parameters = new ArrayList<>();
-            Type[] genericParameterTypes = constructor.getGenericParameterTypes();
+            Type[] genericParameterTypes = constructor.getParameterTypes();
             Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
             int index = 0;
             for (Type param : genericParameterTypes)

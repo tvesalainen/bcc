@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.reflect.Type;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -38,31 +39,39 @@ public class TypeVariableImpl implements TypeVariable
     @Override
     public Element asElement()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return ElementFactory.get(typeVariable.getGenericDeclaration());
     }
 
     @Override
     public TypeMirror getUpperBound()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        Type[] bounds = typeVariable.getBounds();
+        if (bounds.length == 0)
+        {
+            return TypeMirrorFactory.getClassType(Object.class);
+        }
+        else
+        {
+            return TypeMirrorFactory.getIntersectionType(bounds);
+        }
     }
 
     @Override
     public TypeMirror getLowerBound()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return TypeMirrorFactory.Null;
     }
 
     @Override
     public TypeKind getKind()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return TypeKind.TYPEVAR;
     }
 
     @Override
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return v.visitTypeVariable(this, p);
     }
 
 }

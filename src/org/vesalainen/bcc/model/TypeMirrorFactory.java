@@ -20,15 +20,23 @@ package org.vesalainen.bcc.model;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.NoType;
+import javax.lang.model.type.NullType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.TypeVisitor;
 
 /**
  * @author Timo Vesalainen
  */
 public class TypeMirrorFactory 
 {
-
+    public static final NullType Null = new NullTypeImpl();
+    public static final NoType Void = new NoTypeImpl(TypeKind.VOID);
+    public static final NoType Package = new NoTypeImpl(TypeKind.PACKAGE);
+    public static final NoType None = new NoTypeImpl(TypeKind.NONE);
+    
     public static TypeMirror get(Type type)
     {
         if (type instanceof java.lang.reflect.GenericArrayType)
@@ -81,7 +89,7 @@ public class TypeMirrorFactory
 
     public static TypeVariable getTypeVariable(java.lang.reflect.TypeVariable tv)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return new TypeVariableImpl(tv);
     }
 
     public static TypeMirror getWildcardType(java.lang.reflect.WildcardType wt)
@@ -102,4 +110,50 @@ public class TypeMirrorFactory
         return new DeclaredTypeImpl(cls);
     }
 
+    static TypeMirror getIntersectionType(Type[] bounds)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public static class NullTypeImpl implements NullType
+    {
+
+        private NullTypeImpl()
+        {
+        }
+
+        @Override
+        public TypeKind getKind()
+        {
+            return TypeKind.NULL;
+        }
+
+        @Override
+        public <R, P> R accept(TypeVisitor<R, P> v, P p)
+        {
+            return v.visitNull(this, p);
+        }
+
+    }
+    public static class NoTypeImpl implements NoType 
+    {
+        private TypeKind typeKind;
+        private NoTypeImpl(TypeKind typeKind)
+        {
+            this.typeKind = typeKind;
+        }
+
+        @Override
+        public TypeKind getKind()
+        {
+            return typeKind;
+        }
+
+        @Override
+        public <R, P> R accept(TypeVisitor<R, P> v, P p)
+        {
+            return v.visitNoType(this, p);
+        }
+
+    }
 }

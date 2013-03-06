@@ -42,7 +42,7 @@ public class VariableElementFieldImpl extends AbstractSymbol implements Variable
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(field.getGenericType());
+        return TypeMirrorFactory.get(field.getType());
     }
 
     @Override

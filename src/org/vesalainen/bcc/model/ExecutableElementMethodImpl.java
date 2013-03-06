@@ -52,7 +52,7 @@ class ExecutableElementMethodImpl extends AbstractParameterizableSymbol implemen
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(method.getGenericReturnType());
+        return TypeMirrorFactory.get(method.getReturnType());
     }
 
     @Override
@@ -92,7 +92,7 @@ class ExecutableElementMethodImpl extends AbstractParameterizableSymbol implemen
         if (parameters == null)
         {
             parameters = new ArrayList<>();
-            Type[] genericParameterTypes = method.getGenericParameterTypes();
+            Type[] genericParameterTypes = method.getParameterTypes();
             Annotation[][] parameterAnnotations = method.getParameterAnnotations();
             int index = 0;
             for (Type param : genericParameterTypes)
