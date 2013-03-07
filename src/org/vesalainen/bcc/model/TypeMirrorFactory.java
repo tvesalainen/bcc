@@ -18,24 +18,25 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.NoType;
 import javax.lang.model.type.NullType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.TypeVisitor;
+import javax.lang.model.util.Types;
 
 /**
  * @author Timo Vesalainen
  */
 public class TypeMirrorFactory 
 {
-    public static final NullType Null = new NullTypeImpl();
-    public static final NoType Void = new NoTypeImpl(TypeKind.VOID);
-    public static final NoType Package = new NoTypeImpl(TypeKind.PACKAGE);
-    public static final NoType None = new NoTypeImpl(TypeKind.NONE);
+    public static final Types Types = new TypesImpl();
     
     public static TypeMirror get(Type type)
     {
@@ -73,6 +74,16 @@ public class TypeMirrorFactory
     }
 
     public static DeclaredType get(Enum en)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public static ExecutableType get(Constructor constructor)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public static ExecutableType get(Method method)
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
@@ -115,45 +126,4 @@ public class TypeMirrorFactory
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public static class NullTypeImpl implements NullType
-    {
-
-        private NullTypeImpl()
-        {
-        }
-
-        @Override
-        public TypeKind getKind()
-        {
-            return TypeKind.NULL;
-        }
-
-        @Override
-        public <R, P> R accept(TypeVisitor<R, P> v, P p)
-        {
-            return v.visitNull(this, p);
-        }
-
-    }
-    public static class NoTypeImpl implements NoType 
-    {
-        private TypeKind typeKind;
-        private NoTypeImpl(TypeKind typeKind)
-        {
-            this.typeKind = typeKind;
-        }
-
-        @Override
-        public TypeKind getKind()
-        {
-            return typeKind;
-        }
-
-        @Override
-        public <R, P> R accept(TypeVisitor<R, P> v, P p)
-        {
-            return v.visitNoType(this, p);
-        }
-
-    }
 }

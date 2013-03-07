@@ -33,15 +33,9 @@ class AnnotationValueImpl implements AnnotationValue
     private Object value;
     public AnnotationValueImpl(Object value)
     {
-        this.value = value;
-    }
-
-    @Override
-    public Object getValue()
-    {
         if (value == null)
         {
-            return null;
+            this.value = null;
         }
         Class<?> returnType = value.getClass();
         if (
@@ -49,21 +43,21 @@ class AnnotationValueImpl implements AnnotationValue
                 String.class.equals(returnType)
                 )
         {
-            return value;
+            this.value = value;
         }
         if (Class.class.equals(returnType))
         {
-            return TypeMirrorFactory.get((Type)value);
+            this.value = TypeMirrorFactory.get((Type)value);
         }
         if (returnType.isEnum())
         {
             Enum en = (Enum) value;
-            return ElementFactory.getVariableElement(en);
+            this.value = ElementFactory.getVariableElement(en);
         }
         if (returnType.isAnnotation())
         {
             Annotation annotation = (Annotation) value;
-            return ElementFactory.getAnnotationMirror(annotation);
+            this.value = ElementFactory.getAnnotationMirror(annotation);
         }
         if (returnType.isArray())
         {
@@ -73,9 +67,15 @@ class AnnotationValueImpl implements AnnotationValue
             {
                 list.add(ElementFactory.getAnnotationValue(v));
             }
-            return list;
+            this.value = list;
         }
         throw new UnsupportedOperationException(value+" Not supported as annotation value.");
+    }
+
+    @Override
+    public Object getValue()
+    {
+        return value;
     }
 
     @Override

@@ -29,37 +29,39 @@ import javax.lang.model.type.TypeVisitor;
  */
 public class TypeVariableImpl implements TypeVariable
 {
-    private java.lang.reflect.TypeVariable typeVariable;
-
+    private Element element;
+    private TypeMirror upperBound;
+    
     public TypeVariableImpl(java.lang.reflect.TypeVariable typeVariable)
     {
-        this.typeVariable = typeVariable;
+        element = ElementFactory.get(typeVariable.getGenericDeclaration());
+        Type[] bounds = typeVariable.getBounds();
+        if (bounds.length == 0)
+        {
+            upperBound = TypeMirrorFactory.getClassType(Object.class);
+        }
+        else
+        {
+            upperBound = TypeMirrorFactory.getIntersectionType(bounds);
+        }
     }
     
     @Override
     public Element asElement()
     {
-        return ElementFactory.get(typeVariable.getGenericDeclaration());
+        return element;
     }
 
     @Override
     public TypeMirror getUpperBound()
     {
-        Type[] bounds = typeVariable.getBounds();
-        if (bounds.length == 0)
-        {
-            return TypeMirrorFactory.getClassType(Object.class);
-        }
-        else
-        {
-            return TypeMirrorFactory.getIntersectionType(bounds);
-        }
+        return upperBound;
     }
 
     @Override
     public TypeMirror getLowerBound()
     {
-        return TypeMirrorFactory.Null;
+        return TypeMirrorFactory.Types.getNullType();
     }
 
     @Override

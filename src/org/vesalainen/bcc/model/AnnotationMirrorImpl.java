@@ -31,31 +31,26 @@ import javax.lang.model.type.DeclaredType;
  */
 public class AnnotationMirrorImpl implements AnnotationMirror
 {
-    private Annotation annotation;
-    private Map<ExecutableElement,AnnotationValue> elementValues;
-
+    private Map<ExecutableElement,AnnotationValue> elementValues = new HashMap<>();
+    private DeclaredType declaredType;
     public AnnotationMirrorImpl(Annotation annotation)
     {
-        this.annotation = annotation;
+        for (Method method : annotation.annotationType().getDeclaredMethods())
+        {
+            elementValues.put(ElementFactory.get(method), new AnnotationValueImpl(method.getDefaultValue()));
+        }
+        declaredType = TypeMirrorFactory.get(annotation);
     }
     
     @Override
     public DeclaredType getAnnotationType()
     {
-        return TypeMirrorFactory.get(annotation);
+        return declaredType;
     }
 
     @Override
     public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValues()
     {
-        if (elementValues == null)
-        {
-            elementValues = new HashMap<>();
-            for (Method method : annotation.annotationType().getDeclaredMethods())
-            {
-                elementValues.put(ElementFactory.get(method), new AnnotationValueImpl(method.getDefaultValue()));
-            }
-        }
         return elementValues;
     }
 

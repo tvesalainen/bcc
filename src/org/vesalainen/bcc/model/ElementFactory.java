@@ -34,12 +34,15 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
 
 /**
  * @author Timo Vesalainen
  */
 public class ElementFactory 
 {
+    public static final Elements Elements = new ElementsImpl();
+    
     private static Map<Class<?>,TypeElement> classMap = new HashMap<>();
     private static Map<Field,VariableElement> fieldMap = new HashMap<>();
     private static Map<Constructor,ExecutableElement> constructorMap = new HashMap<>();
@@ -49,6 +52,40 @@ public class ElementFactory
     private static Map<Annotation,AnnotationMirror> annotationMap = new HashMap<>();
     private static Map<Object,AnnotationValue> annotationValueMap = new HashMap<>();
     
+    public static Element get(Object ob)
+    {
+        if (ob instanceof Class)
+        {
+            Class<?> cls = (Class<?>) ob;
+            return get(cls);
+        }
+        if (ob instanceof Field)
+        {
+            Field f = (Field) ob;
+            return get(f);
+        }
+        if (ob instanceof Constructor)
+        {
+            Constructor c = (Constructor) ob;
+            return get(c);
+        }
+        if (ob instanceof Method)
+        {
+            Method m = (Method) ob;
+            return get(m);
+        }
+        if (ob instanceof Package)
+        {
+            Package p = (Package) ob;
+            return get(p);
+        }
+        if (ob instanceof Annotation)
+        {
+            Annotation a = (Annotation) ob;
+            return get(a);
+        }
+        throw new UnsupportedOperationException(ob+" not supported");
+    }
     public static TypeElement get(Class<?> type)
     {
         TypeElement te = classMap.get(type);
@@ -65,7 +102,7 @@ public class ElementFactory
         VariableElement ve = fieldMap.get(field);
         if (ve == null)
         {
-            ve = new VariableElementFieldImpl(field);
+            ve = new VariableElementImpl(field);
             fieldMap.put(field, ve);
         }
         return ve;
@@ -75,7 +112,7 @@ public class ElementFactory
         ExecutableElement ee = constructorMap.get(constructor);
         if (ee == null)
         {
-            ee = new ExecutableElementConstructorImpl(constructor);
+            ee = new ExecutableElementImpl(constructor);
             constructorMap.put(constructor, ee);
         }
         return ee;
@@ -85,7 +122,7 @@ public class ElementFactory
         ExecutableElement ee = methodMap.get(method);
         if (ee == null)
         {
-            ee = new ExecutableElementMethodImpl(method);
+            ee = new ExecutableElementImpl(method);
             methodMap.put(method, ee);
         }
         return ee;
@@ -139,7 +176,7 @@ public class ElementFactory
 
     public static VariableElement getVariableElement(Type param, Annotation[] annotation)
     {
-        return new VariableElementParameterImpl(param, annotation);
+        return new VariableElementImpl(param, annotation);
     }
     public static Element get(GenericDeclaration genericDeclaration)
     {
@@ -163,7 +200,7 @@ public class ElementFactory
 
     public static VariableElement getVariableElement(Enum en)
     {
-        return new VariableElementEnumImpl(en);
+        return new VariableElementImpl(en);
     }
 
 }

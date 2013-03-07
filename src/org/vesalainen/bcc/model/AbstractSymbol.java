@@ -21,7 +21,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -34,71 +33,85 @@ import javax.lang.model.element.Name;
  */
 public abstract class AbstractSymbol implements Element
 {
-    protected AnnotatedElement element;
-    private int modifier;
     private Name name;
-    
-    protected Set<Modifier> modifiers;
-    protected List<AnnotationMirror> annotationMirrors;
+    private Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);;
+    private Annotation[] annotations;
+    private List<AnnotationMirror> annotationMirrors = new ArrayList<>();
 
+    public AbstractSymbol(String name)
+    {
+        this.name = ElementFactory.Elements.getName(name);
+        annotations = new Annotation[] {};
+        annotationMirrors = new ArrayList<>();
+        for (Annotation annotation : annotations)
+        {
+            annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
+        }
+    }
+    public AbstractSymbol(Annotation[] annotations, String name)
+    {
+        this.name = ElementFactory.Elements.getName(name);
+        this.annotations = annotations;
+        annotationMirrors = new ArrayList<>();
+    }
     public AbstractSymbol(AnnotatedElement element, int modifier, String name)
     {
-        this.element = element;
-        this.modifier = modifier;
-        this.name = new NameImpl(name);
+        this.name = ElementFactory.Elements.getName(name);
+        annotations = element.getAnnotations();
+        annotationMirrors = new ArrayList<>();
+        for (Annotation annotation : element.getDeclaredAnnotations())
+        {
+            annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
+        }
+        if (java.lang.reflect.Modifier.isAbstract(modifier))
+        {
+            modifiers.add(Modifier.ABSTRACT);
+        }
+        if (java.lang.reflect.Modifier.isFinal(modifier))
+        {
+            modifiers.add(Modifier.FINAL);
+        }
+        if (java.lang.reflect.Modifier.isNative(modifier))
+        {
+            modifiers.add(Modifier.NATIVE);
+        }
+        if (java.lang.reflect.Modifier.isPrivate(modifier))
+        {
+            modifiers.add(Modifier.PRIVATE);
+        }
+        if (java.lang.reflect.Modifier.isProtected(modifier))
+        {
+            modifiers.add(Modifier.PROTECTED);
+        }
+        if (java.lang.reflect.Modifier.isPublic(modifier))
+        {
+            modifiers.add(Modifier.PUBLIC);
+        }
+        if (java.lang.reflect.Modifier.isStatic(modifier))
+        {
+            modifiers.add(Modifier.STATIC);
+        }
+        if (java.lang.reflect.Modifier.isStrict(modifier))
+        {
+            modifiers.add(Modifier.STRICTFP);
+        }
+        if (java.lang.reflect.Modifier.isSynchronized(modifier))
+        {
+            modifiers.add(Modifier.SYNCHRONIZED);
+        }
+        if (java.lang.reflect.Modifier.isTransient(modifier))
+        {
+            modifiers.add(Modifier.TRANSIENT);
+        }
+        if (java.lang.reflect.Modifier.isVolatile(modifier))
+        {
+            modifiers.add(Modifier.VOLATILE);
+        }
     }
 
     @Override
     public Set<Modifier> getModifiers()
     {
-        if (modifiers == null)
-        {
-            modifiers = EnumSet.noneOf(Modifier.class);
-            if (java.lang.reflect.Modifier.isAbstract(modifier))
-            {
-                modifiers.add(Modifier.ABSTRACT);
-            }
-            if (java.lang.reflect.Modifier.isFinal(modifier))
-            {
-                modifiers.add(Modifier.FINAL);
-            }
-            if (java.lang.reflect.Modifier.isNative(modifier))
-            {
-                modifiers.add(Modifier.NATIVE);
-            }
-            if (java.lang.reflect.Modifier.isPrivate(modifier))
-            {
-                modifiers.add(Modifier.PRIVATE);
-            }
-            if (java.lang.reflect.Modifier.isProtected(modifier))
-            {
-                modifiers.add(Modifier.PROTECTED);
-            }
-            if (java.lang.reflect.Modifier.isPublic(modifier))
-            {
-                modifiers.add(Modifier.PUBLIC);
-            }
-            if (java.lang.reflect.Modifier.isStatic(modifier))
-            {
-                modifiers.add(Modifier.STATIC);
-            }
-            if (java.lang.reflect.Modifier.isStrict(modifier))
-            {
-                modifiers.add(Modifier.STRICTFP);
-            }
-            if (java.lang.reflect.Modifier.isSynchronized(modifier))
-            {
-                modifiers.add(Modifier.SYNCHRONIZED);
-            }
-            if (java.lang.reflect.Modifier.isTransient(modifier))
-            {
-                modifiers.add(Modifier.TRANSIENT);
-            }
-            if (java.lang.reflect.Modifier.isVolatile(modifier))
-            {
-                modifiers.add(Modifier.VOLATILE);
-            }
-        }
         return modifiers;
     }
 
@@ -109,22 +122,22 @@ public abstract class AbstractSymbol implements Element
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <A extends Annotation> A getAnnotation(Class<A> annotationType)
     {
-        return element.getAnnotation(annotationType);
+        for (Annotation a : annotations)
+        {
+            if (annotationType.isInstance(a))
+            {
+                return (A) a;
+            }
+        }
+        return null;
     }
 
     @Override
     public List<? extends AnnotationMirror> getAnnotationMirrors()
     {
-        if (annotationMirrors == null)
-        {
-            annotationMirrors = new ArrayList<>();
-            for (Annotation annotation : element.getDeclaredAnnotations())
-            {
-                annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
-            }
-        }
         return annotationMirrors;
     }
 

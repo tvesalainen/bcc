@@ -39,144 +39,146 @@ import javax.lang.model.type.TypeMirror;
  */
 public class TypeElementImpl extends AbstractParameterizableSymbol implements TypeElement
 {
-    private Class<?> type;
-    private List<Element> enclosedElements;
-    private List<TypeMirror> interfaces;
+    private TypeMirror type;
+    private List<Element> enclosedElements = new ArrayList<>();
+    private List<TypeMirror> interfaces = new ArrayList<>();
+    private NestingKind nestingKind;
+    private Name qualifiedName;
+    private TypeMirror superclass;
+    private Element enclosingElement;
+    private ElementKind kind;
 
-    public TypeElementImpl(Class<?> type)
+    public TypeElementImpl(Class<?> cls)
     {
-        super(type);
-        this.type = type;
+        super(cls);
+        type = TypeMirrorFactory.get(cls);
+        qualifiedName = ElementFactory.Elements.getName(cls.getName());
+        superclass = TypeMirrorFactory.get(cls.getSuperclass());
+        for (Field field : cls.getDeclaredFields())
+        {
+            enclosedElements.add(ElementFactory.get(field));
+        }
+        for (Constructor constructor : cls.getDeclaredConstructors())
+        {
+            enclosedElements.add(ElementFactory.get(constructor));
+        }
+        for (Method method : cls.getDeclaredMethods())
+        {
+            enclosedElements.add(ElementFactory.get(method));
+        }
+        for (Annotation annotation : cls.getDeclaredAnnotations())
+        {
+            enclosedElements.add(ElementFactory.get(annotation));
+        }
+        for (Class<?> c : cls.getDeclaredClasses())
+        {
+            enclosedElements.add(ElementFactory.get(c));
+        }
+        if (cls.isAnonymousClass())
+        {
+            nestingKind = NestingKind.ANONYMOUS;
+        }
+        else
+        {
+            if (cls.isLocalClass())
+            {
+                nestingKind = NestingKind.LOCAL;
+            }
+            else
+            {
+                if (cls.isMemberClass())
+                {
+                    nestingKind = NestingKind.MEMBER;
+                }
+                else
+                {
+                    nestingKind = NestingKind.TOP_LEVEL;
+                }
+            }
+        }
+        for (Type intf : cls.getGenericInterfaces())
+        {
+            interfaces.add(TypeMirrorFactory.get(intf));
+        }
+        Class<?> enclosingClass = cls.getEnclosingClass();
+        if (enclosingClass != null)
+        {
+            enclosingElement = ElementFactory.get(enclosingClass);
+        }
+        else
+        {
+            enclosingElement = ElementFactory.get(cls.getPackage());
+        }
+        if (cls.isAnnotation())
+        {
+            kind = ElementKind.ANNOTATION_TYPE;
+        }
+        else
+        {
+            if (cls.isEnum())
+            {
+                kind = ElementKind.ENUM;
+            }
+            else
+            {
+                if (cls.isInterface())
+                {
+                    kind = ElementKind.INTERFACE;
+                }
+                else
+                {
+                    kind = ElementKind.CLASS;
+                }
+            }
+        }
     }
     
     @Override
     public List<? extends Element> getEnclosedElements()
     {
-        if (enclosedElements == null)
-        {
-            enclosedElements = new ArrayList<>();
-            for (Field field : type.getDeclaredFields())
-            {
-                enclosedElements.add(ElementFactory.get(field));
-            }
-            for (Constructor constructor : type.getDeclaredConstructors())
-            {
-                enclosedElements.add(ElementFactory.get(constructor));
-            }
-            for (Method method : type.getDeclaredMethods())
-            {
-                enclosedElements.add(ElementFactory.get(method));
-            }
-            for (Annotation annotation : type.getDeclaredAnnotations())
-            {
-                enclosedElements.add(ElementFactory.get(annotation));
-            }
-            for (Class<?> cls : type.getDeclaredClasses())
-            {
-                enclosedElements.add(ElementFactory.get(cls));
-            }
-        }
         return enclosedElements;
     }
 
     @Override
     public NestingKind getNestingKind()
     {
-        if (type.isAnonymousClass())
-        {
-            return NestingKind.ANONYMOUS;
-        }
-        else
-        {
-            if (type.isLocalClass())
-            {
-                return NestingKind.LOCAL;
-            }
-            else
-            {
-                if (type.isMemberClass())
-                {
-                    return NestingKind.MEMBER;
-                }
-                else
-                {
-                    return NestingKind.TOP_LEVEL;
-                }
-            }
-        }
+        return nestingKind;
     }
 
     @Override
     public Name getQualifiedName()
     {
-        return new NameImpl(type.getName());
+        return qualifiedName;
     }
 
     @Override
     public TypeMirror getSuperclass()
     {
-        return TypeMirrorFactory.get(type.getGenericSuperclass());
+        return superclass;
     }
 
     @Override
     public List<? extends TypeMirror> getInterfaces()
     {
-        if (interfaces == null)
-        {
-            interfaces = new ArrayList<>();
-            for (Type intf : type.getGenericInterfaces())
-            {
-                interfaces.add(TypeMirrorFactory.get(intf));
-            }
-        }
         return interfaces;
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        Class<?> enclosingClass = type.getEnclosingClass();
-        if (enclosingClass != null)
-        {
-            return ElementFactory.get(enclosingClass);
-        }
-        else
-        {
-            return ElementFactory.get(type.getPackage());
-        }
+        return enclosingElement;
     }
 
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(type);
+        return type;
     }
 
     @Override
     public ElementKind getKind()
     {
-        if (type.isAnnotation())
-        {
-            return ElementKind.ANNOTATION_TYPE;
-        }
-        else
-        {
-            if (type.isEnum())
-            {
-                return ElementKind.ENUM;
-            }
-            else
-            {
-                if (type.isInterface())
-                {
-                    return ElementKind.INTERFACE;
-                }
-                else
-                {
-                    return ElementKind.CLASS;
-                }
-            }
-        }
+        return kind;
     }
 
     @Override

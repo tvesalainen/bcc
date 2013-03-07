@@ -34,37 +34,81 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Dump;
 
 /**
  * @author Timo Vesalainen
  */
-class ExecutableElementMethodImpl extends AbstractParameterizableSymbol implements ExecutableElement 
+class ExecutableElementImpl extends AbstractParameterizableSymbol implements ExecutableElement 
 {
-    private Method method;
-    private List<VariableElement> parameters;
-    private List<TypeMirror> thrownTypes;
-    public ExecutableElementMethodImpl(Method method)
+    private TypeMirror type;
+    private ElementKind kind;
+    private Element enclosingElement;
+    private TypeMirror returnType;
+    private List<VariableElement> parameters = new ArrayList<>();
+    private boolean varArgs;
+    private List<TypeMirror> thrownTypes = new ArrayList<>();
+    private AnnotationValue defaultValue;
+    
+    public ExecutableElementImpl(Constructor constructor)
+    {
+        super(constructor);
+        type = TypeMirrorFactory.get(constructor);
+        kind = ElementKind.CONSTRUCTOR;
+        enclosingElement = ElementFactory.get(constructor.getDeclaringClass());
+        returnType = TypeMirrorFactory.Types.getNoType(TypeKind.VOID);
+        Type[] genericParameterTypes = constructor.getParameterTypes();
+        Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
+        int index = 0;
+        for (Type param : genericParameterTypes)
+        {
+            parameters.add(ElementFactory.getVariableElement(param, parameterAnnotations[index++]));
+        }
+        varArgs = constructor.isVarArgs();
+        for (Type type : constructor.getGenericExceptionTypes())
+        {
+            thrownTypes.add(TypeMirrorFactory.get(type));
+        }
+    }
+
+    public ExecutableElementImpl(Method method)
     {
         super(method);
-        this.method = method;
+        type = TypeMirrorFactory.get(method);
+        kind = ElementKind.METHOD;
+        enclosingElement = ElementFactory.get(method.getDeclaringClass());
+        returnType = TypeMirrorFactory.get(method.getReturnType());
+        Type[] genericParameterTypes = method.getParameterTypes();
+        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+        int index = 0;
+        for (Type param : genericParameterTypes)
+        {
+            parameters.add(ElementFactory.getVariableElement(param, parameterAnnotations[index++]));
+        }
+        varArgs = method.isVarArgs();
+        for (Type type : method.getGenericExceptionTypes())
+        {
+            thrownTypes.add(TypeMirrorFactory.get(type));
+        }
+        defaultValue = new AnnotationValueImpl(method.getDefaultValue());
     }
 
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(method.getReturnType());
+        return type;
     }
 
     @Override
     public ElementKind getKind()
     {
-        return ElementKind.METHOD;
+        return kind;
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        return ElementFactory.get(method.getDeclaringClass());
+        return enclosingElement;
     }
 
     @Override
@@ -83,50 +127,31 @@ class ExecutableElementMethodImpl extends AbstractParameterizableSymbol implemen
     @Override
     public TypeMirror getReturnType()
     {
-        return TypeMirrorFactory.get(method.getGenericReturnType());
+        return returnType;
     }
 
     @Override
     public List<? extends VariableElement> getParameters()
     {
-        if (parameters == null)
-        {
-            parameters = new ArrayList<>();
-            Type[] genericParameterTypes = method.getParameterTypes();
-            Annotation[][] parameterAnnotations = method.getParameterAnnotations();
-            int index = 0;
-            for (Type param : genericParameterTypes)
-            {
-                parameters.add(ElementFactory.getVariableElement(param, parameterAnnotations[index++]));
-            }
-        }
         return parameters;
     }
 
     @Override
     public boolean isVarArgs()
     {
-        return method.isVarArgs();
+        return varArgs;
     }
 
     @Override
     public List<? extends TypeMirror> getThrownTypes()
     {
-        if (thrownTypes == null)
-        {
-            thrownTypes = new ArrayList<>();
-            for (Type type : method.getGenericExceptionTypes())
-            {
-                thrownTypes.add(TypeMirrorFactory.get(type));
-            }
-        }
         return thrownTypes;
     }
 
     @Override
     public AnnotationValue getDefaultValue()
     {
-        return new AnnotationValueImpl(method.getDefaultValue());
+        return defaultValue;
     }
 
 }

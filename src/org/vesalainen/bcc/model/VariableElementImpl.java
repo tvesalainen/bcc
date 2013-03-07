@@ -17,8 +17,10 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import javax.lang.model.element.Element;
@@ -30,31 +32,66 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class VariableElementFieldImpl extends AbstractSymbol implements VariableElement
+public class VariableElementImpl extends AbstractSymbol implements VariableElement
 {
-    private Field field;
-    public VariableElementFieldImpl(Field field)
+    private TypeMirror type;
+    private ElementKind kind;
+    private Element enclosingElement;
+    private Object constantValue;
+    
+    public VariableElementImpl(Field field)
     {
         super(field, field.getModifiers(), field.getName());
-        this.field = field;
+        type = TypeMirrorFactory.get(field.getType());
+        kind = ElementKind.FIELD;
+        enclosingElement = ElementFactory.get(field.getDeclaringClass());
+        if (
+                Modifier.isFinal(field.getModifiers()) &&
+                Modifier.isStatic(field.getModifiers()) 
+                )
+        {
+            try
+            {
+                constantValue = field.get(null);
+            }
+            catch (IllegalArgumentException | IllegalAccessException ex)
+            {
+            }
+        }
+    }
+
+    public VariableElementImpl(Enum en)
+    {
+        super(en.name());
+        type = TypeMirrorFactory.get(en);
+        kind = ElementKind.ENUM_CONSTANT;
+        enclosingElement = ElementFactory.get(en.getDeclaringClass());
+        constantValue = en;
+    }
+
+    public VariableElementImpl(Type param, Annotation[] annotation)
+    {
+        super(annotation, null);
+        type = TypeMirrorFactory.get(param);
+        kind = ElementKind.PARAMETER;
     }
 
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(field.getType());
+        return type;
     }
 
     @Override
     public ElementKind getKind()
     {
-        return ElementKind.FIELD;
+        return kind;
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        return ElementFactory.get(field.getDeclaringClass());
+        return enclosingElement;
     }
 
     @Override
@@ -73,20 +110,7 @@ public class VariableElementFieldImpl extends AbstractSymbol implements Variable
     @Override
     public Object getConstantValue()
     {
-        if (
-                Modifier.isFinal(field.getModifiers()) &&
-                Modifier.isStatic(field.getModifiers()) 
-                )
-        {
-            try
-            {
-                return field.get(null);
-            }
-            catch (IllegalArgumentException | IllegalAccessException ex)
-            {
-            }
-        }
-        return null;
+        return constantValue;
     }
 
 }

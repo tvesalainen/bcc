@@ -33,16 +33,17 @@ import javax.lang.model.type.TypeMirror;
  */
 public class PackageElementImpl extends AbstractSymbol implements PackageElement
 {
-    private Package pkg;
+    private Name qualifiedName;
     public PackageElementImpl(Package pkg)
     {
         super(pkg, 0, pkg.getName());
+        qualifiedName = ElementFactory.Elements.getName(pkg.getName());
     }
 
     @Override
     public TypeMirror asType()
     {
-        return new NoTypeImpl(TypeKind.NONE);
+        return TypeMirrorFactory.Types.getNoType(TypeKind.PACKAGE);
     }
 
     @Override
@@ -73,13 +74,13 @@ public class PackageElementImpl extends AbstractSymbol implements PackageElement
     @Override
     public Name getQualifiedName()
     {
-        return new NameImpl(pkg.getName());
+        return qualifiedName;
     }
 
     @Override
     public boolean isUnnamed()
     {
-        return pkg.getName().isEmpty();
+        return qualifiedName.length() == 0;
     }
 
 }

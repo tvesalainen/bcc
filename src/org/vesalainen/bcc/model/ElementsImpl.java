@@ -74,7 +74,16 @@ public class ElementsImpl implements Elements
     @Override
     public PackageElement getPackageOf(Element type)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        switch (type.getKind())
+        {
+            case PACKAGE:
+                return (PackageElement)type;
+            case CLASS:
+                TypeElement te = (TypeElement) type;
+                return getPackageOf(te.getEnclosingElement());
+            default:
+                throw new UnsupportedOperationException(type.getKind()+" not supported");
+        }
     }
 
     @Override
@@ -116,7 +125,58 @@ public class ElementsImpl implements Elements
     @Override
     public Name getName(CharSequence cs)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new NameImpl(cs);
     }
 
+    public class NameImpl implements Name
+    {
+        private String name;
+
+        public NameImpl(CharSequence name)
+        {
+            this.name = name.toString();
+        }
+
+        @Override
+        public int length()
+        {
+            return name.length();
+        }
+
+        @Override
+        public char charAt(int index)
+        {
+            return name.charAt(index);
+        }
+
+        @Override
+        public boolean equals(Object anObject)
+        {
+            return name.equals(anObject);
+        }
+
+        @Override
+        public boolean contentEquals(CharSequence cs)
+        {
+            return name.contentEquals(cs);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return name.hashCode();
+        }
+
+        @Override
+        public CharSequence subSequence(int beginIndex, int endIndex)
+        {
+            return name.subSequence(beginIndex, endIndex);
+        }
+
+        @Override
+        public String toString()
+        {
+            return name.toString();
+        }
+    }
 }

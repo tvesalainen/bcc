@@ -27,18 +27,17 @@ import javax.lang.model.type.TypeVisitor;
  */
 public class ArrayTypeImpl implements ArrayType
 {
-    private Class<?> cls;
-
+    private TypeMirror componentType;
     public ArrayTypeImpl(Class<?> cls)
     {
         assert cls.isArray();
-        this.cls = cls;
+        this.componentType = TypeMirrorFactory.get(cls.getComponentType());
     }
     
     @Override
     public TypeMirror getComponentType()
     {
-        return TypeMirrorFactory.get(cls.getComponentType());
+        return componentType;
     }
 
     @Override

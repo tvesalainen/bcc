@@ -39,19 +39,27 @@ import javax.lang.model.type.TypeMirror;
  */
 class TypeParameterElementImpl implements TypeParameterElement 
 {
-    private GenericDeclaration genericDeclaration;
-    private TypeVariable typeVariable;
-    private List<TypeMirror> bounds;
+    private TypeMirror type;
+    private Element enclosingElement;
+    private Element genericElement;
+    private List<TypeMirror> bounds = new ArrayList<>();
+    private Name simpleName;
     public TypeParameterElementImpl(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
     {
-        this.genericDeclaration = genericDeclaration;
-        this.typeVariable = typeVariable;
+        type = TypeMirrorFactory.get(typeVariable);
+        simpleName = ElementFactory.Elements.getName(typeVariable.getName());
+        enclosingElement = ElementFactory.get(genericDeclaration);
+        genericElement = ElementFactory.get(typeVariable.getGenericDeclaration());
+        for (Type b : typeVariable.getBounds())
+        {
+            bounds.add(TypeMirrorFactory.get(b));
+        }
     }
 
     @Override
     public TypeMirror asType()
     {
-        return TypeMirrorFactory.get(typeVariable);
+        return type;
     }
 
     @Override
@@ -63,7 +71,7 @@ class TypeParameterElementImpl implements TypeParameterElement
     @Override
     public Element getEnclosingElement()
     {
-        return ElementFactory.get(genericDeclaration);
+        return enclosingElement;
     }
 
     @Override
@@ -82,20 +90,12 @@ class TypeParameterElementImpl implements TypeParameterElement
     @Override
     public Element getGenericElement()
     {
-        return ElementFactory.get(typeVariable.getGenericDeclaration());
+        return genericElement;
     }
 
     @Override
     public List<? extends TypeMirror> getBounds()
     {
-        if (bounds == null)
-        {
-            bounds = new ArrayList<>();
-            for (Type b : typeVariable.getBounds())
-            {
-                bounds.add(TypeMirrorFactory.get(b));
-            }
-        }
         return bounds;
     }
 
@@ -122,7 +122,7 @@ class TypeParameterElementImpl implements TypeParameterElement
     @Override
     public Name getSimpleName()
     {
-        return new NameImpl(typeVariable.getName());
+        return simpleName;
     }
 
 }

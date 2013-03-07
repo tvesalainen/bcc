@@ -31,44 +31,42 @@ import javax.lang.model.type.TypeVisitor;
  */
 public class DeclaredTypeImpl implements DeclaredType
 {
-    private Class<?> cls;
-    private List<TypeMirror> typeArguments;
+    private Element element;
+    private TypeMirror enclosingType;
+    private List<TypeMirror> typeArguments = new ArrayList<>();
     public DeclaredTypeImpl(Class<?> cls)
     {
-        this.cls = cls;
+        this.element = ElementFactory.get(cls);
+        Class<?> enclosingClass = cls.getEnclosingClass();
+        if (enclosingClass == null)
+        {
+            enclosingType = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+        }
+        else
+        {
+            enclosingType = TypeMirrorFactory.get(enclosingClass);
+        }
+        for (TypeVariable tv : cls.getTypeParameters())
+        {
+            typeArguments.add(TypeMirrorFactory.get(tv));
+        }
     }
     
     @Override
     public Element asElement()
     {
-        return ElementFactory.get(cls);
+        return element;
     }
 
     @Override
     public TypeMirror getEnclosingType()
     {
-        Class<?> enclosingClass = cls.getEnclosingClass();
-        if (enclosingClass == null)
-        {
-            return new NoTypeImpl(TypeKind.NONE);
-        }
-        else
-        {
-            return TypeMirrorFactory.get(enclosingClass);
-        }
+        return enclosingType;
     }
 
     @Override
     public List<? extends TypeMirror> getTypeArguments()
     {
-        if (typeArguments == null)
-        {
-            typeArguments = new ArrayList<>();
-            for (TypeVariable tv : cls.getTypeParameters())
-            {
-                typeArguments.add(TypeMirrorFactory.get(tv));
-            }
-        }
         return typeArguments;
     }
 

@@ -17,9 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.Method;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
@@ -32,38 +30,38 @@ import javax.lang.model.element.TypeParameterElement;
  */
 public abstract class AbstractParameterizableSymbol extends AbstractSymbol implements Parameterizable
 {
-    private GenericDeclaration genericDeclaration;
-    protected List<TypeParameterElement> typeParameters;
+    private List<TypeParameterElement> typeParameters = new ArrayList<>();
 
     public AbstractParameterizableSymbol(Class<?> type)
     {
         super(type, type.getModifiers(), type.getSimpleName());
-        this.genericDeclaration = type;
+        for (TypeVariable param : type.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.get(type, param));
+        }
     }
 
     public AbstractParameterizableSymbol(Constructor constructor)
     {
         super(constructor, constructor.getModifiers(), "<init>");
-        this.genericDeclaration = constructor;
+        for (TypeVariable param : constructor.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.get(constructor, param));
+        }
     }
 
     public AbstractParameterizableSymbol(Method method)
     {
         super(method, method.getModifiers(), method.getName());
-        this.genericDeclaration = method;
+        for (TypeVariable param : method.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.get(method, param));
+        }
     }
 
     @Override
     public List<? extends TypeParameterElement> getTypeParameters()
     {
-        if (typeParameters == null)
-        {
-            typeParameters = new ArrayList<>();
-            for (TypeVariable param : genericDeclaration.getTypeParameters())
-            {
-                typeParameters.add(ElementFactory.get(genericDeclaration, param));
-            }
-        }
         return typeParameters;
     }
 
