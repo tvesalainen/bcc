@@ -17,9 +17,12 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
@@ -34,7 +37,11 @@ public class DeclaredTypeImpl implements DeclaredType
     private Element element;
     private TypeMirror enclosingType;
     private List<TypeMirror> typeArguments = new ArrayList<>();
-    public DeclaredTypeImpl(Class<?> cls)
+    DeclaredTypeImpl()
+    {
+        
+    }
+    void init(Class<?> cls)
     {
         this.element = ElementFactory.get(cls);
         Class<?> enclosingClass = cls.getEnclosingClass();
@@ -50,6 +57,30 @@ public class DeclaredTypeImpl implements DeclaredType
         {
             typeArguments.add(TypeMirrorFactory.get(tv));
         }
+    }
+    
+    void init(Annotation annotation)
+    {
+        this.element = ElementFactory.get(annotation);
+        enclosingType = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+    }
+
+    void init(java.lang.reflect.ParameterizedType parameterizedType)
+    {
+        this.element = ElementFactory.get(parameterizedType.getRawType());
+        Type ownerType = parameterizedType.getOwnerType();
+        if (ownerType != null)
+        {
+            enclosingType = TypeMirrorFactory.get(ownerType);
+        }
+        for (Type t : parameterizedType.getActualTypeArguments())
+        {
+            typeArguments.add(TypeMirrorFactory.get(t));
+        }
+    }
+    void init(Type[] bounds)
+    {
+        element = ElementFactory.getIntersectionTypeElement(bounds);
     }
     
     @Override
@@ -80,6 +111,40 @@ public class DeclaredTypeImpl implements DeclaredType
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
         return v.visitDeclared(this, p);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 3;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final DeclaredTypeImpl other = (DeclaredTypeImpl) obj;
+        if (!Objects.equals(this.element, other.element))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.enclosingType, other.enclosingType))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.typeArguments, other.typeArguments))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

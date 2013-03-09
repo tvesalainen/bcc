@@ -25,6 +25,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
@@ -32,28 +33,48 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 /**
  * @author Timo Vesalainen
  */
-public class TypeElementImpl extends AbstractParameterizableSymbol implements TypeElement
+public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeElement
 {
-    private TypeMirror type;
     private List<Element> enclosedElements = new ArrayList<>();
     private List<TypeMirror> interfaces = new ArrayList<>();
     private NestingKind nestingKind;
     private Name qualifiedName;
     private TypeMirror superclass;
     private Element enclosingElement;
-    private ElementKind kind;
+    private List<TypeParameterElement> typeParameters = new ArrayList<>();
 
-    public TypeElementImpl(Class<?> cls)
+    TypeElementImpl()
     {
-        super(cls);
-        type = TypeMirrorFactory.get(cls);
+        super(ElementKind.CLASS, "");
+    }
+
+    TypeElementImpl(Class<?> cls)
+    {
+        super(detectKind(cls), cls, cls.getModifiers(), cls.getSimpleName());
+    }
+    void init(Class<?> cls)
+    {
+        for (TypeVariable param : cls.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.getTypeParameterElement(param));
+        }
+        type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
         qualifiedName = ElementFactory.Elements.getName(cls.getName());
-        superclass = TypeMirrorFactory.get(cls.getSuperclass());
+        if (cls.getSuperclass() != null)
+        {
+            superclass = TypeMirrorFactory.get(cls.getGenericSuperclass());
+        }
+        else
+        {
+            superclass = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+        }
         for (Field field : cls.getDeclaredFields())
         {
             enclosedElements.add(ElementFactory.get(field));
@@ -107,32 +128,51 @@ public class TypeElementImpl extends AbstractParameterizableSymbol implements Ty
         }
         else
         {
-            enclosingElement = ElementFactory.get(cls.getPackage());
+            enclosingElement = ElementFactory.getPackageElement(cls.getPackage());
         }
+    }
+
+    void init(Type[] bounds)
+    {
+        assert bounds.length > 0;
+        superclass = TypeMirrorFactory.get(bounds[0]);
+        for (int ii=1;ii<bounds.length;ii++)
+        {
+            interfaces.add(TypeMirrorFactory.get(bounds[ii]));
+        }
+    }
+
+    private static ElementKind detectKind(Class<?> cls)
+    {
         if (cls.isAnnotation())
         {
-            kind = ElementKind.ANNOTATION_TYPE;
+            return ElementKind.ANNOTATION_TYPE;
         }
         else
         {
             if (cls.isEnum())
             {
-                kind = ElementKind.ENUM;
+                return ElementKind.ENUM;
             }
             else
             {
                 if (cls.isInterface())
                 {
-                    kind = ElementKind.INTERFACE;
+                    return ElementKind.INTERFACE;
                 }
                 else
                 {
-                    kind = ElementKind.CLASS;
+                    return ElementKind.CLASS;
                 }
             }
         }
     }
-    
+    @Override
+    public List<? extends TypeParameterElement> getTypeParameters()
+    {
+        return typeParameters;
+    }
+
     @Override
     public List<? extends Element> getEnclosedElements()
     {
@@ -170,21 +210,59 @@ public class TypeElementImpl extends AbstractParameterizableSymbol implements Ty
     }
 
     @Override
-    public TypeMirror asType()
-    {
-        return type;
-    }
-
-    @Override
-    public ElementKind getKind()
-    {
-        return kind;
-    }
-
-    @Override
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
         return v.visitType(this, p);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final TypeElementImpl other = (TypeElementImpl) obj;
+        if (!Objects.equals(this.enclosedElements, other.enclosedElements))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.interfaces, other.interfaces))
+        {
+            return false;
+        }
+        if (this.nestingKind != other.nestingKind)
+        {
+            return false;
+        }
+        if (!Objects.equals(this.qualifiedName, other.qualifiedName))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.superclass, other.superclass))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.typeParameters, other.typeParameters))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

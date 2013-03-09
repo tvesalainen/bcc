@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.util.Objects;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -32,6 +33,11 @@ public class ArrayTypeImpl implements ArrayType
     {
         assert cls.isArray();
         this.componentType = TypeMirrorFactory.get(cls.getComponentType());
+    }
+
+    ArrayTypeImpl(java.lang.reflect.GenericArrayType gat)
+    {
+        this.componentType = TypeMirrorFactory.get(gat.getGenericComponentType());
     }
     
     @Override
@@ -50,6 +56,32 @@ public class ArrayTypeImpl implements ArrayType
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
         return v.visitArray(this, p);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final ArrayTypeImpl other = (ArrayTypeImpl) obj;
+        if (!Objects.equals(this.componentType, other.componentType))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

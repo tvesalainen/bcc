@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
@@ -28,6 +29,7 @@ import javax.lang.model.type.NullType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
@@ -45,7 +47,17 @@ public class TypesImpl implements Types
     @Override
     public Element asElement(TypeMirror t)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        switch (t.getKind())
+        {
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) t;
+                return dt.asElement();
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) t;
+                return tv.asElement();
+            default:
+                return null;
+        }
     }
 
     @Override
@@ -81,7 +93,25 @@ public class TypesImpl implements Types
     @Override
     public List<? extends TypeMirror> directSupertypes(TypeMirror t)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        switch (t.getKind())
+        {
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) t;
+                TypeElement te = (TypeElement) dt.asElement();
+                List<TypeMirror> list = new ArrayList<>();
+                TypeMirror superclass = te.getSuperclass();
+                if (TypeKind.NONE != superclass.getKind())
+                {
+                    list.add(superclass);
+                }
+                list.addAll(te.getInterfaces());
+                return list;
+            case EXECUTABLE:
+            case PACKAGE:
+                throw new IllegalArgumentException(t.getKind().name());
+            default:
+                throw new UnsupportedOperationException(t.getKind().name()+" not supported yet");
+        }
     }
 
     @Override

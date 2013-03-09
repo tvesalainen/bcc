@@ -18,13 +18,14 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -32,17 +33,16 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.annotation.dump.Dump;
 
 /**
  * @author Timo Vesalainen
  */
-class ExecutableElementImpl extends AbstractParameterizableSymbol implements ExecutableElement 
+class ExecutableElementImpl extends ElementImpl<ExecutableType> implements ExecutableElement 
 {
-    private TypeMirror type;
-    private ElementKind kind;
+    private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private Element enclosingElement;
     private TypeMirror returnType;
     private List<VariableElement> parameters = new ArrayList<>();
@@ -50,14 +50,20 @@ class ExecutableElementImpl extends AbstractParameterizableSymbol implements Exe
     private List<TypeMirror> thrownTypes = new ArrayList<>();
     private AnnotationValue defaultValue;
     
-    public ExecutableElementImpl(Constructor constructor)
+    ExecutableElementImpl(Constructor constructor)
     {
-        super(constructor);
+        super(ElementKind.CONSTRUCTOR, constructor, constructor.getModifiers(), "<init>");
+    }
+    void init(Constructor constructor)
+    {
+        for (TypeVariable param : constructor.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.getTypeParameterElement(param));
+        }
         type = TypeMirrorFactory.get(constructor);
-        kind = ElementKind.CONSTRUCTOR;
         enclosingElement = ElementFactory.get(constructor.getDeclaringClass());
         returnType = TypeMirrorFactory.Types.getNoType(TypeKind.VOID);
-        Type[] genericParameterTypes = constructor.getParameterTypes();
+        Type[] genericParameterTypes = constructor.getGenericParameterTypes();
         Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
         int index = 0;
         for (Type param : genericParameterTypes)
@@ -71,14 +77,20 @@ class ExecutableElementImpl extends AbstractParameterizableSymbol implements Exe
         }
     }
 
-    public ExecutableElementImpl(Method method)
+    ExecutableElementImpl(Method method)
     {
-        super(method);
+        super(ElementKind.METHOD, method, method.getModifiers(), method.getName());
+    }
+    void init(Method method)
+    {
+        for (TypeVariable param : method.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.getTypeParameterElement(param));
+        }
         type = TypeMirrorFactory.get(method);
-        kind = ElementKind.METHOD;
         enclosingElement = ElementFactory.get(method.getDeclaringClass());
-        returnType = TypeMirrorFactory.get(method.getReturnType());
-        Type[] genericParameterTypes = method.getParameterTypes();
+        returnType = TypeMirrorFactory.get(method.getGenericReturnType());
+        Type[] genericParameterTypes = method.getGenericParameterTypes();
         Annotation[][] parameterAnnotations = method.getParameterAnnotations();
         int index = 0;
         for (Type param : genericParameterTypes)
@@ -90,19 +102,17 @@ class ExecutableElementImpl extends AbstractParameterizableSymbol implements Exe
         {
             thrownTypes.add(TypeMirrorFactory.get(type));
         }
-        defaultValue = new AnnotationValueImpl(method.getDefaultValue());
+        Object defValue = method.getDefaultValue();
+        if (defValue != null)
+        {
+            defaultValue = new AnnotationValueImpl(defValue);
+        }
     }
 
     @Override
-    public TypeMirror asType()
+    public List<? extends TypeParameterElement> getTypeParameters()
     {
-        return type;
-    }
-
-    @Override
-    public ElementKind getKind()
-    {
-        return kind;
+        return typeParameters;
     }
 
     @Override
@@ -153,5 +163,56 @@ class ExecutableElementImpl extends AbstractParameterizableSymbol implements Exe
     {
         return defaultValue;
     }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final ExecutableElementImpl other = (ExecutableElementImpl) obj;
+        if (!Objects.equals(this.typeParameters, other.typeParameters))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.returnType, other.returnType))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.parameters, other.parameters))
+        {
+            return false;
+        }
+        if (this.varArgs != other.varArgs)
+        {
+            return false;
+        }
+        if (!Objects.equals(this.thrownTypes, other.thrownTypes))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.defaultValue, other.defaultValue))
+        {
+            return false;
+        }
+        return true;
+    }
+
 
 }

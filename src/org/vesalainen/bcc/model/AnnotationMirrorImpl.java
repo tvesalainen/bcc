@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
@@ -52,6 +53,36 @@ public class AnnotationMirrorImpl implements AnnotationMirror
     public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValues()
     {
         return elementValues;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 3;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final AnnotationMirrorImpl other = (AnnotationMirrorImpl) obj;
+        if (!Objects.equals(this.elementValues, other.elementValues))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.declaredType, other.declaredType))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

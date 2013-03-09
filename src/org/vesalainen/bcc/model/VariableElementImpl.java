@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
@@ -32,18 +33,15 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class VariableElementImpl extends AbstractSymbol implements VariableElement
+public class VariableElementImpl extends ElementImpl<TypeMirror> implements VariableElement
 {
-    private TypeMirror type;
-    private ElementKind kind;
     private Element enclosingElement;
     private Object constantValue;
     
     public VariableElementImpl(Field field)
     {
-        super(field, field.getModifiers(), field.getName());
-        type = TypeMirrorFactory.get(field.getType());
-        kind = ElementKind.FIELD;
+        super(ElementKind.FIELD, field, field.getModifiers(), field.getName());
+        type = TypeMirrorFactory.get(field.getGenericType());
         enclosingElement = ElementFactory.get(field.getDeclaringClass());
         if (
                 Modifier.isFinal(field.getModifiers()) &&
@@ -62,30 +60,16 @@ public class VariableElementImpl extends AbstractSymbol implements VariableEleme
 
     public VariableElementImpl(Enum en)
     {
-        super(en.name());
+        super(ElementKind.ENUM_CONSTANT, en.name());
         type = TypeMirrorFactory.get(en);
-        kind = ElementKind.ENUM_CONSTANT;
         enclosingElement = ElementFactory.get(en.getDeclaringClass());
         constantValue = en;
     }
 
     public VariableElementImpl(Type param, Annotation[] annotation)
     {
-        super(annotation, null);
+        super(ElementKind.PARAMETER, annotation, "");
         type = TypeMirrorFactory.get(param);
-        kind = ElementKind.PARAMETER;
-    }
-
-    @Override
-    public TypeMirror asType()
-    {
-        return type;
-    }
-
-    @Override
-    public ElementKind getKind()
-    {
-        return kind;
     }
 
     @Override
@@ -111,6 +95,40 @@ public class VariableElementImpl extends AbstractSymbol implements VariableEleme
     public Object getConstantValue()
     {
         return constantValue;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final VariableElementImpl other = (VariableElementImpl) obj;
+        if (!Objects.equals(this.type, other.type))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.constantValue, other.constantValue))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

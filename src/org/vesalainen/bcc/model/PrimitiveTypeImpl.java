@@ -45,4 +45,31 @@ public class PrimitiveTypeImpl implements PrimitiveType
         return v.visitPrimitive(this, p);
     }
 
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 29 * hash + (this.kind != null ? this.kind.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final PrimitiveTypeImpl other = (PrimitiveTypeImpl) obj;
+        if (this.kind != other.kind)
+        {
+            return false;
+        }
+        return true;
+    }
+
 }

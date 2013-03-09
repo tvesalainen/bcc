@@ -18,7 +18,9 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.reflect.Type;
+import java.util.Objects;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -29,20 +31,23 @@ import javax.lang.model.type.TypeVisitor;
  */
 public class TypeVariableImpl implements TypeVariable
 {
-    private Element element;
+    private TypeParameterElement element;
     private TypeMirror upperBound;
     
-    public TypeVariableImpl(java.lang.reflect.TypeVariable typeVariable)
+    public <D extends java.lang.reflect.GenericDeclaration> TypeVariableImpl(java.lang.reflect.TypeVariable<D> typeVariable)
     {
-        element = ElementFactory.get(typeVariable.getGenericDeclaration());
+        element = ElementFactory.getTypeParameterElement(typeVariable);
         Type[] bounds = typeVariable.getBounds();
-        if (bounds.length == 0)
+        switch (bounds.length)
         {
-            upperBound = TypeMirrorFactory.getClassType(Object.class);
-        }
-        else
-        {
-            upperBound = TypeMirrorFactory.getIntersectionType(bounds);
+            case 0:
+                upperBound = TypeMirrorFactory.getClassType(Object.class);
+                break;
+            case 1:
+                upperBound = TypeMirrorFactory.get(bounds[0]);
+                break;
+            default:
+                upperBound = TypeMirrorFactory.getIntersectionType(bounds);
         }
     }
     
@@ -74,6 +79,36 @@ public class TypeVariableImpl implements TypeVariable
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
         return v.visitTypeVariable(this, p);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final TypeVariableImpl other = (TypeVariableImpl) obj;
+        if (!Objects.equals(this.element, other.element))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.upperBound, other.upperBound))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

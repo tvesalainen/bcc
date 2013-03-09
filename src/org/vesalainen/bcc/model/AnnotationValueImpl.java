@@ -18,10 +18,10 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.AnnotationValueVisitor;
 
@@ -37,39 +37,42 @@ class AnnotationValueImpl implements AnnotationValue
         {
             this.value = null;
         }
-        Class<?> returnType = value.getClass();
-        if (
-                returnType.isPrimitive() ||
-                String.class.equals(returnType)
-                )
+        else
         {
-            this.value = value;
-        }
-        if (Class.class.equals(returnType))
-        {
-            this.value = TypeMirrorFactory.get((Type)value);
-        }
-        if (returnType.isEnum())
-        {
-            Enum en = (Enum) value;
-            this.value = ElementFactory.getVariableElement(en);
-        }
-        if (returnType.isAnnotation())
-        {
-            Annotation annotation = (Annotation) value;
-            this.value = ElementFactory.getAnnotationMirror(annotation);
-        }
-        if (returnType.isArray())
-        {
-            Object[] ar = (Object[]) value;
-            List<AnnotationValue> list = new ArrayList<>();
-            for (Object v : ar)
+            Class<?> returnType = value.getClass();
+            if (
+                    returnType.isPrimitive() ||
+                    String.class.equals(returnType)
+                    )
             {
-                list.add(ElementFactory.getAnnotationValue(v));
+                this.value = value;
             }
-            this.value = list;
+            if (Class.class.equals(returnType))
+            {
+                this.value = TypeMirrorFactory.get((Type)value);
+            }
+            if (returnType.isEnum())
+            {
+                Enum en = (Enum) value;
+                this.value = ElementFactory.getVariableElement(en);
+            }
+            if (returnType.isAnnotation())
+            {
+                Annotation annotation = (Annotation) value;
+                this.value = ElementFactory.getAnnotationMirror(annotation);
+            }
+            if (returnType.isArray())
+            {
+                Object[] ar = (Object[]) value;
+                List<AnnotationValue> list = new ArrayList<>();
+                for (Object v : ar)
+                {
+                    list.add(ElementFactory.getAnnotationValue(v));
+                }
+                this.value = list;
+            }
+            throw new UnsupportedOperationException(value+" Not supported as annotation value.");
         }
-        throw new UnsupportedOperationException(value+" Not supported as annotation value.");
     }
 
     @Override
@@ -82,6 +85,33 @@ class AnnotationValueImpl implements AnnotationValue
     public <R, P> R accept(AnnotationValueVisitor<R, P> v, P p)
     {
         return v.visit(this, p);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 5;
+        hash = 17 * hash + Objects.hashCode(this.value);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final AnnotationValueImpl other = (AnnotationValueImpl) obj;
+        if (!Objects.equals(this.value, other.value))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

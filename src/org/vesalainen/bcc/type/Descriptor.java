@@ -123,6 +123,9 @@ public class Descriptor
         }
         return sb.toString();
     }
+    /**
+     * 
+     */
     public static String getFieldDesriptor(Type type)
     {
         StringBuilder sb = new StringBuilder();

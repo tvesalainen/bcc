@@ -20,12 +20,15 @@ package org.vesalainen.bcc.model;
 import java.io.Writer;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 
@@ -38,13 +41,29 @@ public class ElementsImpl implements Elements
     @Override
     public PackageElement getPackageElement(CharSequence name)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        Package pkg = Package.getPackage(name.toString());
+        if (pkg != null)
+        {
+            return ElementFactory.getPackageElement(pkg);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
     public TypeElement getTypeElement(CharSequence name)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try
+        {
+            Class<?> cls = Class.forName(name.toString());
+            return ElementFactory.get(cls);
+        }
+        catch (ClassNotFoundException ex)
+        {
+            return null;
+        }
     }
 
     @Override
@@ -68,7 +87,15 @@ public class ElementsImpl implements Elements
     @Override
     public Name getBinaryName(TypeElement type)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (type instanceof QualifiedNameable)
+        {
+            QualifiedNameable qn = type;
+            return qn.getQualifiedName();
+        }
+        else
+        {
+            throw new IllegalArgumentException(type+" not QualifiedNameable");
+        }
     }
 
     @Override
@@ -79,6 +106,8 @@ public class ElementsImpl implements Elements
             case PACKAGE:
                 return (PackageElement)type;
             case CLASS:
+            case INTERFACE:
+            case ENUM:
                 TypeElement te = (TypeElement) type;
                 return getPackageOf(te.getEnclosingElement());
             default:
@@ -134,7 +163,14 @@ public class ElementsImpl implements Elements
 
         public NameImpl(CharSequence name)
         {
-            this.name = name.toString();
+            if (name != null)
+            {
+                this.name = name.toString();
+            }
+            else
+            {
+                this.name = "";
+            }
         }
 
         @Override

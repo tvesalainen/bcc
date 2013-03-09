@@ -19,16 +19,17 @@ package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
-import javax.lang.model.type.NoType;
-import javax.lang.model.type.NullType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.TypeVisitor;
+import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
 
 /**
@@ -52,7 +53,7 @@ public class TypeMirrorFactory
         }
         if (type instanceof java.lang.reflect.TypeVariable)
         {
-            java.lang.reflect.TypeVariable tv = (java.lang.reflect.TypeVariable) type;
+            java.lang.reflect.TypeVariable<? extends java.lang.reflect.GenericDeclaration> tv = (java.lang.reflect.TypeVariable<? extends java.lang.reflect.GenericDeclaration>) type;
             return getTypeVariable(tv);
         }
         if (type instanceof java.lang.reflect.WildcardType)
@@ -67,10 +68,18 @@ public class TypeMirrorFactory
         }
         throw new UnsupportedOperationException(type+" Not implemented");
     }
-
+    private static Map<Annotation,DeclaredType> declaredTypeAnnotationMap = new HashMap<>();
     public static DeclaredType get(Annotation annotation)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        DeclaredType dt = declaredTypeAnnotationMap.get(annotation);
+        if (dt == null)
+        {
+            DeclaredTypeImpl dti = new DeclaredTypeImpl();
+            declaredTypeAnnotationMap.put(annotation, dti);
+            dti.init(annotation);
+            dt = dti;
+        }
+        return dt;
     }
 
     public static DeclaredType get(Enum en)
@@ -80,50 +89,115 @@ public class TypeMirrorFactory
 
     public static ExecutableType get(Constructor constructor)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        ExecutableType et = executableTypeMap.get(constructor);
+        if (et == null)
+        {
+            et = new ExecutableTypeImpl(constructor);
+            executableTypeMap.put(constructor, et);
+        }
+        return et;
     }
 
+    private static Map<Member,ExecutableType> executableTypeMap = new HashMap<>();
     public static ExecutableType get(Method method)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        ExecutableType et = executableTypeMap.get(method);
+        if (et == null)
+        {
+            et = new ExecutableTypeImpl(method);
+            executableTypeMap.put(method, et);
+        }
+        return et;
     }
-
-    public static TypeMirror getGenericArrayType(java.lang.reflect.GenericArrayType gat)
+    private static Map<java.lang.reflect.GenericArrayType,ArrayType> arrayTypeMap = new HashMap<>();
+    public static ArrayType getGenericArrayType(java.lang.reflect.GenericArrayType gat)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        ArrayType at = arrayTypeMap.get(gat);
+        if (at == null)
+        {
+            at = new ArrayTypeImpl(gat);
+            arrayTypeMap.put(gat, at);
+        }
+        return at;
     }
 
-    public static TypeMirror getParameterizedType(java.lang.reflect.ParameterizedType pt)
+    private static Map<java.lang.reflect.ParameterizedType,DeclaredType> parameterizedTypeMap = new HashMap<>();
+    public static DeclaredType getParameterizedType(java.lang.reflect.ParameterizedType pt)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        DeclaredType dt = parameterizedTypeMap.get(pt);
+        if (dt == null)
+        {
+            DeclaredTypeImpl dti = new DeclaredTypeImpl();
+            parameterizedTypeMap.put(pt, dti);
+            dti.init(pt);
+            dt = dti;
+        }
+        return dt;
     }
-
-    public static TypeVariable getTypeVariable(java.lang.reflect.TypeVariable tv)
+    private static Map<java.lang.reflect.TypeVariable<? extends java.lang.reflect.GenericDeclaration>,TypeVariable> typeVariableMap = new HashMap<>();
+    public static <D extends java.lang.reflect.GenericDeclaration> TypeVariable getTypeVariable(java.lang.reflect.TypeVariable<D> typeVar)
     {
-        return new TypeVariableImpl(tv);
+        TypeVariable tv = typeVariableMap.get(typeVar);
+        if (tv == null)
+        {
+            tv = new TypeVariableImpl(typeVar);
+            typeVariableMap.put(typeVar, tv);
+        }
+        return tv;
     }
-
-    public static TypeMirror getWildcardType(java.lang.reflect.WildcardType wt)
+    private static Map<java.lang.reflect.WildcardType,WildcardType> wildcardTypeMap = new HashMap<>();
+    public static WildcardType getWildcardType(java.lang.reflect.WildcardType rwt)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        WildcardType wt = wildcardTypeMap.get(rwt);
+        if (wt == null)
+        {
+            wt = new WildcardTypeImpl(rwt);
+            wildcardTypeMap.put(rwt, wt);
+        }
+        return wt;
     }
 
+    private static Map<Class<?>,TypeMirror> classMap = new HashMap<>();
     public static TypeMirror getClassType(Class<?> cls)
     {
-        if (cls.isArray())
+        TypeMirror tm = classMap.get(cls);
+        if (tm == null)
         {
-            return new ArrayTypeImpl(cls);
+            if (cls.isArray())
+            {
+                tm = new ArrayTypeImpl(cls);
+                classMap.put(cls, tm);
+            }
+            else
+            {
+                if (cls.isPrimitive())
+                {
+                    tm = new PrimitiveTypeImpl(cls);
+                    classMap.put(cls, tm);
+                }
+                else
+                {
+                    DeclaredTypeImpl dti = new DeclaredTypeImpl();
+                    classMap.put(cls, dti);
+                    dti.init(cls);
+                    tm = dti;
+                }
+            }
         }
-        if (cls.isPrimitive())
-        {
-            return new PrimitiveTypeImpl(cls);
-        }
-        return new DeclaredTypeImpl(cls);
+        return tm;
     }
-
-    static TypeMirror getIntersectionType(Type[] bounds)
+    private static Map<Type[],DeclaredType> intersectionTypeMap = new HashMap<>();
+    static DeclaredType getIntersectionType(Type[] bounds)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        DeclaredType dt = intersectionTypeMap.get(bounds);
+        if (dt == null)
+        {
+            DeclaredTypeImpl dti = new DeclaredTypeImpl();
+            intersectionTypeMap.put(bounds, dti);
+            dti.init(bounds);
+            dt = dti;
+        }
+        return dt;
     }
 
 }

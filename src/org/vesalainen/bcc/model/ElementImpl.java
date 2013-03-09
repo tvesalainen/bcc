@@ -20,26 +20,34 @@ package org.vesalainen.bcc.model;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
+import javax.lang.model.type.TypeMirror;
 
 /**
  * @author Timo Vesalainen
  */
-public abstract class AbstractSymbol implements Element
+public abstract class ElementImpl<T extends TypeMirror> implements Element
 {
+    protected T type;
+    private ElementKind kind;
     private Name name;
     private Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);;
     private Annotation[] annotations;
     private List<AnnotationMirror> annotationMirrors = new ArrayList<>();
 
-    public AbstractSymbol(String name)
+    public ElementImpl(ElementKind kind, String name)
     {
+        this.kind = kind;
         this.name = ElementFactory.Elements.getName(name);
         annotations = new Annotation[] {};
         annotationMirrors = new ArrayList<>();
@@ -48,14 +56,16 @@ public abstract class AbstractSymbol implements Element
             annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
         }
     }
-    public AbstractSymbol(Annotation[] annotations, String name)
+    public ElementImpl(ElementKind kind, Annotation[] annotations, String name)
     {
+        this.kind = kind;
         this.name = ElementFactory.Elements.getName(name);
         this.annotations = annotations;
         annotationMirrors = new ArrayList<>();
     }
-    public AbstractSymbol(AnnotatedElement element, int modifier, String name)
+    public ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
     {
+        this.kind = kind;
         this.name = ElementFactory.Elements.getName(name);
         annotations = element.getAnnotations();
         annotationMirrors = new ArrayList<>();
@@ -139,6 +149,66 @@ public abstract class AbstractSymbol implements Element
     public List<? extends AnnotationMirror> getAnnotationMirrors()
     {
         return annotationMirrors;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 3;
+        hash = 83 * hash + Objects.hashCode(this.name);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        @SuppressWarnings("unchecked")
+        final ElementImpl<T> other = (ElementImpl<T>) obj;
+        if (!Objects.equals(this.type, other.type))
+        {
+            return false;
+        }
+        if (this.kind != other.kind)
+        {
+            return false;
+        }
+        if (!Objects.equals(this.name, other.name))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.modifiers, other.modifiers))
+        {
+            return false;
+        }
+        if (!Arrays.deepEquals(this.annotations, other.annotations))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.annotationMirrors, other.annotationMirrors))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public T asType()
+    {
+        return type;
+    }
+
+    @Override
+    public ElementKind getKind()
+    {
+        return kind;
     }
 
 }

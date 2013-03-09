@@ -18,12 +18,11 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -33,39 +32,34 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 
 /**
  * @author Timo Vesalainen
  */
-class TypeParameterElementImpl implements TypeParameterElement 
+class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements TypeParameterElement 
 {
-    private TypeMirror type;
     private Element enclosingElement;
     private Element genericElement;
     private List<TypeMirror> bounds = new ArrayList<>();
     private Name simpleName;
-    public TypeParameterElementImpl(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
+
+    TypeParameterElementImpl(java.lang.reflect.TypeVariable<?> typeVariable)
     {
-        type = TypeMirrorFactory.get(typeVariable);
+       super(ElementKind.TYPE_PARAMETER, typeVariable.getName());
+    }
+    
+    
+    void init(java.lang.reflect.TypeVariable<?> typeVariable)
+    {
+        type = TypeMirrorFactory.getTypeVariable(typeVariable);
         simpleName = ElementFactory.Elements.getName(typeVariable.getName());
-        enclosingElement = ElementFactory.get(genericDeclaration);
+        enclosingElement = ElementFactory.get(typeVariable.getGenericDeclaration());
         genericElement = ElementFactory.get(typeVariable.getGenericDeclaration());
         for (Type b : typeVariable.getBounds())
         {
             bounds.add(TypeMirrorFactory.get(b));
         }
-    }
-
-    @Override
-    public TypeMirror asType()
-    {
-        return type;
-    }
-
-    @Override
-    public ElementKind getKind()
-    {
-        return ElementKind.TYPE_PARAMETER;
     }
 
     @Override
@@ -123,6 +117,49 @@ class TypeParameterElementImpl implements TypeParameterElement
     public Name getSimpleName()
     {
         return simpleName;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        hash = 11 * hash + Objects.hashCode(this.simpleName);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final TypeParameterElementImpl other = (TypeParameterElementImpl) obj;
+        if (!Objects.equals(this.type, other.type))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.genericElement, other.genericElement))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.bounds, other.bounds))
+        {
+            return false;
+        }
+        if (!Objects.equals(this.simpleName, other.simpleName))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

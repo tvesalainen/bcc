@@ -51,6 +51,8 @@ public class ElementFactory
     private static Map<TypeVariable,TypeParameterElement> typeParameterMap = new HashMap<>();
     private static Map<Annotation,AnnotationMirror> annotationMap = new HashMap<>();
     private static Map<Object,AnnotationValue> annotationValueMap = new HashMap<>();
+    private static Map<Type,VariableElement> variableElementMap = new HashMap<>();
+    private static Map<Enum,VariableElement> variableElementEnumMap = new HashMap<>();
     
     public static Element get(Object ob)
     {
@@ -77,7 +79,7 @@ public class ElementFactory
         if (ob instanceof Package)
         {
             Package p = (Package) ob;
-            return get(p);
+            return getPackageElement(p);
         }
         if (ob instanceof Annotation)
         {
@@ -91,8 +93,10 @@ public class ElementFactory
         TypeElement te = classMap.get(type);
         if (te == null)
         {
-            te = new TypeElementImpl(type);
-            classMap.put(type, te);
+            TypeElementImpl tei = new TypeElementImpl(type);
+            classMap.put(type, tei); // try to prevent loops
+            tei.init(type);
+            te = tei;
         }
         return te;
     }
@@ -102,6 +106,10 @@ public class ElementFactory
         VariableElement ve = fieldMap.get(field);
         if (ve == null)
         {
+            if (field.getName().endsWith("field1"))
+            {
+                System.err.println();
+            }
             ve = new VariableElementImpl(field);
             fieldMap.put(field, ve);
         }
@@ -112,8 +120,10 @@ public class ElementFactory
         ExecutableElement ee = constructorMap.get(constructor);
         if (ee == null)
         {
-            ee = new ExecutableElementImpl(constructor);
-            constructorMap.put(constructor, ee);
+            ExecutableElementImpl eei = new ExecutableElementImpl(constructor);
+            constructorMap.put(constructor, eei);
+            eei.init(constructor);
+            ee = eei;
         }
         return ee;
     }
@@ -122,8 +132,10 @@ public class ElementFactory
         ExecutableElement ee = methodMap.get(method);
         if (ee == null)
         {
-            ee = new ExecutableElementImpl(method);
-            methodMap.put(method, ee);
+            ExecutableElementImpl eei = new ExecutableElementImpl(method);
+            methodMap.put(method, eei);
+            eei.init(method);
+            ee = eei;
         }
         return ee;
     }
@@ -131,7 +143,7 @@ public class ElementFactory
     {
         return get(annotation.annotationType());    // TODO does this work???
     }
-    public static PackageElement get(Package pkg)
+    public static PackageElement getPackageElement(Package pkg)
     {
         PackageElement pe = packageMap.get(pkg);
         if (pe == null)
@@ -141,13 +153,15 @@ public class ElementFactory
         }
         return pe;
     }
-    public static TypeParameterElement get(GenericDeclaration genericDeclaration, TypeVariable typeVariable)
+    public static TypeParameterElement getTypeParameterElement(TypeVariable typeVariable)
     {
         TypeParameterElement tpe = typeParameterMap.get(typeVariable);
         if (tpe == null)
         {
-            tpe = new TypeParameterElementImpl(genericDeclaration, typeVariable);
-            typeParameterMap.put(typeVariable, tpe);
+            TypeParameterElementImpl tpei = new TypeParameterElementImpl(typeVariable);
+            typeParameterMap.put(typeVariable, tpei);
+            tpei.init(typeVariable);
+            tpe = tpei;
         }
         return tpe;
     }
@@ -176,7 +190,13 @@ public class ElementFactory
 
     public static VariableElement getVariableElement(Type param, Annotation[] annotation)
     {
-        return new VariableElementImpl(param, annotation);
+        VariableElement ve = variableElementMap.get(param);
+        if (ve == null)
+        {
+            ve = new VariableElementImpl(param, annotation);
+            variableElementMap.put(param, ve);
+        }
+        return ve;
     }
     public static Element get(GenericDeclaration genericDeclaration)
     {
@@ -200,7 +220,26 @@ public class ElementFactory
 
     public static VariableElement getVariableElement(Enum en)
     {
-        return new VariableElementImpl(en);
+        VariableElement ve = variableElementEnumMap.get(en);
+        if (ve == null)
+        {
+            ve = new VariableElementImpl(en);
+            variableElementEnumMap.put(en, ve);
+        }
+        return ve;
+    }
+    private static Map<Type[],TypeElement> intersectionTypeElementMap = new HashMap<>();
+    public static TypeElement getIntersectionTypeElement(Type[] bounds)
+    {
+        TypeElement te = intersectionTypeElementMap.get(bounds);
+        if (te == null)
+        {
+            TypeElementImpl tei = new TypeElementImpl();
+            intersectionTypeElementMap.put(bounds, tei);
+            tei.init(bounds);
+            te = tei;
+        }
+        return te;
     }
 
 }
