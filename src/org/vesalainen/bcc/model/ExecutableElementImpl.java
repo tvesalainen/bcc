@@ -62,7 +62,7 @@ class ExecutableElementImpl extends ElementImpl<ExecutableType> implements Execu
         }
         type = TypeMirrorFactory.get(constructor);
         enclosingElement = ElementFactory.get(constructor.getDeclaringClass());
-        returnType = TypeMirrorFactory.Types.getNoType(TypeKind.VOID);
+        returnType = T.getNoType(TypeKind.VOID);
         Type[] genericParameterTypes = constructor.getGenericParameterTypes();
         Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
         int index = 0;

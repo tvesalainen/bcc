@@ -66,7 +66,7 @@ public class TypeVariableImpl implements TypeVariable
     @Override
     public TypeMirror getLowerBound()
     {
-        return TypeMirrorFactory.Types.getNullType();
+        return T.getNullType();
     }
 
     @Override

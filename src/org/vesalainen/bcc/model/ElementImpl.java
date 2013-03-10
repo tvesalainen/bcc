@@ -48,7 +48,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
     public ElementImpl(ElementKind kind, String name)
     {
         this.kind = kind;
-        this.name = ElementFactory.Elements.getName(name);
+        this.name = E.getName(name);
         annotations = new Annotation[] {};
         annotationMirrors = new ArrayList<>();
         for (Annotation annotation : annotations)
@@ -59,14 +59,14 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
     public ElementImpl(ElementKind kind, Annotation[] annotations, String name)
     {
         this.kind = kind;
-        this.name = ElementFactory.Elements.getName(name);
+        this.name = E.getName(name);
         this.annotations = annotations;
         annotationMirrors = new ArrayList<>();
     }
     public ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
     {
         this.kind = kind;
-        this.name = ElementFactory.Elements.getName(name);
+        this.name = E.getName(name);
         annotations = element.getAnnotations();
         annotationMirrors = new ArrayList<>();
         for (Annotation annotation : element.getDeclaredAnnotations())

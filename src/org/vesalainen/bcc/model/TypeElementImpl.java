@@ -62,14 +62,14 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     void init(Class<?> cls)
     {
         type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
-        qualifiedName = ElementFactory.Elements.getName(cls.getName());
+        qualifiedName = E.getName(cls.getName());
         if (cls.getSuperclass() != null)
         {
             superclass = TypeMirrorFactory.get(cls.getGenericSuperclass());
         }
         else
         {
-            superclass = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+            superclass = T.getNoType(TypeKind.NONE);
         }
         for (TypeVariable param : cls.getTypeParameters())
         {

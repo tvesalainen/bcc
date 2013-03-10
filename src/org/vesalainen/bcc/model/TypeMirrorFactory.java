@@ -37,7 +37,6 @@ import javax.lang.model.util.Types;
  */
 public class TypeMirrorFactory 
 {
-    public static final Types Types = new TypesImpl();
     
     public static TypeMirror get(Type type)
     {

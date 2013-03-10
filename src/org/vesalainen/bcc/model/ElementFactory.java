@@ -41,8 +41,6 @@ import javax.lang.model.util.Elements;
  */
 public class ElementFactory 
 {
-    public static final Elements Elements = new ElementsImpl();
-    
     private static Map<Class<?>,TypeElement> classMap = new HashMap<>();
     private static Map<Field,VariableElement> fieldMap = new HashMap<>();
     private static Map<Constructor,ExecutableElement> constructorMap = new HashMap<>();

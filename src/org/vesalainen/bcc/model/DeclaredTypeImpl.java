@@ -47,7 +47,7 @@ public class DeclaredTypeImpl implements DeclaredType
         Class<?> enclosingClass = cls.getEnclosingClass();
         if (enclosingClass == null)
         {
-            enclosingType = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+            enclosingType = T.getNoType(TypeKind.NONE);
         }
         else
         {
@@ -62,7 +62,7 @@ public class DeclaredTypeImpl implements DeclaredType
     void init(Annotation annotation)
     {
         this.element = ElementFactory.get(annotation);
-        enclosingType = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
+        enclosingType = T.getNoType(TypeKind.NONE);
     }
 
     void init(java.lang.reflect.ParameterizedType parameterizedType)

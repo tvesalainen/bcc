@@ -38,7 +38,7 @@ class ExecutableTypeImpl implements ExecutableType
     private List<TypeMirror> thrownTypes = new ArrayList<>();
     public ExecutableTypeImpl(Constructor constructor)
     {
-        returnType = TypeMirrorFactory.Types.getNullType();
+        returnType = T.getNullType();
         for (Class<?> type : constructor.getParameterTypes())
         {
             parameterTypes.add(TypeMirrorFactory.getClassType(type));
