@@ -61,10 +61,6 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     }
     void init(Class<?> cls)
     {
-        for (TypeVariable param : cls.getTypeParameters())
-        {
-            typeParameters.add(ElementFactory.getTypeParameterElement(param));
-        }
         type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
         qualifiedName = ElementFactory.Elements.getName(cls.getName());
         if (cls.getSuperclass() != null)
@@ -75,25 +71,9 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
         {
             superclass = TypeMirrorFactory.Types.getNoType(TypeKind.NONE);
         }
-        for (Field field : cls.getDeclaredFields())
+        for (TypeVariable param : cls.getTypeParameters())
         {
-            enclosedElements.add(ElementFactory.get(field));
-        }
-        for (Constructor constructor : cls.getDeclaredConstructors())
-        {
-            enclosedElements.add(ElementFactory.get(constructor));
-        }
-        for (Method method : cls.getDeclaredMethods())
-        {
-            enclosedElements.add(ElementFactory.get(method));
-        }
-        for (Annotation annotation : cls.getDeclaredAnnotations())
-        {
-            enclosedElements.add(ElementFactory.get(annotation));
-        }
-        for (Class<?> c : cls.getDeclaredClasses())
-        {
-            enclosedElements.add(ElementFactory.get(c));
+            typeParameters.add(ElementFactory.getTypeParameterElement(param));
         }
         if (cls.isAnonymousClass())
         {
@@ -117,10 +97,6 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
                 }
             }
         }
-        for (Type intf : cls.getGenericInterfaces())
-        {
-            interfaces.add(TypeMirrorFactory.get(intf));
-        }
         Class<?> enclosingClass = cls.getEnclosingClass();
         if (enclosingClass != null)
         {
@@ -129,6 +105,40 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
         else
         {
             enclosingElement = ElementFactory.getPackageElement(cls.getPackage());
+        }
+        if (cls.isAnnotation())
+        {
+            
+        }
+        else
+        {
+            if (cls.isEnum())
+            {
+                
+            }
+            else
+            {
+                for (Field field : cls.getDeclaredFields())
+                {
+                    enclosedElements.add(ElementFactory.get(field));
+                }
+                for (Constructor constructor : cls.getDeclaredConstructors())
+                {
+                    enclosedElements.add(ElementFactory.get(constructor));
+                }
+                for (Method method : cls.getDeclaredMethods())
+                {
+                    enclosedElements.add(ElementFactory.get(method));
+                }
+                for (Class<?> c : cls.getDeclaredClasses())
+                {
+                    enclosedElements.add(ElementFactory.get(c));
+                }
+                for (Type intf : cls.getGenericInterfaces())
+                {
+                    interfaces.add(TypeMirrorFactory.get(intf));
+                }
+            }
         }
     }
 
@@ -263,6 +273,12 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TypeElementImpl{" + "qualifiedName=" + qualifiedName + '}';
     }
 
 }

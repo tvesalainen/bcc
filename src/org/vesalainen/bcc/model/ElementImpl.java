@@ -211,4 +211,10 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
         return kind;
     }
 
+    @Override
+    public String toString()
+    {
+        return "ElementImpl{" + "name=" + name + '}';
+    }
+
 }

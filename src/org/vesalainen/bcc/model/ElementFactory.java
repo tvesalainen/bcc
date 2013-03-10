@@ -141,7 +141,7 @@ public class ElementFactory
     }
     public static TypeElement get(Annotation annotation)
     {
-        return get(annotation.annotationType());    // TODO does this work???
+        return get(annotation.annotationType());
     }
     public static PackageElement getPackageElement(Package pkg)
     {

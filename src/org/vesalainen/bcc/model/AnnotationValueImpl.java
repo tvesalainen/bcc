@@ -47,31 +47,46 @@ class AnnotationValueImpl implements AnnotationValue
             {
                 this.value = value;
             }
-            if (Class.class.equals(returnType))
+            else
             {
-                this.value = TypeMirrorFactory.get((Type)value);
-            }
-            if (returnType.isEnum())
-            {
-                Enum en = (Enum) value;
-                this.value = ElementFactory.getVariableElement(en);
-            }
-            if (returnType.isAnnotation())
-            {
-                Annotation annotation = (Annotation) value;
-                this.value = ElementFactory.getAnnotationMirror(annotation);
-            }
-            if (returnType.isArray())
-            {
-                Object[] ar = (Object[]) value;
-                List<AnnotationValue> list = new ArrayList<>();
-                for (Object v : ar)
+                if (Class.class.equals(returnType))
                 {
-                    list.add(ElementFactory.getAnnotationValue(v));
+                    this.value = TypeMirrorFactory.get((Type)value);
                 }
-                this.value = list;
+                else
+                {
+                    if (returnType.isEnum())
+                    {
+                        Enum en = (Enum) value;
+                        this.value = ElementFactory.getVariableElement(en);
+                    }
+                    else
+                    {
+                        if (returnType.isAnnotation())
+                        {
+                            Annotation annotation = (Annotation) value;
+                            this.value = ElementFactory.getAnnotationMirror(annotation);
+                        }
+                        else
+                        {
+                            if (returnType.isArray())
+                            {
+                                Object[] ar = (Object[]) value;
+                                List<AnnotationValue> list = new ArrayList<>();
+                                for (Object v : ar)
+                                {
+                                    list.add(ElementFactory.getAnnotationValue(v));
+                                }
+                                this.value = list;
+                            }
+                            else
+                            {
+                                throw new UnsupportedOperationException(value+" Not supported as annotation value.");
+                            }
+                        }
+                    }
+                }
             }
-            throw new UnsupportedOperationException(value+" Not supported as annotation value.");
         }
     }
 
