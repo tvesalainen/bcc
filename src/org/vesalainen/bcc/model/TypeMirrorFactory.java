@@ -23,14 +23,15 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import javax.lang.model.element.Element;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
-import javax.lang.model.util.Types;
 
 /**
  * @author Timo Vesalainen
@@ -38,6 +39,14 @@ import javax.lang.model.util.Types;
 public class TypeMirrorFactory 
 {
     
+    public static TypeMirror getDeclaredType(Class<?> element, Class<?>... typeArguments)
+    {
+        return new DeclaredTypeImpl(element, typeArguments);
+    }
+    public static TypeMirror getDeclaredType(Element element, List<? extends TypeMirror> typeArguments)
+    {
+        return new DeclaredTypeImpl(element, typeArguments);
+    }
     public static TypeMirror get(Type type)
     {
         if (type instanceof java.lang.reflect.GenericArrayType)

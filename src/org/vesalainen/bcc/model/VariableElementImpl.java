@@ -27,7 +27,9 @@ import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 /**
@@ -37,8 +39,38 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
 {
     private Element enclosingElement;
     private Object constantValue;
+
+    public static class FieldBuilder
+    {
+        private VariableElementImpl var;
+
+        FieldBuilder(Element enclosingElement, TypeMirror type, String name)
+        {
+            var = new VariableElementImpl(enclosingElement, type, name);
+        }
+        public FieldBuilder setConstantValue(Object constantValue)
+        {
+            var.constantValue = constantValue;
+            return this;
+        }
+        public FieldBuilder addModifier(javax.lang.model.element.Modifier modifier)
+        {
+            var.modifiers.add(modifier);
+            return this;
+        }
+        public VariableElement getVariableElement()
+        {
+            return var;
+        }
+    }
+    private VariableElementImpl(Element enclosingElement, TypeMirror type, String name)
+    {
+        super(ElementKind.FIELD, name);
+        this.type = type;
+        this.enclosingElement = enclosingElement;
+    }
     
-    public VariableElementImpl(Field field)
+    VariableElementImpl(Field field)
     {
         super(ElementKind.FIELD, field, field.getModifiers(), field.getName());
         type = TypeMirrorFactory.get(field.getGenericType());
@@ -58,7 +90,7 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
         }
     }
 
-    public VariableElementImpl(Enum en)
+    VariableElementImpl(Enum en)
     {
         super(ElementKind.ENUM_CONSTANT, en.name());
         type = TypeMirrorFactory.get(en);
@@ -66,7 +98,7 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
         constantValue = en;
     }
 
-    public VariableElementImpl(Type param, Annotation[] annotation)
+    VariableElementImpl(Type param, Annotation[] annotation)
     {
         super(ElementKind.PARAMETER, annotation, "");
         type = TypeMirrorFactory.get(param);

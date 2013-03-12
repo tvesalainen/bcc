@@ -29,7 +29,7 @@ import javax.lang.model.type.TypeVisitor;
 public class ArrayTypeImpl implements ArrayType
 {
     private TypeMirror componentType;
-    public ArrayTypeImpl(Class<?> cls)
+    ArrayTypeImpl(Class<?> cls)
     {
         assert cls.isArray();
         this.componentType = TypeMirrorFactory.get(cls.getComponentType());
@@ -38,6 +38,11 @@ public class ArrayTypeImpl implements ArrayType
     ArrayTypeImpl(java.lang.reflect.GenericArrayType gat)
     {
         this.componentType = TypeMirrorFactory.get(gat.getGenericComponentType());
+    }
+
+    ArrayTypeImpl(TypeMirror componentType)
+    {
+        this.componentType = componentType;
     }
     
     @Override

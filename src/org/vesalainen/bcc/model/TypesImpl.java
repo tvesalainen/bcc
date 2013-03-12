@@ -169,7 +169,7 @@ public class TypesImpl implements Types
     @Override
     public ArrayType getArrayType(TypeMirror componentType)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new ArrayTypeImpl(componentType);
     }
 
     @Override

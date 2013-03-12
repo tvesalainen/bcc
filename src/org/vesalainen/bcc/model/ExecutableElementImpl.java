@@ -40,7 +40,7 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-class ExecutableElementImpl extends ElementImpl<ExecutableType> implements ExecutableElement 
+public class ExecutableElementImpl extends ElementImpl<ExecutableType> implements ExecutableElement 
 {
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private Element enclosingElement;
@@ -49,6 +49,48 @@ class ExecutableElementImpl extends ElementImpl<ExecutableType> implements Execu
     private boolean varArgs;
     private List<TypeMirror> thrownTypes = new ArrayList<>();
     private AnnotationValue defaultValue;
+    
+    static class MethodBuilder extends ConstructorBuilder
+    {
+        public MethodBuilder(Element enclosingElement, String name)
+        {
+            super(enclosingElement, ElementKind.METHOD, name);
+        }
+        public MethodBuilder setReturnType(TypeMirror returnType)
+        {
+            exe.returnType = returnType;
+            return this;
+        }
+    }
+    static class ConstructorBuilder
+    {
+        protected ExecutableElementImpl exe;
+
+        public ConstructorBuilder(Element enclosingElement)
+        {
+            exe = new ExecutableElementImpl(enclosingElement, ElementKind.CONSTRUCTOR, "<init>");
+        }
+        private ConstructorBuilder(Element enclosingElement, ElementKind kind, String name)
+        {
+            exe = new ExecutableElementImpl(enclosingElement, kind, name);
+        }
+        public ConstructorBuilder addParameter(VariableElement param)
+        {
+            exe.parameters.add(param);
+            return this;
+        }
+        public ConstructorBuilder addThrownType(TypeMirror thrownType)
+        {
+            exe.thrownTypes.add(thrownType);
+            return this;
+        }
+    }
+
+    public ExecutableElementImpl(Element enclosingElement, ElementKind kind, String name)
+    {
+        super(kind, name);
+        this.enclosingElement = enclosingElement;
+    }
     
     ExecutableElementImpl(Constructor constructor)
     {

@@ -36,7 +36,14 @@ import javax.lang.model.type.TypeMirror;
 public class PackageElementImpl extends ElementImpl<NoType> implements PackageElement
 {
     private Name qualifiedName;
-    public PackageElementImpl(Package pkg)
+
+    public PackageElementImpl(String qualifiedName)
+    {
+        super(ElementKind.PACKAGE, qualifiedName);
+        this.qualifiedName = getSimpleName();
+    }
+    
+    PackageElementImpl(Package pkg)
     {
         super(ElementKind.PACKAGE, pkg, 0, pkg.getName());
         type = T.getNoType(TypeKind.PACKAGE);

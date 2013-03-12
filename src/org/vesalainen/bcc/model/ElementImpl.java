@@ -28,7 +28,6 @@ import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
@@ -39,34 +38,30 @@ import javax.lang.model.type.TypeMirror;
 public abstract class ElementImpl<T extends TypeMirror> implements Element
 {
     protected T type;
-    private ElementKind kind;
-    private Name name;
-    private Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);;
-    private Annotation[] annotations;
-    private List<AnnotationMirror> annotationMirrors = new ArrayList<>();
+    protected ElementKind kind;
+    protected Name simpleName;
+    protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);;
+    protected Annotation[] annotations;
+    protected List<AnnotationMirror> annotationMirrors = new ArrayList<>();
 
-    public ElementImpl(ElementKind kind, String name)
+    ElementImpl(ElementKind kind, String name)
     {
         this.kind = kind;
-        this.name = E.getName(name);
+        this.simpleName = E.getName(name);
         annotations = new Annotation[] {};
         annotationMirrors = new ArrayList<>();
-        for (Annotation annotation : annotations)
-        {
-            annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
-        }
     }
-    public ElementImpl(ElementKind kind, Annotation[] annotations, String name)
+    ElementImpl(ElementKind kind, Annotation[] annotations, String name)
     {
         this.kind = kind;
-        this.name = E.getName(name);
+        this.simpleName = E.getName(name);
         this.annotations = annotations;
         annotationMirrors = new ArrayList<>();
     }
-    public ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
+    ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
     {
         this.kind = kind;
-        this.name = E.getName(name);
+        this.simpleName = E.getName(name);
         annotations = element.getAnnotations();
         annotationMirrors = new ArrayList<>();
         for (Annotation annotation : element.getDeclaredAnnotations())
@@ -128,7 +123,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
     @Override
     public Name getSimpleName()
     {
-        return name;
+        return simpleName;
     }
 
     @Override
@@ -155,7 +150,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
     public int hashCode()
     {
         int hash = 3;
-        hash = 83 * hash + Objects.hashCode(this.name);
+        hash = 83 * hash + Objects.hashCode(this.simpleName);
         return hash;
     }
 
@@ -180,7 +175,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
         {
             return false;
         }
-        if (!Objects.equals(this.name, other.name))
+        if (!Objects.equals(this.simpleName, other.simpleName))
         {
             return false;
         }
@@ -214,7 +209,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
     @Override
     public String toString()
     {
-        return "ElementImpl{" + "name=" + name + '}';
+        return "ElementImpl{" + "name=" + simpleName + '}';
     }
 
 }

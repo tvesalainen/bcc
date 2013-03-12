@@ -17,18 +17,20 @@
 
 package org.vesalainen.bcc.model;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
@@ -36,6 +38,7 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.VariableElementImpl.FieldBuilder;
 
 /**
  * @author Timo Vesalainen
@@ -44,15 +47,191 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
 {
     private List<Element> enclosedElements = new ArrayList<>();
     private List<TypeMirror> interfaces = new ArrayList<>();
-    private NestingKind nestingKind;
+    private NestingKind nestingKind = NestingKind.TOP_LEVEL;
     private Name qualifiedName;
-    private TypeMirror superclass;
+    private TypeMirror superclass = T.getNoType(TypeKind.NONE);
     private Element enclosingElement;
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
 
+    public static class ClassBuilder
+    {
+        private TypeElementImpl element = new TypeElementImpl();
+        private TypeParameterBuilder<ClassBuilder> typeParamBuilder;
+        public ClassBuilder()
+        {
+            typeParamBuilder = new TypeParameterBuilder<>(this, element, element.typeParameters);
+        }
+        
+        public TypeElementImpl getTypeElement()
+        {
+            if (element.enclosingElement == null)
+            {
+                throw new IllegalArgumentException("enclosingElement not set");
+            }
+            if (element.type == null)
+            {
+                element.type = new DeclaredTypeImpl(element, typeParamBuilder.getTypeArguments());
+            }
+            if (
+                    ElementKind.CLASS == element.getKind() && 
+                    !"java.lang.Object".contentEquals(element.qualifiedName) &&
+                    element.superclass == null
+                    )
+            {
+                throw new IllegalArgumentException("superclass not set");
+            }
+            return element;
+        }
+
+        public ClassBuilder addTypeParameter(String name, Class<?>... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ClassBuilder addTypeParameter(String name, CharSequence... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ClassBuilder addTypeParameter(String name, TypeElement... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ClassBuilder addTypeParameter(String name, TypeMirror... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ClassBuilder addTypeParameter(TypeParameterElement param)
+        {
+            return typeParamBuilder.addTypeParameter(param);
+        }
+
+        public FieldBuilder addField(String name, String type)
+        {
+            FieldBuilder fieldBuilder = new VariableElementImpl.FieldBuilder(element, typeParamBuilder.resolvType(type), name);
+            addEnclosedElement(fieldBuilder.getVariableElement());
+            return fieldBuilder;
+        }
+        public ClassBuilder addEnclosedElement(Element el)
+        {
+            element.enclosedElements.add(el);
+            return this;
+        }
+        public ClassBuilder addInterface(Class<?> element, String... typeArguments)
+        {
+            List<TypeMirror> ta = new ArrayList<>();
+            for (String a : typeArguments)
+            {
+                ta.add(typeParamBuilder.resolvType(a));
+            }
+            return addInterface(TypeMirrorFactory.getDeclaredType(E.getTypeElement(element.getCanonicalName()), ta));
+        }
+        public ClassBuilder addInterface(Class<?> element, Class<?>... typeArguments)
+        {
+            return addInterface(TypeMirrorFactory.getDeclaredType(element, typeArguments));
+        }
+        public ClassBuilder addInterface(Class<?> intf)
+        {
+            if (!intf.isInterface())
+            {
+                throw new IllegalArgumentException(intf+" is not interface");
+            }
+            return addInterface(E.getTypeElement(intf.getCanonicalName()));
+        }
+        public ClassBuilder addInterface(CharSequence intf)
+        {
+            return addInterface(E.getTypeElement(intf));
+        }
+        public ClassBuilder addInterface(TypeElement intf)
+        {
+            return addInterface(intf.asType());
+        }
+        public ClassBuilder addInterface(TypeMirror intf)
+        {
+            element.interfaces.add(intf);
+            return this;
+        }
+        public ClassBuilder setNestingKind(NestingKind nestingKind)
+        {
+            element.nestingKind = nestingKind;
+            return this;
+        }
+
+        public ClassBuilder setSuperclass(Class<?> superclass)
+        {
+            return setSuperclass(E.getTypeElement(superclass.getName()));
+        }
+
+        public ClassBuilder setSuperclass(CharSequence superclass)
+        {
+            return setSuperclass(E.getTypeElement(superclass));
+        }
+
+        public ClassBuilder setSuperclass(TypeElement superclass)
+        {
+            return setSuperclass(superclass.asType());
+        }
+
+        public ClassBuilder setSuperclass(TypeMirror superclass)
+        {
+            element.superclass = superclass;
+            return this;
+        }
+
+        public ClassBuilder setEnclosingElement(Element enclosingElement)
+        {
+            element.enclosingElement = enclosingElement;
+            return this;
+        }
+
+        public ClassBuilder setQualifiedName(String name)
+        {
+            element.qualifiedName = E.getName(name);
+            int idx = name.lastIndexOf('.');
+            if (idx != -1)
+            {
+                element.simpleName = E.getName(name.substring(idx+1));
+                element.enclosingElement = new PackageElementImpl(name.substring(0, idx));
+            }
+            else
+            {
+                element.simpleName = element.qualifiedName;
+                element.enclosingElement = new PackageElementImpl("");
+            }
+            return this;
+        }
+        public ClassBuilder setType(DeclaredType type)
+        {
+            element.type = type;
+            return this;
+        }
+        public ClassBuilder addModifier(Modifier modifier)
+        {
+            element.modifiers.add(modifier);
+            return this;
+        }
+    }
     TypeElementImpl()
     {
-        super(ElementKind.CLASS, "");
+        this("");
+    }
+
+    TypeElementImpl(TypeMirror[] bounds)
+    {
+        this("");
+        assert bounds.length > 0;
+        superclass = bounds[0];
+        for (int ii=1;ii<bounds.length;ii++)
+        {
+            interfaces.add(bounds[ii]);
+        }
+    }
+
+    TypeElementImpl(String name)
+    {
+        super(ElementKind.CLASS, name);
     }
 
     TypeElementImpl(Class<?> cls)

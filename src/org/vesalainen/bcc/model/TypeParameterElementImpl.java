@@ -30,6 +30,7 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
+import javax.lang.model.element.Parameterizable;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
@@ -37,25 +38,32 @@ import javax.lang.model.type.TypeVariable;
 /**
  * @author Timo Vesalainen
  */
-class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements TypeParameterElement 
+public class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements TypeParameterElement 
 {
-    private Element enclosingElement;
-    private Element genericElement;
+    private Parameterizable genericElement;
     private List<TypeMirror> bounds = new ArrayList<>();
-    private Name simpleName;
+
+    TypeParameterElementImpl(String simpleName, Parameterizable genericElement, TypeMirror... bounds)
+    {
+       super(ElementKind.TYPE_PARAMETER, simpleName);
+       this.genericElement = genericElement;
+       for (TypeMirror bound : bounds)
+       {
+           this.bounds.add(bound);
+       }
+        type = new TypeVariableImpl(this, bounds);
+    }
 
     TypeParameterElementImpl(java.lang.reflect.TypeVariable<?> typeVariable)
     {
        super(ElementKind.TYPE_PARAMETER, typeVariable.getName());
     }
     
-    
     void init(java.lang.reflect.TypeVariable<?> typeVariable)
     {
         type = TypeMirrorFactory.getTypeVariable(typeVariable);
         simpleName = E.getName(typeVariable.getName());
-        enclosingElement = ElementFactory.get(typeVariable.getGenericDeclaration());
-        genericElement = ElementFactory.get(typeVariable.getGenericDeclaration());
+        genericElement = (Parameterizable) ElementFactory.get(typeVariable.getGenericDeclaration());
         for (Type b : typeVariable.getBounds())
         {
             bounds.add(TypeMirrorFactory.get(b));
@@ -65,7 +73,7 @@ class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements Type
     @Override
     public Element getEnclosingElement()
     {
-        return enclosingElement;
+        return genericElement;
     }
 
     @Override
@@ -114,12 +122,6 @@ class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements Type
     }
 
     @Override
-    public Name getSimpleName()
-    {
-        return simpleName;
-    }
-
-    @Override
     public int hashCode()
     {
         int hash = 7;
@@ -140,10 +142,6 @@ class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements Type
         }
         final TypeParameterElementImpl other = (TypeParameterElementImpl) obj;
         if (!Objects.equals(this.type, other.type))
-        {
-            return false;
-        }
-        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
         {
             return false;
         }

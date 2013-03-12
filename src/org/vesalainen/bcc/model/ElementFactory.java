@@ -52,6 +52,10 @@ public class ElementFactory
     private static Map<Type,VariableElement> variableElementMap = new HashMap<>();
     private static Map<Enum,VariableElement> variableElementEnumMap = new HashMap<>();
     
+    public static TypeElementImpl.ClassBuilder classBuilder()
+    {
+        return new TypeElementImpl.ClassBuilder();
+    }
     public static Element get(Object ob)
     {
         if (ob instanceof Class)

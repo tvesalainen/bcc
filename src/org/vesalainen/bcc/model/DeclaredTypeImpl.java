@@ -35,11 +35,31 @@ import javax.lang.model.type.TypeVisitor;
 public class DeclaredTypeImpl implements DeclaredType
 {
     private Element element;
-    private TypeMirror enclosingType;
+    private TypeMirror enclosingType = T.getNoType(TypeKind.NONE);
     private List<TypeMirror> typeArguments = new ArrayList<>();
     DeclaredTypeImpl()
     {
         
+    }
+
+    DeclaredTypeImpl(Element element, List<? extends TypeMirror> typeArguments)
+    {
+        this.element = element;
+        this.typeArguments.addAll(typeArguments);
+    }
+
+    DeclaredTypeImpl(Class<?> element, Class<?>... typeArguments)
+    {
+        this.element = E.getTypeElement(element.getCanonicalName());
+        for (Class<?> a : typeArguments)
+        {
+            this.typeArguments.add(E.getTypeElement(a.getCanonicalName()).asType());
+        }
+    }
+
+    DeclaredTypeImpl(TypeMirror[] bounds)
+    {
+        element = new TypeElementImpl(bounds);
     }
     void init(Class<?> cls)
     {

@@ -33,8 +33,24 @@ public class TypeVariableImpl implements TypeVariable
 {
     private TypeParameterElement element;
     private TypeMirror upperBound;
+
+    TypeVariableImpl(TypeParameterElement element, TypeMirror... bounds)
+    {
+        this.element = element;
+        switch (bounds.length)
+        {
+            case 0:
+                upperBound = TypeMirrorFactory.getClassType(Object.class);
+                break;
+            case 1:
+                upperBound = bounds[0];
+                break;
+            default:
+                upperBound = new DeclaredTypeImpl(bounds);
+        }
+    }
     
-    public <D extends java.lang.reflect.GenericDeclaration> TypeVariableImpl(java.lang.reflect.TypeVariable<D> typeVariable)
+    <D extends java.lang.reflect.GenericDeclaration> TypeVariableImpl(java.lang.reflect.TypeVariable<D> typeVariable)
     {
         element = ElementFactory.getTypeParameterElement(typeVariable);
         Type[] bounds = typeVariable.getBounds();
