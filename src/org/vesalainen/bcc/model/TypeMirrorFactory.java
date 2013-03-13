@@ -25,10 +25,12 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
@@ -38,12 +40,47 @@ import javax.lang.model.type.WildcardType;
  */
 public class TypeMirrorFactory 
 {
-    
-    public static TypeMirror getDeclaredType(Class<?> element, Class<?>... typeArguments)
+    public static final PrimitiveType Byte = new PrimitiveTypeImpl(TypeKind.BYTE);
+    public static final PrimitiveType Boolean = new PrimitiveTypeImpl(TypeKind.BOOLEAN);
+    public static final PrimitiveType Char = new PrimitiveTypeImpl(TypeKind.CHAR);
+    public static final PrimitiveType Short = new PrimitiveTypeImpl(TypeKind.SHORT);
+    public static final PrimitiveType Int = new PrimitiveTypeImpl(TypeKind.INT);
+    public static final PrimitiveType Long = new PrimitiveTypeImpl(TypeKind.LONG);
+    public static final PrimitiveType Float = new PrimitiveTypeImpl(TypeKind.FLOAT);
+    public static final PrimitiveType Double = new PrimitiveTypeImpl(TypeKind.DOUBLE);
+    public static final PrimitiveType Void = new PrimitiveTypeImpl(TypeKind.VOID);
+
+    public static PrimitiveType getPrimitiveType(String type)
+    {
+        switch (type)
+        {
+            case "byte":
+                return Byte;
+            case "boolean":
+                return Boolean;
+            case "char":
+                return Char;
+            case "short":
+                return Short;
+            case "int":
+                return Int;
+            case "long":
+                return Long;
+            case "float":
+                return Float;
+            case "double":
+                return Double;
+            case "void":
+                return Void;
+            default:
+                return null;
+        }
+    }
+    public static DeclaredType getDeclaredType(Class<?> element, Class<?>... typeArguments)
     {
         return new DeclaredTypeImpl(element, typeArguments);
     }
-    public static TypeMirror getDeclaredType(Element element, List<? extends TypeMirror> typeArguments)
+    public static DeclaredType getDeclaredType(TypeElement element, List<TypeMirror> typeArguments)
     {
         return new DeclaredTypeImpl(element, typeArguments);
     }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -34,23 +35,24 @@ import javax.lang.model.type.TypeVisitor;
  */
 public class DeclaredTypeImpl implements DeclaredType
 {
-    private Element element;
+    private TypeElement element;
     private TypeMirror enclosingType = T.getNoType(TypeKind.NONE);
-    private List<TypeMirror> typeArguments = new ArrayList<>();
+    private List<TypeMirror> typeArguments;
     DeclaredTypeImpl()
     {
-        
+        this.typeArguments = new ArrayList<>();
     }
 
-    DeclaredTypeImpl(Element element, List<? extends TypeMirror> typeArguments)
+    DeclaredTypeImpl(TypeElement element, List<TypeMirror> typeArguments)
     {
         this.element = element;
-        this.typeArguments.addAll(typeArguments);
+        this.typeArguments = typeArguments;
     }
 
     DeclaredTypeImpl(Class<?> element, Class<?>... typeArguments)
     {
         this.element = E.getTypeElement(element.getCanonicalName());
+        this.typeArguments = new ArrayList<>();
         for (Class<?> a : typeArguments)
         {
             this.typeArguments.add(E.getTypeElement(a.getCanonicalName()).asType());
@@ -60,6 +62,7 @@ public class DeclaredTypeImpl implements DeclaredType
     DeclaredTypeImpl(TypeMirror[] bounds)
     {
         element = new TypeElementImpl(bounds);
+        this.typeArguments = new ArrayList<>();
     }
     void init(Class<?> cls)
     {
@@ -87,7 +90,7 @@ public class DeclaredTypeImpl implements DeclaredType
 
     void init(java.lang.reflect.ParameterizedType parameterizedType)
     {
-        this.element = ElementFactory.get(parameterizedType.getRawType());
+        this.element = (TypeElement) ElementFactory.get(parameterizedType.getRawType());
         Type ownerType = parameterizedType.getOwnerType();
         if (ownerType != null)
         {

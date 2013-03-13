@@ -23,9 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -38,7 +36,9 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.bcc.model.VariableElementImpl.FieldBuilder;
+import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
+import org.vesalainen.bcc.model.ExecutableElementImpl.MethodBuilder;
+import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
 /**
  * @author Timo Vesalainen
@@ -80,6 +80,7 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             {
                 throw new IllegalArgumentException("superclass not set");
             }
+            // TODO add superclass type parameters!!!
             return element;
         }
 
@@ -108,9 +109,31 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             return typeParamBuilder.addTypeParameter(param);
         }
 
-        public FieldBuilder addField(String name, String type)
+        public MethodBuilder addMethod(String name)
         {
-            FieldBuilder fieldBuilder = new VariableElementImpl.FieldBuilder(element, typeParamBuilder.resolvType(type), name);
+            MethodBuilder methodBuilder = new ExecutableElementImpl.MethodBuilder(element, name, typeParamBuilder.getTypeArguments(), typeParamBuilder.getTypeParameterMap());
+            addEnclosedElement(methodBuilder.getExecutableElement());
+            return methodBuilder;
+        }
+        public ConstructorBuilder addConstructor()
+        {
+            ConstructorBuilder constructorBuilder = new ExecutableElementImpl.ConstructorBuilder(element, typeParamBuilder.getTypeArguments(), typeParamBuilder.getTypeParameterMap());
+            addEnclosedElement(constructorBuilder.getExecutableElement());
+            return constructorBuilder;
+        }
+        public VariableBuilder addField(String name, Class<?> type)
+        {
+            return addField(name, type.getCanonicalName());
+        }
+        public VariableBuilder addField(String name, String type)
+        {
+            VariableBuilder fieldBuilder = addField(name);
+            fieldBuilder.setType(typeParamBuilder.resolvType(type));
+            return fieldBuilder;
+        }
+        public VariableBuilder addField(String name)
+        {
+            VariableBuilder fieldBuilder = new VariableElementImpl.VariableBuilder(element, name, typeParamBuilder);
             addEnclosedElement(fieldBuilder.getVariableElement());
             return fieldBuilder;
         }

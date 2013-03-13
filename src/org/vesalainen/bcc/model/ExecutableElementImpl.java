@@ -25,17 +25,20 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
 /**
  * @author Timo Vesalainen
@@ -44,17 +47,43 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
 {
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private Element enclosingElement;
-    private TypeMirror returnType;
+    private TypeMirror returnType = T.getNoType(TypeKind.VOID);
     private List<VariableElement> parameters = new ArrayList<>();
     private boolean varArgs;
     private List<TypeMirror> thrownTypes = new ArrayList<>();
     private AnnotationValue defaultValue;
     
-    static class MethodBuilder extends ConstructorBuilder
+    public static class MethodBuilder extends ConstructorBuilder
     {
-        public MethodBuilder(Element enclosingElement, String name)
+        MethodBuilder(TypeElement enclosingElement, String name, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
         {
-            super(enclosingElement, ElementKind.METHOD, name);
+            super(enclosingElement, ElementKind.METHOD, name, typeArguments, typeParameterMap);
+        }
+        public MethodBuilder setReturnType(Class<?> returnType, String... typeArgs)
+        {
+            return setReturnType(returnType.getCanonicalName(), typeArgs);
+        }
+        public MethodBuilder setReturnType(String returnType, String... typeArgs)
+        {
+            Element element = resolvElement(returnType);
+            switch (element.getKind())
+            {
+                case CLASS:
+                case INTERFACE:
+                    TypeElement te = (TypeElement) element;
+                    List<TypeMirror> args = new ArrayList<>();
+                    for (String a : typeArgs)
+                    {
+                        args.add(resolvType(a));
+                    }
+                    return setReturnType(new DeclaredTypeImpl(te, args));
+                default:
+                    if (typeArgs.length > 0)
+                    {
+                        throw new IllegalArgumentException("type args not used");
+                    }
+                    return setReturnType(element.asType());
+            }
         }
         public MethodBuilder setReturnType(TypeMirror returnType)
         {
@@ -62,28 +91,91 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
             return this;
         }
     }
-    static class ConstructorBuilder
+    public static class ConstructorBuilder
     {
         protected ExecutableElementImpl exe;
+        private TypeParameterBuilder<ConstructorBuilder> typeParamBuilder;
 
-        public ConstructorBuilder(Element enclosingElement)
+        ConstructorBuilder(TypeElement enclosingElement, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
         {
-            exe = new ExecutableElementImpl(enclosingElement, ElementKind.CONSTRUCTOR, "<init>");
+            this(enclosingElement, ElementKind.CONSTRUCTOR, "<init>", typeArguments, typeParameterMap);
         }
-        private ConstructorBuilder(Element enclosingElement, ElementKind kind, String name)
+        private ConstructorBuilder(TypeElement enclosingElement, ElementKind kind, String name, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
         {
             exe = new ExecutableElementImpl(enclosingElement, kind, name);
+            typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, exe.typeParameters, typeArguments, typeParameterMap);
+        }
+
+        public ExecutableElement getExecutableElement()
+        {
+            return exe;
+        }
+        
+        public VariableBuilder addParameter(String name)
+        {
+            VariableBuilder variableBuilder = new VariableElementImpl.VariableBuilder(exe, name, typeParamBuilder);
+            exe.parameters.add(variableBuilder.getVariableElement());
+            return variableBuilder;
         }
         public ConstructorBuilder addParameter(VariableElement param)
         {
             exe.parameters.add(param);
             return this;
         }
+        public ConstructorBuilder addThrownType(Class<?> thrownType)
+        {
+            return addThrownType(resolvType(thrownType.getCanonicalName()));
+        }
+        public ConstructorBuilder addThrownType(String thrownType)
+        {
+            return addThrownType(resolvType(thrownType));
+        }
         public ConstructorBuilder addThrownType(TypeMirror thrownType)
         {
             exe.thrownTypes.add(thrownType);
             return this;
         }
+
+        public List<TypeMirror> getTypeArguments()
+        {
+            return typeParamBuilder.getTypeArguments();
+        }
+
+        protected TypeMirror resolvType(String type)
+        {
+            return typeParamBuilder.resolvType(type);
+        }
+
+        protected Element resolvElement(String type)
+        {
+            return typeParamBuilder.resolvElement(type);
+        }
+
+        public ConstructorBuilder addTypeParameter(String name, Class<?>... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ConstructorBuilder addTypeParameter(String name, CharSequence... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ConstructorBuilder addTypeParameter(String name, TypeElement... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ConstructorBuilder addTypeParameter(String name, TypeMirror... bounds)
+        {
+            return typeParamBuilder.addTypeParameter(name, bounds);
+        }
+
+        public ConstructorBuilder addTypeParameter(TypeParameterElement param)
+        {
+            return typeParamBuilder.addTypeParameter(param);
+        }
+        
     }
 
     public ExecutableElementImpl(Element enclosingElement, ElementKind kind, String name)

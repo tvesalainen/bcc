@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +31,9 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
 
 /**
  * @author Timo Vesalainen
@@ -40,20 +43,60 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
     private Element enclosingElement;
     private Object constantValue;
 
-    public static class FieldBuilder
+    public static class VariableBuilder
     {
         private VariableElementImpl var;
+        private TypeParameterBuilder<?> typeParamBuilder;
 
-        FieldBuilder(Element enclosingElement, TypeMirror type, String name)
+        VariableBuilder(Element enclosingElement, String name, TypeParameterBuilder<?> typeParamBuilder)
         {
-            var = new VariableElementImpl(enclosingElement, type, name);
+            var = new VariableElementImpl(enclosingElement, name);
+            this.typeParamBuilder = typeParamBuilder;
         }
-        public FieldBuilder setConstantValue(Object constantValue)
+
+        public DeclaredTypeBuilder setComplexType(Class<?> cls)
+        {
+            return setComplexType(E.getTypeElement(cls.getCanonicalName()));
+        }
+        public DeclaredTypeBuilder setComplexType(CharSequence element)
+        {
+            return setComplexType(E.getTypeElement(element));
+        }
+        public DeclaredTypeBuilder setComplexType(TypeElement element)
+        {
+            DeclaredTypeBuilder builder = new DeclaredTypeBuilder(element, typeParamBuilder);
+            setType(builder.getDeclaredType());
+            return builder;
+        }
+        public VariableBuilder setType(Class<?> type)
+        {
+            return setType(type.getCanonicalName());
+        }
+        public VariableBuilder setType(String type)
+        {
+            PrimitiveType primitive = TypeMirrorFactory.getPrimitiveType(type);
+            if (primitive != null)
+            {
+                return setType(primitive);
+            }
+            Element element = typeParamBuilder.resolvElement(type);
+            return setType(element);
+        }
+        public VariableBuilder setType(Element element)
+        {
+            return setType(element.asType());
+        }
+        public VariableBuilder setType(TypeMirror type)
+        {
+            var.type = type;
+            return this;
+        }
+        public VariableBuilder setConstantValue(Object constantValue)
         {
             var.constantValue = constantValue;
             return this;
         }
-        public FieldBuilder addModifier(javax.lang.model.element.Modifier modifier)
+        public VariableBuilder addModifier(javax.lang.model.element.Modifier modifier)
         {
             var.modifiers.add(modifier);
             return this;
@@ -63,10 +106,9 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
             return var;
         }
     }
-    private VariableElementImpl(Element enclosingElement, TypeMirror type, String name)
+    private VariableElementImpl(Element enclosingElement, String name)
     {
         super(ElementKind.FIELD, name);
-        this.type = type;
         this.enclosingElement = enclosingElement;
     }
     

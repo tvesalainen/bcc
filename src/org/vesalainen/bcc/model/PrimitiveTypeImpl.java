@@ -27,10 +27,14 @@ import javax.lang.model.type.TypeVisitor;
 public class PrimitiveTypeImpl implements PrimitiveType
 {
     private TypeKind kind;
-    public PrimitiveTypeImpl(Class<?> cls)
+    PrimitiveTypeImpl(Class<?> cls)
     {
-        assert cls.isPrimitive();
-        this.kind = TypeKind.valueOf(cls.getSimpleName().toUpperCase());
+        this(TypeKind.valueOf(cls.getSimpleName().toUpperCase()));
+    }
+
+    PrimitiveTypeImpl(TypeKind kind)
+    {
+        this.kind = kind;
     }
     
     @Override

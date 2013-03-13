@@ -30,6 +30,17 @@ class WildcardTypeImpl implements WildcardType
 {
     private TypeMirror extendsBound;
     private TypeMirror superBound;
+
+    WildcardTypeImpl(TypeMirror extendsBound, TypeMirror superBound)
+    {
+        if (extendsBound != null && superBound != null)
+        {
+            throw new IllegalArgumentException("extends & super at the same time");
+        }
+        this.extendsBound = extendsBound;
+        this.superBound = superBound;
+    }
+    
     WildcardTypeImpl(java.lang.reflect.WildcardType rwt)
     {
         Type[] upperBounds = rwt.getUpperBounds();

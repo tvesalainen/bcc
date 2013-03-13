@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.TypeMirror;
@@ -43,6 +44,20 @@ public class TypeParameterBuilder<R>
         this.typeParameters = typeParameters;
     }
 
+    public TypeParameterBuilder(R ret, TypeElement element, List<TypeParameterElement> typeParameters, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+    {
+        this.ret = ret;
+        this.element = element;
+        this.typeParameters = typeParameters;
+        this.typeArguments.addAll(typeArguments);
+        this.typeParameterMap.putAll(typeParameterMap);
+    }
+
+    public Map<String, TypeParameterElement> getTypeParameterMap()
+    {
+        return typeParameterMap;
+    }
+
     public List<TypeMirror> getTypeArguments()
     {
         return typeArguments;
@@ -60,20 +75,24 @@ public class TypeParameterBuilder<R>
         }
         else
         {
-            TypeParameterElement t = typeParameterMap.get(type);
-            if (t != null)
+            return resolvElement(type).asType();
+        }
+    }
+    protected Element resolvElement(String type)
+    {
+        TypeParameterElement t = typeParameterMap.get(type);
+        if (t != null)
+        {
+            return t;
+        }
+        else
+        {
+            TypeElement te = E.getTypeElement(type);
+            if (te == null)
             {
-                return t.asType();
+                throw new IllegalArgumentException(type+" is not type parameter name or resolvable type name");
             }
-            else
-            {
-                TypeElement te = E.getTypeElement(type);
-                if (te == null)
-                {
-                    throw new IllegalArgumentException(type+" is not type parameter name or resolvable type name");
-                }
-                return te.asType();
-            }
+            return te;
         }
     }
     public R addTypeParameter(String name, Class<?>... bounds)
