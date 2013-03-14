@@ -37,11 +37,42 @@ import javax.lang.model.util.Types;
  */
 public class T 
 {
-    private static Types types = new TypesImpl();
+    public static NullType Null;
+    public static NoType Void;
+    public static NoType Package;
+    public static NoType None;
 
+    public static PrimitiveType Byte;
+    public static PrimitiveType Boolean;
+    public static PrimitiveType Char;
+    public static PrimitiveType Short;
+    public static PrimitiveType Int;
+    public static PrimitiveType Long;
+    public static PrimitiveType Float;
+    public static PrimitiveType Double;
+    
+    private static Types types;
+
+    static
+    {
+        setTypes(new TypesImpl());
+    }
+    
     public static void setTypes(Types types)
     {
         T.types = types;
+        Null = types.getNullType();
+        Void = types.getNoType(TypeKind.VOID);
+        Package = types.getNoType(TypeKind.PACKAGE);
+        None = types.getNoType(TypeKind.NONE);
+        Byte = types.getPrimitiveType(TypeKind.BYTE);
+        Boolean = types.getPrimitiveType(TypeKind.BOOLEAN);
+        Char = types.getPrimitiveType(TypeKind.CHAR);
+        Short = types.getPrimitiveType(TypeKind.SHORT);
+        Int = types.getPrimitiveType(TypeKind.INT);
+        Long = types.getPrimitiveType(TypeKind.LONG);
+        Float = types.getPrimitiveType(TypeKind.FLOAT);
+        Double = types.getPrimitiveType(TypeKind.DOUBLE);
     }
 
     public static Element asElement(TypeMirror t)

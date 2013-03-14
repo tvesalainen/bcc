@@ -40,38 +40,27 @@ import javax.lang.model.type.WildcardType;
  */
 public class TypeMirrorFactory 
 {
-    public static final PrimitiveType Byte = new PrimitiveTypeImpl(TypeKind.BYTE);
-    public static final PrimitiveType Boolean = new PrimitiveTypeImpl(TypeKind.BOOLEAN);
-    public static final PrimitiveType Char = new PrimitiveTypeImpl(TypeKind.CHAR);
-    public static final PrimitiveType Short = new PrimitiveTypeImpl(TypeKind.SHORT);
-    public static final PrimitiveType Int = new PrimitiveTypeImpl(TypeKind.INT);
-    public static final PrimitiveType Long = new PrimitiveTypeImpl(TypeKind.LONG);
-    public static final PrimitiveType Float = new PrimitiveTypeImpl(TypeKind.FLOAT);
-    public static final PrimitiveType Double = new PrimitiveTypeImpl(TypeKind.DOUBLE);
-    public static final PrimitiveType Void = new PrimitiveTypeImpl(TypeKind.VOID);
 
     public static PrimitiveType getPrimitiveType(String type)
     {
         switch (type)
         {
             case "byte":
-                return Byte;
+                return T.Byte;
             case "boolean":
-                return Boolean;
+                return T.Boolean;
             case "char":
-                return Char;
+                return T.Char;
             case "short":
-                return Short;
+                return T.Short;
             case "int":
-                return Int;
+                return T.Int;
             case "long":
-                return Long;
+                return T.Long;
             case "float":
-                return Float;
+                return T.Float;
             case "double":
-                return Double;
-            case "void":
-                return Void;
+                return T.Double;
             default:
                 return null;
         }

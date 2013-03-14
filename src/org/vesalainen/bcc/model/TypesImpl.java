@@ -44,6 +44,15 @@ public class TypesImpl implements Types
     public static final NoType Package = new NoTypeImpl(TypeKind.PACKAGE);
     public static final NoType None = new NoTypeImpl(TypeKind.NONE);
 
+    public static final PrimitiveType Byte = new PrimitiveTypeImpl(TypeKind.BYTE);
+    public static final PrimitiveType Boolean = new PrimitiveTypeImpl(TypeKind.BOOLEAN);
+    public static final PrimitiveType Char = new PrimitiveTypeImpl(TypeKind.CHAR);
+    public static final PrimitiveType Short = new PrimitiveTypeImpl(TypeKind.SHORT);
+    public static final PrimitiveType Int = new PrimitiveTypeImpl(TypeKind.INT);
+    public static final PrimitiveType Long = new PrimitiveTypeImpl(TypeKind.LONG);
+    public static final PrimitiveType Float = new PrimitiveTypeImpl(TypeKind.FLOAT);
+    public static final PrimitiveType Double = new PrimitiveTypeImpl(TypeKind.DOUBLE);
+    
     @Override
     public Element asElement(TypeMirror t)
     {
@@ -63,19 +72,131 @@ public class TypesImpl implements Types
     @Override
     public boolean isSameType(TypeMirror t1, TypeMirror t2)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (t1.getKind() == TypeKind.WILDCARD || t2.getKind() == TypeKind.WILDCARD)
+        {
+            return false;
+        }
+        else
+        {
+            return t1.getKind() == t2.getKind();
+        }
     }
 
     @Override
-    public boolean isSubtype(TypeMirror t1, TypeMirror t2)
+    public boolean isSubtype(TypeMirror sub, TypeMirror sup)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (isSameType(sub, sup))
+        {
+            return true;
+        }
+        switch (sup.getKind())
+        {
+            case DOUBLE:
+                switch (sub.getKind())
+                {
+                    case FLOAT:
+                    case LONG:
+                    case INT:
+                    case CHAR:
+                    case SHORT:
+                    case BYTE:
+                        return true;
+                    default:
+                        return false;
+                }
+            case FLOAT:
+                switch (sub.getKind())
+                {
+                    case LONG:
+                    case INT:
+                    case CHAR:
+                    case SHORT:
+                    case BYTE:
+                        return true;
+                    default:
+                        return false;
+                }
+            case LONG:
+                switch (sub.getKind())
+                {
+                    case INT:
+                    case CHAR:
+                    case SHORT:
+                    case BYTE:
+                        return true;
+                    default:
+                        return false;
+                }
+            case INT:
+                switch (sub.getKind())
+                {
+                    case CHAR:
+                    case SHORT:
+                    case BYTE:
+                        return true;
+                    default:
+                        return false;
+                }
+            case SHORT:
+                switch (sub.getKind())
+                {
+                    case BYTE:
+                        return true;
+                    default:
+                        return false;
+                }
+            case DECLARED:
+                switch (sub.getKind())
+                {
+                    case DECLARED:
+                        for (TypeMirror t : directSupertypes(sub))
+                        {
+                            if (t.equals(sup))
+                            {
+                                return true;
+                            }
+                        }
+                        return false;
+                    case NULL:
+                        return true;
+                    default:
+                        return false;
+                }
+            case EXECUTABLE:
+            case PACKAGE:
+                throw new IllegalArgumentException(sup+" is unsuitable type");
+            default:
+                return false;
+        }
     }
 
     @Override
     public boolean isAssignable(TypeMirror t1, TypeMirror t2)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (isSubtype(t1, t2))
+        {
+            return true;
+        }
+        switch (t2.getKind())
+        {
+            case BOOLEAN:
+            case BYTE:
+            case CHAR:
+            case DOUBLE:
+            case FLOAT:
+            case INT:
+            case LONG:
+            case SHORT:
+            case DECLARED:
+                return false;
+            case NULL:
+            case ARRAY:
+            default:
+                throw new IllegalArgumentException(t2+" not suitable type");
+            case EXECUTABLE:
+            case PACKAGE:
+                throw new IllegalArgumentException(t2+" is unsuitable type");
+        }
     }
 
     @Override
@@ -100,11 +221,13 @@ public class TypesImpl implements Types
                 TypeElement te = (TypeElement) dt.asElement();
                 List<TypeMirror> list = new ArrayList<>();
                 TypeMirror superclass = te.getSuperclass();
-                if (TypeKind.NONE != superclass.getKind())
+                while (TypeKind.NONE != superclass.getKind())
                 {
-                    list.add(superclass);
+                    list.add(0, superclass);
+                    list.addAll(te.getInterfaces());
+                    TypeElement sc = (TypeElement) superclass;
+                    superclass = sc.getSuperclass();
                 }
-                list.addAll(te.getInterfaces());
                 return list;
             case EXECUTABLE:
             case PACKAGE:
@@ -123,13 +246,59 @@ public class TypesImpl implements Types
     @Override
     public TypeElement boxedClass(PrimitiveType p)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        switch (p.getKind())
+        {
+            case BYTE:
+                return ElementFactory.get(Byte.class);
+            case BOOLEAN:
+                return ElementFactory.get(Boolean.class);
+            case CHAR:
+                return ElementFactory.get(Character.class);
+            case SHORT:
+                return ElementFactory.get(Short.class);
+            case INT:
+                return ElementFactory.get(Integer.class);
+            case LONG:
+                return ElementFactory.get(Long.class);
+            case FLOAT:
+                return ElementFactory.get(Float.class);
+            case DOUBLE:
+                return ElementFactory.get(Double.class);
+            case VOID:
+                return ElementFactory.get(Void.class);
+            default:
+                throw new IllegalArgumentException(p+" is not primitive");
+        }
     }
 
     @Override
     public PrimitiveType unboxedType(TypeMirror t)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (TypeKind.DECLARED == t.getKind())
+        {
+            DeclaredType dt = (DeclaredType) t;
+            TypeElement te = (TypeElement) dt.asElement();
+            switch (te.getQualifiedName().toString())
+            {
+                case "byte":
+                    return Byte;
+                case "boolean":
+                    return Boolean;
+                case "char":
+                    return Char;
+                case "short":
+                    return Short;
+                case "int":
+                    return Int;
+                case "long":
+                    return Long;
+                case "float":
+                    return Float;
+                case "double":
+                    return Double;
+            }
+        }
+        throw new IllegalArgumentException(t+" cannot be unboxed");
     }
 
     @Override
@@ -141,7 +310,27 @@ public class TypesImpl implements Types
     @Override
     public PrimitiveType getPrimitiveType(TypeKind kind)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        switch (kind)
+        {
+            case BYTE:
+                return Byte;
+            case BOOLEAN:
+                return Boolean;
+            case CHAR:
+                return Char;
+            case SHORT:
+                return Short;
+            case INT:
+                return Int;
+            case LONG:
+                return Long;
+            case FLOAT:
+                return Float;
+            case DOUBLE:
+                return Double;
+            default:
+                throw new IllegalArgumentException(kind+" is not primitive");
+        }
     }
 
     @Override
