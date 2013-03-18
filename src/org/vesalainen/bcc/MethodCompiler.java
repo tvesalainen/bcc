@@ -17,19 +17,31 @@
 package org.vesalainen.bcc;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Member;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.vesalainen.bcc.type.Descriptor;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
+import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.ElementFactory;
+import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.UpdateableElement;
+import org.vesalainen.bcc.type.ODescriptor;
 import org.vesalainen.bcc.type.Generics;
-import org.vesalainen.bcc.type.Signature;
+import org.vesalainen.bcc.type.OSignature;
 
 /**
  *
@@ -40,32 +52,41 @@ public class MethodCompiler extends Assembler
     public static final String SUBROUTINERETURNADDRESSNAME = "$subroutineReturnAddressName";
     private SubClass subClass;
     private CodeAttribute code;
-    private List<Type> localVariables = new ArrayList<>();
-    private Type[] parameters;
-    private Type returnType;
-    private String methodName;
-    private Map<String,Integer> localIndexMap = new HashMap<>();
-    private Map<Integer,String> localNameMap = new HashMap<>();
-    private Map<String,Type> localClassMap = new HashMap<>();
+    private List<VariableElement> localVariables = new ArrayList<>();
     private Method debug;
     private boolean compiled;
     private String subroutine;
     private boolean optimize = true;
-    private int modifier;
     private boolean dump;
     private List<ExceptionTable> exceptionTableList = new ArrayList<>();
+    private MethodInfo methodInfo;
+    private ExecutableElement executableElement;
+    private ExecutableType executableType;
 
-    MethodCompiler(SubClass subClass, int modifier, CodeAttribute codeAttribute, Type[] parameters, Type returnType, String name)
+    MethodCompiler(SubClass subClass, MethodInfo methodInfo)
     {
         this.subClass = subClass;
-        this.modifier = modifier;
-        this.code = codeAttribute;
-        this.parameters = parameters;
-        this.returnType = returnType;
-        this.methodName = name;
-        localVariables.add(subClass.getClassName());
-        nameArgument("this", 0);
-        localVariables.addAll(Arrays.asList(parameters));
+        this.methodInfo = methodInfo;
+        this.executableElement = methodInfo.getExecutableElement();
+        executableType = (ExecutableType) executableElement.asType();
+        this.code = methodInfo.getCodeAttribute();
+        localVariables.add(new LocalVariable(executableElement, subClass.asType(), "this"));
+        for (VariableElement ve : executableElement.getParameters())
+        {
+            if (ve instanceof UpdateableElement)
+            {
+                localVariables.add(ve);
+            }
+            else
+            {
+                localVariables.add(ElementFactory.createUpdateableElement(ve));
+            }
+        }
+    }
+
+    public ExecutableElement getExecutableElement()
+    {
+        return executableElement;
     }
 
     public SubClass getSubClass()
@@ -73,9 +94,9 @@ public class MethodCompiler extends Assembler
         return subClass;
     }
 
-    public int getModifier()
+    public String getModifiers()
     {
-        return modifier;
+        return methodInfo.getModifiersAsString();
     }
     /**
      * Set the compiler optimize flag. Affects switches
@@ -86,19 +107,21 @@ public class MethodCompiler extends Assembler
         this.optimize = optimize;
     }
 
-    public String getMethodName()
+    public String getMethodDescription()
     {
-        return methodName;
+        StringWriter sw = new StringWriter();
+        E.printElements(sw, executableElement);
+        return sw.toString();
     }
 
-    public Type[] getParameters()
+    public List<? extends TypeMirror> getParameters()
     {
-        return parameters;
+        return executableType.getParameterTypes();
     }
 
-    public Type getReturnType()
+    public TypeMirror getReturnType()
     {
-        return returnType;
+        return executableType.getReturnType();
     }
 
     public int localSize()
@@ -111,8 +134,8 @@ public class MethodCompiler extends Assembler
         int size = 0;
         for (int ii=offset;ii<length;ii++)
         {
-            Type type = localVariables.get(ii);
-            if (Generics.isCategory2(type))
+            TypeMirror type = localVariables.get(ii).asType();
+            if (T.isCategory2(type))
             {
                 size += 2;
             }
@@ -130,23 +153,73 @@ public class MethodCompiler extends Assembler
      */
     public final void nameArgument(String name, int index)
     {
-        if (index < localVariables.size())
+        VariableElement lv = getLocalVariable(index);
+        if (lv instanceof UpdateableElement)
         {
-            int ls = localSize(0, index);
-            String oldName = localNameMap.put(ls, name);
-            if (oldName != null)
-            {
-                localIndexMap.remove(oldName);
-                localClassMap.remove(oldName);
-            }
-            Integer idx = localIndexMap.put(name, ls);
-            if (idx != null && idx > 0)
-            {
-                throw new IllegalArgumentException(name+" has already been set");
-            }
-            Type cls = localClassMap.put(name, localVariables.get(index));
-            assert cls == null || idx == 0;
+            UpdateableElement ue = (UpdateableElement) lv;
+            ue.setSimpleName(E.getName(name));
+            return;
         }
+        else
+        {
+            throw new IllegalArgumentException("local variable at index "+index+" cannot be named");
+        }
+    }
+    /**
+     * Returns local variable at index. Note! long and double take two positions.
+     * @param index
+     * @return 
+     */
+    public VariableElement getLocalVariable(int index)
+    {
+        int idx = 0;
+        for (VariableElement lv : localVariables)
+        {
+            if (idx == index)
+            {
+                return lv;
+            }
+            if (T.isCategory2(lv.asType()))
+            {
+                idx += 2;
+            }
+            else
+            {
+                idx++;
+            }
+        }
+        throw new IllegalArgumentException("local variable at index "+index+" not found");
+    }
+    public VariableElement getLocalVariable(String name)
+    {
+        for (VariableElement lv : localVariables)
+        {
+            if (name.contentEquals(lv.getSimpleName()))
+            {
+                return lv;
+            }
+        }
+        throw new IllegalArgumentException("local variable for name "+name+" not found");
+    }
+    public int getLocalVariableIndex(String name)
+    {
+        int idx = 0;
+        for (VariableElement lv : localVariables)
+        {
+            if (name.contentEquals(lv.getSimpleName()))
+            {
+                return idx;
+            }
+            if (T.isCategory2(lv.asType()))
+            {
+                idx += 2;
+            }
+            else
+            {
+                idx++;
+            }
+        }
+        throw new IllegalArgumentException("local variable for name "+name+" not found");
     }
     public void nameArguments(String[] args)
     {
@@ -163,40 +236,28 @@ public class MethodCompiler extends Assembler
      */
     public String getLocalName(int index)
     {
-        String name = localNameMap.get(index);
-        if (name == null)
-        {
-            throw new IllegalArgumentException("Variable "+name+" not found");
-        }
-        return name;
+        VariableElement lv = getLocalVariable(index);
+        return lv.getSimpleName().toString();
     }
     /**
      * Returns the type of local variable at index
      * @param index
      * @return
      */
-    public Type getLocalType(int index)
+    public TypeMirror getLocalType(int index)
     {
-        String name = getLocalName(index);
-        if (name != null)
-        {
-            return localClassMap.get(name);
-        }
-        return null;
+        VariableElement lv = getLocalVariable(index);
+        return lv.asType();
     }
     /**
      * returns the type of local variable named name.
      * @param name
      * @return
      */
-    public Type getLocalType(String name)
+    public TypeMirror getLocalType(String name)
     {
-        Type type = localClassMap.get(name);
-        if (type == null)
-        {
-            throw new IllegalArgumentException("Variable "+name+" not found");
-        }
-        return type;
+        VariableElement lv = getLocalVariable(name);
+        return lv.asType();
     }
     /**
      * Return true if named variable is added.
@@ -205,7 +266,15 @@ public class MethodCompiler extends Assembler
      */
     public boolean hasLocalVariable(String name)
     {
-        return localClassMap.containsKey(name);
+        try
+        {
+            getLocalVariable(name);
+            return true;
+        }
+        catch (IllegalArgumentException ex)
+        {
+            return false;
+        }
     }
     /**
      * return a descriptive text about local variable named name.
@@ -214,34 +283,27 @@ public class MethodCompiler extends Assembler
      */
     public String getLocalDescription(int index)
     {
-        String name = localNameMap.get(index);
-        if (name != null)
-        {
-            Type cls = localClassMap.get(name);
-            return name+" "+cls;
-        }
-        return "?";
+        StringWriter sw = new StringWriter();
+        E.printElements(sw, getLocalVariable(index));
+        return sw.toString();
     }
     /**
      * Add new local variable
      * @param name
      * @param type
      */
-    public void addVariable(String name, Type type)
+    public void addVariable(String name, Class<?> type)
     {
-        if (Generics.isPrimitive(type))
-        {
-            Type boxed = Generics.getPrimitiveType(type);
-            if (boxed != null)
-            {
-                type = boxed;
-            }
-        }
-        int ls = localSize();
-        localIndexMap.put(name, ls);
-        localNameMap.put(ls, name);
-        localClassMap.put(name, type);
-        localVariables.add(type);
+        addVariable(name, T.getTypeFor(type));
+    }
+    /**
+     * Add new local variable
+     * @param name
+     * @param type
+     */
+    public void addVariable(String name, TypeMirror type)
+    {
+        localVariables.add(new LocalVariable(executableElement, type, name));
     }
     /**
      * assign default type for local variable depending on type. (false, 0, null)
@@ -250,10 +312,10 @@ public class MethodCompiler extends Assembler
      */
     public void assignDefault(String name) throws IOException
     {
-        Type cls = localClassMap.get(name);
-        if (Generics.isPrimitive(cls))
+        TypeMirror t = getLocalType(name);
+        if (T.isPrimitive(t))
         {
-            tconst(Generics.getPrimitiveType(cls), 0);
+            tconst(t, 0);
         }
         else
         {
@@ -266,13 +328,22 @@ public class MethodCompiler extends Assembler
      * @param type
      * @throws IOException
      */
-    public void loadDefault(Type type) throws IOException
+    public void loadDefault(Class<?> type) throws IOException
     {
-        if (!Generics.isVoid(type))
+        loadDefault(T.getTypeFor(type));
+    }
+    /**
+     * Load default value to stack depending on type
+     * @param type
+     * @throws IOException
+     */
+    public void loadDefault(TypeMirror type) throws IOException
+    {
+        if (type.getKind() != TypeKind.VOID)
         {
-            if (Generics.isPrimitive(type))
+            if (T.isPrimitive(type))
             {
-                tconst(Generics.getPrimitiveType(type), 0);
+                tconst(type, 0);
             }
             else
             {
@@ -294,7 +365,7 @@ public class MethodCompiler extends Assembler
         subroutine = target;
         if (!hasLocalVariable(SUBROUTINERETURNADDRESSNAME))
         {
-            addVariable(SUBROUTINERETURNADDRESSNAME, ReturnAddress.class);
+            addVariable(SUBROUTINERETURNADDRESSNAME, T.ReturnAddress);
         }
         fixAddress(target);
         tstore(SUBROUTINERETURNADDRESSNAME);
@@ -306,7 +377,7 @@ public class MethodCompiler extends Assembler
         {
             throw new IllegalStateException("ending subroutine that is not started");
         }
-        int index = localIndexMap.get(SUBROUTINERETURNADDRESSNAME);
+        int index = getLocalVariableIndex(SUBROUTINERETURNADDRESSNAME);
         ret(index);
         subroutine = null;
     }
@@ -325,15 +396,27 @@ public class MethodCompiler extends Assembler
      * @param count array count
      * @throws IOException
      */
-    public void newarray(Type type, int count) throws IOException
+    public void newarray(Class<?> type, int count) throws IOException
     {
-        if (!Generics.isArray(type))
+        newarray(T.getTypeFor(type), count);
+    }
+    /**
+     * Create new array
+     * <p>Stack: ..., count =&gt; ..., arrayref
+     * @param type array class eg. String[].class
+     * @param count array count
+     * @throws IOException
+     */
+    public void newarray(TypeMirror type, int count) throws IOException
+    {
+        if (type.getKind() != TypeKind.ARRAY)
         {
             throw new IllegalArgumentException(type+" is not array");
         }
+        ArrayType at = (ArrayType) type;
         iconst(count);
-        ObjectType ot = ObjectType.valueOf(Generics.getComponentType(type));
-        switch (ot)
+        TypeMirror ct = at.getComponentType();
+        switch (ct.getKind())
         {
             case BOOLEAN:
                 newarray(T_BOOLEAN);
@@ -359,9 +442,10 @@ public class MethodCompiler extends Assembler
             case LONG:
                 newarray(T_LONG);
                 break;
-            case REF:
+            case DECLARED:
             {
-                int index = subClass.resolveClassIndex(Generics.getComponentType(type));
+                DeclaredType dt = (DeclaredType) ct;
+                int index = subClass.resolveClassIndex((TypeElement)dt.asElement());
                 anewarray(index);
             }
                 break;
@@ -374,21 +458,21 @@ public class MethodCompiler extends Assembler
      * @param count
      * @return
      */
-    public ObjectType typeForCount(int count)
+    public TypeMirror typeForCount(int count)
     {
         if (count <= Byte.MAX_VALUE)
         {
-            return ObjectType.BYTE;
+            return T.Byte;
         }
         if (count <= Short.MAX_VALUE)
         {
-            return ObjectType.SHORT;
+            return T.Short;
         }
         if (count <= Integer.MAX_VALUE)
         {
-            return ObjectType.INT;
+            return T.Int;
         }
-        return ObjectType.LONG;
+        return T.Long;
     }
     /**
      * Load from local variable
@@ -401,14 +485,15 @@ public class MethodCompiler extends Assembler
     public void tload(String name) throws IOException
     {
         check(name);
-        Type cn = localClassMap.get(name);
-        if (Generics.isPrimitive(cn))
+        TypeMirror cn = getLocalType(name);
+        int index = getLocalVariableIndex(name);
+        if (T.isPrimitive(cn))
         {
-            super.tload(Generics.getPrimitiveType(cn), localIndexMap.get(name));
+            super.tload(cn, index);
         }
         else
         {
-            super.aload(localIndexMap.get(name));
+            super.aload(index);
         }
     }
     /**
@@ -422,14 +507,15 @@ public class MethodCompiler extends Assembler
     public void tstore(String name) throws IOException
     {
         check(name);
-        Type cn = localClassMap.get(name);
-        if (Generics.isPrimitive(cn))
+        TypeMirror cn = getLocalType(name);
+        int index = getLocalVariableIndex(name);
+        if (T.isPrimitive(cn))
         {
-            tstore(Generics.getPrimitiveType(cn), localIndexMap.get(name));
+            tstore(cn, index);
         }
         else
         {
-            astore(localIndexMap.get(name));
+            astore(index);
         }
     }
     /**
@@ -444,7 +530,9 @@ public class MethodCompiler extends Assembler
     public void tinc(String name, int con) throws IOException
     {
         check(name);
-        tinc(Generics.getPrimitiveType(localClassMap.get(name)), localIndexMap.get(name), con);
+        TypeMirror cn = getLocalType(name);
+        int index = getLocalVariableIndex(name);
+        tinc(cn, index, con);
     }
     /**
      * Return. If return type is other than void the value at stack is returned
@@ -455,7 +543,7 @@ public class MethodCompiler extends Assembler
      */
     public void treturn() throws IOException
     {
-        treturn(returnType);
+        treturn(executableElement.getReturnType());
     }
 
     public void setDebug(Method debug)
@@ -486,7 +574,17 @@ public class MethodCompiler extends Assembler
      * @param type class eg. String.class
      * @throws IOException
      */
-    public void anew(Type clazz) throws IOException
+    public void anew(Class<?> clazz) throws IOException
+    {
+        anew(E.getTypeElement(clazz.getCanonicalName()));
+    }
+    /**
+     * Create new object
+     * <p>Stack: ... =&gt; ..., objectref
+     * @param type class eg. String.class
+     * @throws IOException
+     */
+    public void anew(TypeElement clazz) throws IOException
     {
         int index = subClass.resolveClassIndex(clazz);
         anew(index);
@@ -580,6 +678,7 @@ public class MethodCompiler extends Assembler
      * @see addVariable
      * @throws IOException
      */
+    @Override
     public void ldc(int constant) throws IOException
     {
         int index = subClass.resolveConstantIndex(constant);
@@ -651,7 +750,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getfield(Member field) throws IOException
+    public void getfield(Field field) throws IOException
     {
         int index = subClass.resolveFieldIndex(field);
         getfield(index);
@@ -662,7 +761,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getstatic(Member field) throws IOException
+    public void getstatic(Field field) throws IOException
     {
         int index = subClass.resolveFieldIndex(field);
         getstatic(index);
@@ -673,7 +772,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void get(Member field) throws IOException
+    public void get(Field field) throws IOException
     {
         if (Modifier.isStatic(field.getModifiers()))
         {
@@ -688,7 +787,7 @@ public class MethodCompiler extends Assembler
      * Set field in object
      * <p>Stack: ..., objectref, value =&gt; ...
      */
-    public void putfield(Member field) throws IOException
+    public void putfield(Field field) throws IOException
     {
         int index = subClass.resolveFieldIndex(field);
         putfield(index);
@@ -699,7 +798,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void putstatic(Member field) throws IOException
+    public void putstatic(Field field) throws IOException
     {
         int index = subClass.resolveFieldIndex(field);
         putstatic(index);
@@ -710,9 +809,9 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void put(Member field) throws IOException
+    public void put(Field field) throws IOException
     {
-        if (Modifier.isStatic(field.getModifiers()))
+        if (java.lang.reflect.Modifier.isStatic(field.getModifiers()))
         {
             putstatic(field);
         }
@@ -722,34 +821,49 @@ public class MethodCompiler extends Assembler
         }
     }
     /**
-     * If method is ConstructorWrapper calls invokespecial, if method is private 
-     * calls invokespecial, if static calls invokestatic, otherwice calls invokevirtual
+     * @param constructor
+     * @throws IOException 
+     */
+    public void invoke(Constructor constructor) throws IOException
+    {
+        invoke(ElementFactory.get(constructor));
+    }
+    /**
      * @param method
      * @throws IOException 
      */
-    public void invoke(Member method) throws IOException
+    public void invoke(Method method) throws IOException
     {
-        if (Generics.isConstructor(method))
+        invoke(ElementFactory.get(method));
+    }
+    /**
+     * @param method
+     * @throws IOException 
+     */
+    public void invoke(ExecutableElement method) throws IOException
+    {
+        switch (method.getKind())
         {
-            invokespecial(method);
-        }
-        else
-        {
-            if (Modifier.isPrivate(method.getModifiers()))
-            {
+            case CONSTRUCTOR:
                 invokespecial(method);
-            }
-            else
-            {
-                if (Modifier.isStatic(method.getModifiers()))
+                break;
+            case METHOD:
+                if (method.getModifiers().contains(Modifier.PRIVATE))
                 {
-                    invokestatic(method);
+                    invokespecial(method);
                 }
                 else
                 {
-                    invokevirtual(method);
+                    if (method.getModifiers().contains(Modifier.STATIC))
+                    {
+                        invokestatic(method);
+                    }
+                    else
+                    {
+                        invokevirtual(method);
+                    }
                 }
-            }
+                break;
         }
     }
     /**
@@ -762,7 +876,22 @@ public class MethodCompiler extends Assembler
      * @param parameters
      * @throws IOException
      */
-    public void invokespecial(Member method) throws IOException
+    public void invokespecial(Method method) throws IOException
+    {
+        invokespecial(ElementFactory.get(method));
+    }
+
+    /**
+     * Invoke instance method; special handling for superclass, private, and instance initialization method invocations
+     * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
+     * @param fullyQualifiedName in fully qualified form
+     * @param methodName
+     * @param isInterface
+     * @param returnType
+     * @param parameters
+     * @throws IOException
+     */
+    public void invokespecial(ExecutableElement method) throws IOException
     {
         int index = subClass.resolveMethodIndex(method);
         invokespecial(index);
@@ -779,35 +908,79 @@ public class MethodCompiler extends Assembler
      * @param parameters
      * @throws IOException
      */
-    public void invokevirtual(Member method) throws IOException
+    public void invokevirtual(Method method) throws IOException
+    {
+        invokevirtual(ElementFactory.get(method));
+    }
+    /**
+     * Invoke instance method; dispatch based on classIf method is interface
+     * calls invokeinterface otherwise calls invokevirtual.
+     * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
+     * @param fullyQualifiedName
+     * @param methodName
+     * @param isInterface
+     * @param returnType
+     * @param parameters
+     * @throws IOException
+     */
+    public void invokevirtual(ExecutableElement method) throws IOException
     {
         int index = subClass.resolveMethodIndex(method);
-        if (Generics.isInterfaceMethod(method))
+        if (method.getEnclosingElement().getKind() == ElementKind.INTERFACE)
         {
-            invokeinterface(index, argumentCount(Generics.getParameterTypes(method)));
+            invokeinterface(index, argumentCount(method.getParameters()));
         }
         else
         {
             invokevirtual(index);
         }
     }
-    public void invokevirtual(Type clazz, String name, Type... parameters) throws IOException
+    /**
+     * Invoke a class (static) method
+     * <p>Stack: ..., [arg1, [arg2 ...]] =&gt; ...
+     * @param method
+     * @throws IOException
+     */
+    public void invokestatic(Method method) throws IOException
+    {
+        invokestatic(ElementFactory.get(method));
+    }
+
+    /**
+     * Invoke a class (static) method
+     * <p>Stack: ..., [arg1, [arg2 ...]] =&gt; ...
+     * @param method
+     * @throws IOException
+     */
+    public void invokestatic(ExecutableElement method) throws IOException
+    {
+        int index = subClass.resolveMethodIndex(method);
+        invokestatic(index);
+    }
+
+    public void invokevirtual(Class<?> clazz, String name, Class<?>... parameters) throws IOException
     {
         invokevirtual(findMethod(clazz, name, parameters));
     }
-    public Member findMethod(Type clazz, String name, Type... parameters) throws IOException
+    private ExecutableElement findMethod(Class<?> clazz, String name, Class<?>... parameters) throws IOException
     {
-        for (Member method : Generics.getMethods(clazz))
+        TypeElement te = ElementFactory.get(clazz);
+        List<TypeMirror> callerParams = new ArrayList<>();
+        for (Class<?> p : parameters)
         {
-            if (name.equals(Generics.getName(method)))
+            callerParams.add(T.getTypeFor(p));
+        }
+        for (ExecutableElement method : ElementFilter.methodsIn(te.getEnclosedElements()))
+        {
+            if (name.contentEquals(method.getSimpleName()))
             {
-                Type[] params = Generics.getParameterTypes(method);
-                if (params.length == parameters.length)
+                if (callerParams.size() == method.getParameters().size())
                 {
                     boolean ok = true;
-                    for (int ii=0;ii<params.length;ii++)
+                    List<? extends VariableElement> calleeParams = method.getParameters();
+                    for (int ii=0;ii<callerParams.size();ii++)
                     {
-                        if (!Generics.isAssignableFrom(params[ii], parameters[ii]))
+                        if (!T.isAssignable(callerParams.get(ii), calleeParams.get(ii).asType()))
                         {
                             ok = false;
                             continue;
@@ -823,30 +996,18 @@ public class MethodCompiler extends Assembler
         throw new IOException("method "+name+" int "+clazz+" not found");
     }
 
-    /**
-     * Invoke a class (static) method
-     * <p>Stack: ..., [arg1, [arg2 ...]] =&gt; ...
-     * @param method
-     * @throws IOException
-     */
-    public void invokestatic(Member method) throws IOException
-    {
-        int index = subClass.resolveMethodIndex(method);
-        invokestatic(index);
-    }
-
-    private int argumentCount(Type... parameters)
+    private int argumentCount(List<? extends VariableElement> parameters)
     {
         int result = 0;
-        for (Type parameter : parameters)
+        for (VariableElement parameter : parameters)
         {
-            if (category1(parameter))
+            if (T.isCategory2(parameter.asType()))
             {
-                result++;
+                result += 2;
             }
             else
             {
-                result += 2;
+                result++;
             }
         }
         return result;
@@ -885,50 +1046,7 @@ public class MethodCompiler extends Assembler
         code.setCode(bb, exceptionTable);
         code.setMax_locals(localVariables.size()+1);
         code.setMax_stack(ver.getMaxStack());
-
-        int ani = subClass.resolveNameIndex("LocalVariableTable");
-        LocalVariableTable lvt = new LocalVariableTable(subClass, ani, bb.length);
-        ani = subClass.resolveNameIndex("LocalVariableTypeTable");
-        LocalVariableTypeTable lvtt = new LocalVariableTypeTable(subClass, ani, bb.length);
-        int ii = 0;
-        for (Type type : localVariables)
-        {
-            if (!(type instanceof ReturnAddress))
-            {
-                String n = localNameMap.get(ii);
-                if (n != null)
-                {
-                    int index = localIndexMap.get(n);
-                    int ni = subClass.resolveNameIndex(n);
-                    int di = 0;
-                    if (ii == 0)
-                    {
-                        di = subClass.getThisDescriptorIndex();
-                    }
-                    else
-                    {
-                        String descriptor = Descriptor.getFieldDesriptor(type);
-                        di = subClass.resolveNameIndex(descriptor);
-                    }
-                    lvt.addLocalVariable(ni, di, index);
-                    if (Signature.needsSignature(type))
-                    {
-                        String signature = Signature.getFieldSignature(type);
-                        int si = subClass.resolveNameIndex(signature);
-                        lvtt.addLocalTypeVariable(ni, si, index);
-                    }
-                }
-            }
-            ii++;
-        }
-        code.addAttribute(lvt);
-        if (!lvtt.isEmpty())
-        {
-            code.addAttribute(lvtt);
-        }
-        //ani = subClass.resolveNameIndex("Synthetic");
-        //SyntheticAttribute sa = new SyntheticAttribute(ani);
-        //code.addAttribute(sa);
+        code.addLocalVariables(localVariables);
     }
     /**
      * Load a local variable and convert it to reference, or leave as it is if
@@ -942,11 +1060,10 @@ public class MethodCompiler extends Assembler
      */
     public void convertToReference(String fromVariable) throws IOException, NoSuchMethodException, NoSuchFieldException, ClassNotFoundException, IllegalConversionException
     {
-        Type from = this.getLocalType(fromVariable);
-        if (Generics.isPrimitive(from))
+        TypeMirror from = this.getLocalType(fromVariable);
+        if (T.isPrimitive(from))
         {
-            ObjectType ot = ObjectType.valueOf(from);
-            switch (ot)
+            switch (from.getKind())
             {
                 case BOOLEAN:
                     convert(fromVariable, Boolean.class);
@@ -1096,7 +1213,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invokespecial(SwitchException.class.getConstructor());
+        invoke(SwitchException.class.getConstructor());
         athrow();
     }
     /**
@@ -1173,7 +1290,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invokespecial(SwitchException.class.getConstructor());
+        invoke(SwitchException.class.getConstructor());
         athrow();
     }
     /**
@@ -1205,7 +1322,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invokespecial(SwitchException.class.getConstructor());
+        invoke(SwitchException.class.getConstructor());
         athrow();
     }
     /**

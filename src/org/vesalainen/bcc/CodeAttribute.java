@@ -21,6 +21,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
+import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.model.T;
 
 /**
  *
@@ -32,12 +36,11 @@ public class CodeAttribute extends AttributeInfo
     private int max_locals;
     private byte code[];
     private ExceptionTable[] exception_table;
-    private List<AttributeInfo> attributes;
+    private List<AttributeInfo> attributes = new ArrayList<>();
 
-    public CodeAttribute(ClassFile cf, int attribute_name_index)
+    public CodeAttribute(ClassFile cf)
     {
-        super(cf, attribute_name_index, 0);
-        attributes = new ArrayList<>();
+        super(cf, "Code");
     }
 
     public CodeAttribute(ClassFile cf, int attribute_name_index, int attribute_length, DataInput in) throws IOException
@@ -55,16 +58,48 @@ public class CodeAttribute extends AttributeInfo
             exception_table[ii] = new ExceptionTable(in);
         }
         int attributes_count = in.readUnsignedShort();
-        attributes = new ArrayList<AttributeInfo>();
         for (int ii=0;ii<attributes_count;ii++)
         {
             attributes.add(AttributeInfo.getInstance(cf, in));
         }
     }
 
-    public void addAttribute(AttributeInfo ai)
+    public void addLocalVariables(List<? extends VariableElement> localVariables)
     {
-        attributes.add(ai);
+        if (code == null)
+        {
+            throw new IllegalStateException("code is not set yet");
+        }
+        LocalVariableTable lvt = new LocalVariableTable(classFile, code.length);
+        attributes.add(lvt);
+        LocalVariableTypeTable lvtt = null;
+        int index = 0;
+        for (VariableElement lv : localVariables)
+        {
+            lvt.addLocalVariable(lv, index);
+            String signature = Signature.getSignature(lv);
+            if (!signature.isEmpty())
+            {
+                if (lvtt == null)
+                {
+                    lvtt = new LocalVariableTypeTable(classFile, code.length);
+                    attributes.add(lvtt);
+                }
+                lvtt.addLocalTypeVariable(lv, signature, index);
+            }
+            if (T.isCategory2(lv.asType()))
+            {
+                index += 2;
+            }
+            else
+            {
+                index++;
+            }
+        }
+    }
+    public void addLineNumberTable(LineNumberTable lnt)
+    {
+        attributes.add(lnt);
     }
 
     @Override
@@ -123,7 +158,7 @@ public class CodeAttribute extends AttributeInfo
         this.max_stack = max_stack;
     }
 
-    public List<AttributeInfo> getAttributes()
+    public List<? extends AttributeInfo> getAttributes()
     {
         return attributes;
     }

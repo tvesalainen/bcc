@@ -21,6 +21,11 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.model.T;
 
 /**
  * @author Timo Vesalainen
@@ -28,25 +33,43 @@ import java.util.List;
 public class LocalVariableTypeTable extends AttributeInfo
 {
     private List<LocalTypeVariable> localTypeVariables = new ArrayList<>();
-    private int length;
+    private int codeLength;
     
-    public LocalVariableTypeTable(ClassFile classFile, int attribute_name_index, int codelength)
+    public LocalVariableTypeTable(ClassFile classFile, int codelength)
     {
-        super(classFile, attribute_name_index, 0);
-        this.length = codelength;
+        super(classFile, "LocalVariableTypeTable");
+        this.codeLength = codelength;
     }
 
-    LocalVariableTypeTable(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in)
+    LocalVariableTypeTable(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
         super(classFile, attribute_name_index, attribute_length);
-        throw new UnsupportedOperationException("Not yet implemented");
+        int localTypeVariablesCount = in.readShort();
+        for (int ii=0;ii<localTypeVariablesCount;ii++)
+        {
+            localTypeVariables.add(new LocalTypeVariable(in));
+        }
     }
 
     public boolean isEmpty()
     {
         return localTypeVariables.isEmpty();
     }
-    
+    /**
+     * Adds a entry into LocalTypeVariableTable if variable is of generic type
+     * @param ve
+     * @param index 
+     */
+    public void addLocalTypeVariable(VariableElement ve, String signature, int index)
+    {
+        localTypeVariables.add(new LocalTypeVariable(ve, signature, index));
+    }
+    /**
+     * @deprecated 
+     * @param nameIndex
+     * @param signatureIndex
+     * @param index 
+     */
     public void addLocalTypeVariable(int nameIndex, int signatureIndex, int index)
     {
         localTypeVariables.add(new LocalTypeVariable(nameIndex, signatureIndex, index));
@@ -55,7 +78,7 @@ public class LocalVariableTypeTable extends AttributeInfo
     @Override
     public void write(DataOutput out) throws IOException
     {
-        assert length > 0;
+        assert codeLength > 0;
         out.writeShort(attribute_name_index);
         out.writeInt(localTypeVariables.size()*10+2);
         out.writeShort(localTypeVariables.size());
@@ -72,9 +95,18 @@ public class LocalVariableTypeTable extends AttributeInfo
 
     private class LocalTypeVariable implements Writable
     {
+        private int startPc;
+        private int length = codeLength;
         private int nameIndex;
         private int signatureIndex;
         private int index;
+
+        private LocalTypeVariable(VariableElement ve, String signature, int index)
+        {
+            this.nameIndex = classFile.getNameIndex(ve.getSimpleName().toString());
+            this.signatureIndex = classFile.getNameIndex(signature);
+            this.index = index;
+        }
 
         public LocalTypeVariable(int nameIndex, int signatureIndex, int index)
         {
@@ -83,14 +115,39 @@ public class LocalVariableTypeTable extends AttributeInfo
             this.index = index;
         }
 
+        private LocalTypeVariable(DataInput in) throws IOException
+        {
+            startPc = in.readUnsignedShort();
+            length = in.readUnsignedShort();
+            nameIndex = in.readUnsignedShort();
+            signatureIndex = in.readUnsignedShort();
+            index = in.readUnsignedShort();
+        }
+
         @Override
         public void write(DataOutput out) throws IOException
         {
-            out.writeShort(0);
+            out.writeShort(startPc);
             out.writeShort(length);
             out.writeShort(nameIndex);
             out.writeShort(signatureIndex);
             out.writeShort(index);
         }
+        
+        public TypeMirror getType()
+        {
+            return T.typeFromSignature(classFile.getString(signatureIndex));
+        }
+
+        public int getIndex()
+        {
+            return index;
+        }
+
+        public String getSimpleName()
+        {
+            return classFile.getString(nameIndex);
+        }
+
     }
 }

@@ -26,10 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * @deprecated 
  *
  * @author tkv
  */
-public class Descriptor
+public class ODescriptor
 {
     /**
      * Returns effective returntype. With effective we mean that if type is one 

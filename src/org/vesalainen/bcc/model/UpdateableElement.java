@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Timo Vesalainen
+ * Copyright (C) 2013 Timo Vesalainen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,26 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.vesalainen.bcc;
+package org.vesalainen.bcc.model;
 
-import java.io.DataOutput;
-import java.io.IOException;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen
  */
-public class SyntheticAttribute extends AttributeInfo
+public interface UpdateableElement
 {
-    public SyntheticAttribute(ClassFile classFile)
-    {
-        super(classFile, "Synthetic");
-    }
-
-    public void write(DataOutput out) throws IOException
-    {
-        out.writeShort(attribute_name_index);
-        out.writeInt(0);
-    }
-
+    void setEnclosingElement(Element enclosingElement);
+    void setModifiers(Modifier... modifier);
+    void setSimpleName(Name name);
 }

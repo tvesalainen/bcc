@@ -44,7 +44,7 @@ public class TypeParameterBuilder<R>
         this.typeParameters = typeParameters;
     }
 
-    public TypeParameterBuilder(R ret, TypeElement element, List<TypeParameterElement> typeParameters, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+    public TypeParameterBuilder(R ret, TypeElement element, List<TypeParameterElement> typeParameters, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
     {
         this.ret = ret;
         this.element = element;

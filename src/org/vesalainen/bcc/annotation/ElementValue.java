@@ -19,13 +19,14 @@ package org.vesalainen.bcc.annotation;
 
 import java.io.DataInput;
 import java.io.IOException;
+import javax.lang.model.element.AnnotationValue;
 import org.vesalainen.bcc.ClassFile;
 import org.vesalainen.bcc.Writable;
 
 /**
  * @author Timo Vesalainen
  */
-public abstract class ElementValue implements Writable 
+public abstract class ElementValue implements Writable, AnnotationValue
 {
     protected int tag;
     protected ClassFile classFile;
@@ -56,7 +57,7 @@ public abstract class ElementValue implements Writable
             case 'c':
                 return new ClassInfoIndex(classFile, tag, in);
             case '@':
-                return new AnnotationValue(classFile, tag, in);
+                return new AnnotationVal(classFile, tag, in);
             case '[':
                 return new ArrayValue(classFile, tag, in);
             default:

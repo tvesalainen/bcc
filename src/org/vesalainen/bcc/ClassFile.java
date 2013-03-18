@@ -16,7 +16,7 @@
  */
 package org.vesalainen.bcc;
 
-import org.vesalainen.bcc.type.Descriptor;
+import org.vesalainen.bcc.type.ODescriptor;
 import org.vesalainen.bcc.type.ClassWrapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -48,13 +48,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.bcc.ConstantInfo.Filler;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.LocalVariableTable.LocalVariable;
+import org.vesalainen.bcc.annotation.ModelUtil;
 import org.vesalainen.bcc.annotation.AnnotationWrapper;
 import org.vesalainen.bcc.annotation.RuntimeVisibleAnnotations;
+import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.T;
 import org.vesalainen.bcc.type.Generics;
 
 /**
@@ -62,7 +77,7 @@ import org.vesalainen.bcc.type.Generics;
  * @author tkv
  * TODO make thread safe
  */
-public class ClassFile implements Writable
+public class ClassFile implements Writable, TypeElement
 {
     /**
      * Declared public; may be accessed from outside its package.
@@ -129,12 +144,13 @@ public class ClassFile implements Writable
     private List<MethodInfo> methods = new ArrayList<>();
     private List<AttributeInfo> attributes = new ArrayList<>();
 
-    protected Type superClass;
-    protected Type thisClass;
+    protected TypeMirror superClass;
 
-    private Map<Integer,Object> constantMap = new HashMap<>();
+    private Map<Integer,Element> elementMap = new HashMap<>();
     private Map<Class<? extends ConstantInfo>,List<ConstantInfo>> constantPoolMap = new HashMap<>();
     private Map<ConstantInfo,Integer> constantPoolIndexMap = new HashMap<>();
+    private Name qualifiedName;
+    protected Map<String, TypeParameterElement> typeParameterMap = new HashMap<>();
     
     protected ClassFile()
     {
@@ -202,34 +218,27 @@ public class ClassFile implements Writable
             attributes.add(AttributeInfo.getInstance(this, oin));
         }
         Clazz superClazz = (Clazz) getConstantInfo(super_class);
-        superClass = ClassWrapper.fromInternalForm(getString(superClazz.getName_index()));
+        superClass = E.fromDescriptor(getString(superClazz.getName_index())).asType();
         Clazz clazz = (Clazz) getConstantInfo(this_class);
-        thisClass = ClassWrapper.fromInternalForm(getString(clazz.getName_index()), superClass);
+        qualifiedName = E.getName(Descriptor.getFullyQualifiedForm(getString(clazz.getName_index())));
     }
 
-    public AnnotationWrapper getAnnotation(Class<? extends Annotation> type)
+    @Override
+    public Name getQualifiedName()
     {
-        String fieldDesriptor = Descriptor.getFieldDesriptor(type);
-        for (AttributeInfo at : attributes)
-        {
-            if (at instanceof RuntimeVisibleAnnotations)
-            {
-                RuntimeVisibleAnnotations rva = (RuntimeVisibleAnnotations) at;
-                for (AnnotationWrapper aw : rva.getAnnotations())
-                {
-                    if (fieldDesriptor.equals(aw.getType()))
-                    {
-                        return aw;
-                    }
-                }
-            }
-        }
-        return null;
+        return qualifiedName;
     }
-    
-    public Type getThisClass()
+
+    @Override
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
     {
-        return thisClass;
+        return ModelUtil.getAnnotationMirrors(attributes);
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        return ModelUtil.getAnnotation(attributes, annotationType);
     }
 
     public int getConstantPoolSize()
@@ -245,7 +254,7 @@ public class ClassFile implements Writable
      */
     public int getFieldIndex(Type declaringClass, String name, Type type)
     {
-        return getFieldIndex(declaringClass, name, Descriptor.getFieldDesriptor(type));
+        return getFieldIndex(declaringClass, name, ODescriptor.getFieldDesriptor(type));
     }
     /**
      * Returns the constant map index to field
@@ -268,7 +277,7 @@ public class ClassFile implements Writable
     {
         Type declaringClass = method.getDeclaringClass();
         String fullyQualifiedname = Generics.getFullyQualifiedForm(declaringClass);
-        return getRefIndex(Methodref.class, fullyQualifiedname, Generics.getName(method), Descriptor.getMethodDesriptor(method));
+        return getRefIndex(Methodref.class, fullyQualifiedname, Generics.getName(method), ODescriptor.getMethodDesriptor(method));
     }
     /**
      * Returns the constant map index to reference
@@ -311,13 +320,13 @@ public class ClassFile implements Writable
      * @param name
      * @return
      */
-    public int getNameIndex(String name)
+    public int getNameIndex(CharSequence name)
     {
         for (ConstantInfo ci : listConstantInfo(Utf8.class))
         {
             Utf8 utf8 = (Utf8) ci;
             String str = utf8.getString();
-            if (name.equals(str))
+            if (str.contentEquals(name))
             {
                 return constantPoolIndexMap.get(ci);
             }
@@ -498,17 +507,12 @@ public class ClassFile implements Writable
         String[] args = new String[localVariables.size()];
         for (LocalVariable lv : localVariables)
         {
-            args[lv.getIndex()] = getString(lv.getNameIndex());
+            args[lv.getIndex()] = lv.getSimpleName();
         }
         return args;
     }
 
-    public Type getClassName()
-    {
-        return thisClass;
-    }
-
-    public Type getSuperClassName()
+    public TypeElement getSuperclass()
     {
         return superClass;
     }
@@ -593,9 +597,9 @@ public class ClassFile implements Writable
         return index;
     }
     
-    protected void addWrapper(int index, Object wrapper)
+    protected void addElement(int index, Element element)
     {
-        constantMap.put(index, wrapper);
+        elementMap.put(index, element);
     }
 
     private List<ConstantInfo> listConstantInfo(Class<? extends ConstantInfo> cls)
@@ -625,9 +629,9 @@ public class ClassFile implements Writable
      * @param index
      * @return
      */
-    public Object getElement(int index)
+    public Element getElement(int index)
     {
-        Object ae = constantMap.get(index);
+        Element ae = elementMap.get(index);
         if (ae == null)
         {
             throw new VerifyError("constant pool at "+index+" not proper type");
@@ -642,7 +646,7 @@ public class ClassFile implements Writable
     public int getFieldIndex(Member field)
     {
         Type declaringClass = field.getDeclaringClass();
-        String descriptor = Descriptor.getFieldDesriptor(field);
+        String descriptor = ODescriptor.getFieldDesriptor(field);
         int index = getFieldIndex(declaringClass, Generics.getName(field), descriptor);
         return index;
     }
@@ -701,7 +705,7 @@ public class ClassFile implements Writable
      */
     public MethodInfo getMethodInfo(Member method)
     {
-        String descriptor = Descriptor.getMethodDesriptor(method);
+        String descriptor = ODescriptor.getMethodDesriptor(method);
         int nameIndex = getNameIndex(Generics.getName(method));
         int descriptorIndex = getNameIndex(descriptor);
         for (MethodInfo mi : methods)
@@ -729,17 +733,17 @@ public class ClassFile implements Writable
         String fullyQualifiedname = Generics.getFullyQualifiedForm(declaringClass);
         String name = Generics.getName(method);
         assert name.indexOf('.') == -1;
-        String descriptor = Descriptor.getMethodDesriptor(method);
+        String descriptor = ODescriptor.getMethodDesriptor(method);
         return getRefIndex(Methodref.class, fullyQualifiedname, name, descriptor) != -1;
     }
-    public boolean referencesClass(Type type)
+    public boolean referencesClass(TypeElement type)
     {
         return getClassIndex(type) != -1;
     }
-    protected final int getClassIndex(Type type)
+    protected final int getClassIndex(TypeElement type)
     {
         int index = -1;
-        String name = Generics.getInternalForm(type);
+        String name = E.getInternalForm(type);
         for (ConstantInfo ci : listConstantInfo(Clazz.class))
         {
             Clazz cls = (Clazz) ci;
@@ -855,6 +859,66 @@ public class ClassFile implements Writable
         {
             ex.printStackTrace();
         }
+    }
+
+    @Override
+    public List<? extends Element> getEnclosedElements()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public NestingKind getNestingKind()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public Name getSimpleName()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public List<? extends TypeMirror> getInterfaces()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public List<? extends TypeParameterElement> getTypeParameters()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public Element getEnclosingElement()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public TypeMirror asType()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public ElementKind getKind()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public Set<Modifier> getModifiers()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public <R, P> R accept(ElementVisitor<R, P> v, P p)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
 }

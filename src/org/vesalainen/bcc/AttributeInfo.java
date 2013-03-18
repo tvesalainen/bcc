@@ -43,10 +43,10 @@ public class AttributeInfo implements Writable
                 return new CodeAttribute(cf, attribute_name_index, attribute_length, in);
             case "LocalVariableTable":
                 return new LocalVariableTable(cf, attribute_name_index, attribute_length, in);
-                /*
             case "LocalVariableTypeTable":
-                return new LocalVariableTypeTable(attribute_name_index, attribute_length, in);
-                */
+                return new LocalVariableTypeTable(cf, attribute_name_index, attribute_length, in);
+            case "Exceptions":
+                return new ExceptionsAttribute(cf, attribute_name_index, attribute_length, in);
             case "RuntimeVisibleAnnotations":
                 return new RuntimeVisibleAnnotations(cf, attribute_name_index, attribute_length, in);
             default:
@@ -60,10 +60,23 @@ public class AttributeInfo implements Writable
         return type.equals(name);
     }
 
+    public AttributeInfo(ClassFile classFile, String attributeName)
+    {
+        this.classFile = classFile;
+        this.attribute_name_index = classFile.getNameIndex(attributeName);
+    }
+
     public AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length)
     {
         this.classFile = classFile;
         this.attribute_name_index = attribute_name_index;
+        this.attribute_length = attribute_length;
+    }
+
+    public AttributeInfo(ClassFile classFile, String attributeName, int attribute_length)
+    {
+        this.classFile = classFile;
+        this.attribute_name_index = classFile.getNameIndex(attributeName);
         this.attribute_length = attribute_length;
     }
 
@@ -76,7 +89,7 @@ public class AttributeInfo implements Writable
         in.readFully(info);
     }
 
-    public AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
+    private AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
     {
         this.classFile = classFile;
         this.attribute_name_index = attribute_name_index;
@@ -85,6 +98,7 @@ public class AttributeInfo implements Writable
         in.readFully(info);
     }
 
+    @Override
     public void write(DataOutput out) throws IOException
     {
         out.writeShort(attribute_name_index);

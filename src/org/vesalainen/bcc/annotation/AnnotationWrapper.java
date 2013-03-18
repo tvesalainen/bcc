@@ -20,41 +20,97 @@ package org.vesalainen.bcc.annotation;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.util.ElementFilter;
 import org.vesalainen.bcc.ClassFile;
 import org.vesalainen.bcc.Writable;
+import org.vesalainen.bcc.model.E;
 
 /**
  * @author Timo Vesalainen
  */
-public class AnnotationWrapper implements Writable 
+public class AnnotationWrapper implements AnnotationMirror, Writable, InvocationHandler  
 {
     private ClassFile classFile;
     private int typeIndex;
+    private DeclaredType annotationType;
+    private Map<ExecutableElement, AnnotationValue> elementValues = new HashMap<>();
+    private Map<? extends ExecutableElement, ? extends AnnotationValue> elementValuesWithDefaults;
     private List<ElementValuePair> elementValuePairs = new ArrayList<>();
+    private final TypeElement typeElement;
 
     public AnnotationWrapper(ClassFile classFile, DataInput in) throws IOException
     {
         this.classFile = classFile;
         typeIndex = in.readUnsignedShort();
+        typeElement = E.fromDescriptor(getDescriptor());
+        annotationType = (DeclaredType) typeElement.asType();
         int numElementValuePairs = in.readUnsignedShort();
         for (int ii = 0; ii < numElementValuePairs; ii++)
         {
-            elementValuePairs.add(new ElementValuePair(classFile, in));
+            ElementValuePair elementValuePair = new ElementValuePair(classFile, in);
+            ExecutableElement executableElement = getExecutableElement(elementValuePair.getName());
+            elementValues.put(executableElement, elementValuePair.getValue());
+            elementValuePairs.add(elementValuePair);
         }
     }
 
-    public String getType()
+    private ExecutableElement getExecutableElement(String name)
+    {
+        for (ExecutableElement ee : ElementFilter.methodsIn(typeElement.getEnclosedElements()))
+        {
+            if (ee.getSimpleName().contentEquals(name))
+            {
+                return ee;
+            }
+        }
+        throw new IllegalArgumentException(name+" not found from "+typeElement);
+    }
+    @Override
+    public DeclaredType getAnnotationType()
+    {
+        return annotationType;
+    }
+
+    @Override
+    public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValues()
+    {
+        return elementValues;
+    }
+
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        if (elementValuesWithDefaults == null)
+        {
+            elementValuesWithDefaults = E.getElementValuesWithDefaults(this);
+        }
+        return (A) Proxy.newProxyInstance(
+                annotationType.getClassLoader(), 
+                new Class<?>[] { annotationType}, 
+                this
+                );
+    }
+    String getDescriptor()
     {
         return classFile.getString(typeIndex);
     }
-    
-    public List<ElementValuePair> getElementValuePairs()
-    {
-        return elementValuePairs;
-    }
-
+    /**
+     * @deprecated 
+     * @param name
+     * @return 
+     */
     public ElementValue getElement(String name)
     {
         for (ElementValuePair evp : elementValuePairs)
@@ -92,7 +148,7 @@ public class AnnotationWrapper implements Writable
     {
         StringBuilder sb = new StringBuilder();
         sb.append("@");
-        sb.append(getType());
+        sb.append(getDescriptor());
         sb.append("(");
         for (ElementValuePair ev : elementValuePairs)
         {
@@ -100,6 +156,17 @@ public class AnnotationWrapper implements Writable
         }
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
+    {
+        ExecutableElement executableElement = getExecutableElement(method.getName());
+        if (executableElement == null)
+        {
+            throw new IllegalArgumentException(method+" not found");
+        }
+        return elementValuesWithDefaults.get(executableElement);
     }
 
     

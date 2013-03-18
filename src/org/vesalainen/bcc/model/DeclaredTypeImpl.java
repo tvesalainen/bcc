@@ -55,7 +55,7 @@ public class DeclaredTypeImpl implements DeclaredType
         this.typeArguments = new ArrayList<>();
         for (Class<?> a : typeArguments)
         {
-            this.typeArguments.add(E.getTypeElement(a.getCanonicalName()).asType());
+            this.typeArguments.add(T.getTypeFor(a));
         }
     }
 

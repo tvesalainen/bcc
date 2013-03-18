@@ -16,12 +16,33 @@
  */
 package org.vesalainen.bcc;
 
-import java.lang.reflect.Type;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVisitor;
 
 /**
- *
+ * 
  * @author tkv
  */
-public abstract class ReturnAddress implements Type
+public class ReturnAddress implements TypeMirror
 {
+
+    @Override
+    public TypeKind getKind()
+    {
+        return TypeKind.OTHER;
+    }
+
+    @Override
+    public <R, P> R accept(TypeVisitor<R, P> v, P p)
+    {
+        return v.visit(this, p);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ReturnAddress";
+    }
+    
 }

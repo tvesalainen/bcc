@@ -26,9 +26,10 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
 /**
+ * @deprecated 
  * @author Timo Vesalainen
  */
-public class Signature extends Descriptor
+public class OSignature extends ODescriptor
 {
     /**
      * Return true if type needs a signature

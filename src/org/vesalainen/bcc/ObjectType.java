@@ -21,7 +21,7 @@ import org.vesalainen.bcc.type.ClassWrapper;
 import org.vesalainen.bcc.type.Generics;
 
 /**
- *
+ * @deprecated 
  * @author tkv
  */
 public enum ObjectType

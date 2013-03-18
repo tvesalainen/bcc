@@ -17,9 +17,12 @@
 
 package org.vesalainen.bcc.model;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
@@ -29,8 +32,10 @@ import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
-import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.LocalVariableTypeTable;
+import org.vesalainen.bcc.ReturnAddress;
 
 /**
  * @author Timo Vesalainen
@@ -50,6 +55,7 @@ public class T
     public static PrimitiveType Long;
     public static PrimitiveType Float;
     public static PrimitiveType Double;
+    public static final TypeMirror ReturnAddress = new ReturnAddress();
     
     private static Types types;
 
@@ -75,6 +81,131 @@ public class T
         Double = types.getPrimitiveType(TypeKind.DOUBLE);
     }
 
+    public static boolean isPrimitive(TypeMirror type)
+    {
+        switch (type.getKind())
+        {
+            case BOOLEAN:
+            case BYTE:
+            case CHAR:
+            case DOUBLE:
+            case FLOAT:
+            case INT:
+            case LONG:
+            case SHORT:
+                return true;
+            default:
+                return false;
+        }
+    }
+    public static TypeMirror getTypeFor(Class<?> cls)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+    public static int getMaxIndexOf(List<? extends VariableElement> params)
+    {
+        int index = 0;
+        for (VariableElement lv : params)
+        {
+            if (T.isCategory2(lv.asType()))
+            {
+                index += 2;
+            }
+            else
+            {
+                index++;
+            }
+        }
+        return index;
+    }
+    public static int getIndexOf(List<? extends VariableElement> params, int ind)
+    {
+        int index = 0;
+        for (int ii=0;ii<ind;ii++)
+        {
+            VariableElement lv = params.get(ii);
+            if (T.isCategory2(lv.asType()))
+            {
+                index += 2;
+            }
+            else
+            {
+                index++;
+            }
+        }
+        return index;
+    }
+    public static boolean isCategory2(TypeMirror type)
+    {
+        TypeKind kind = type.getKind();
+        return kind == TypeKind.LONG || kind == TypeKind.DOUBLE;
+    }
+    public static TypeMirror typeFromDescriptor(String descriptor)
+    {
+        StringIterator si = new StringIterator(descriptor);
+        return parseNext(si);
+    }
+    public static List<? extends TypeMirror> typesFromDescriptor(String descriptor)
+    {
+        List<TypeMirror> list = new ArrayList<>();
+        StringIterator si = new StringIterator(descriptor);
+        TypeMirror t = parseNext(si);
+        while ( t != null && si.hasNext())
+        {
+            list.add(t);
+            t = parseNext(si);
+        }
+        return list;
+    }
+    private static TypeMirror parseNext(StringIterator si)
+    {
+        char cc = si.next();
+        switch (cc)
+        {
+            case 'Z':
+                return T.Boolean;
+            case 'B':
+                return T.Byte;
+            case 'C':
+                return T.Char;
+            case 'S':
+                return T.Short;
+            case 'I':
+                return T.Int;
+            case 'J':
+                return T.Long;
+            case 'F':
+                return T.Float;
+            case 'D':
+                return T.Double;
+            case 'L':
+                return E.fromDescriptor("L" + parseObject(si) + ";").asType();
+            case '[':
+                return T.getArrayType(parseNext(si));
+            case '(':
+                return parseNext(si);
+            case ')':
+                return null;
+            default:
+                throw new IllegalArgumentException("illegal descriptor format ");
+        }
+    }
+
+    private static String parseObject(StringIterator si)
+    {
+        StringBuilder sb = new StringBuilder();
+        while (si.hasNext())
+        {
+            char cc = si.next();
+            if (cc == ';')
+            {
+                return sb.toString();
+            }
+            sb.append(cc);
+        }
+        throw new IllegalArgumentException("illegal descriptor format ");
+    }
+    
     public static Element asElement(TypeMirror t)
     {
         return types.asElement(t);
@@ -169,5 +300,41 @@ public class T
     {
         return types.asMemberOf(containing, element);
     }
+
+    public static TypeMirror typeFromSignature(String string)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    public static boolean isInteger(TypeMirror param)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
     
+    private static class StringIterator implements Iterator<Character>
+    {
+
+        private String text;
+        private int pos;
+
+        public StringIterator(String text)
+        {
+            this.text = text;
+        }
+
+        public boolean hasNext()
+        {
+            return pos < text.length();
+        }
+
+        public Character next()
+        {
+            return text.charAt(pos++);
+        }
+
+        public void remove()
+        {
+            throw new UnsupportedOperationException("Not supported yet.");
+        }
+    }
 }

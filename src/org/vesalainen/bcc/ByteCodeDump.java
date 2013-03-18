@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import org.vesalainen.bcc.model.E;
 
 /**
  *
@@ -69,22 +70,7 @@ public class ByteCodeDump extends OpCodeUtil
         int us;
         int ub;
 
-        out.print(Modifier.toString(mc.getModifier()));
-        out.print(" ");
-        Type rt = mc.getReturnType();
-        if (rt != null)
-        {
-            out.print(rt);
-        }
-        out.print(" ");
-        out.println(mc.getMethodName());
-        out.println("(");
-        for (Type p : mc.getParameters())
-        {
-            out.print("  ");
-            out.println(p);
-        }
-        out.println(")");
+        out.println(mc.getMethodDescription());
         while (in.available() > 0)
         {
             pc = in.pc();

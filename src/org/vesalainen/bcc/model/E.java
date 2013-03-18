@@ -28,6 +28,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
+import org.vesalainen.annotation.dump.Descriptor;
 
 /**
  * @author Timo Vesalainen
@@ -36,6 +37,10 @@ public class E
 {
     private static Elements elements = new ElementsImpl();
 
+    public static TypeElement fromDescriptor(String fieldDescriptor)
+    {
+        return getTypeElement(Descriptor.getFullyQualifiedForm(fieldDescriptor));
+    }
     public static void setElements(Elements elements)
     {
         E.elements = elements;
@@ -109,6 +114,11 @@ public class E
     public static Name getName(CharSequence cs)
     {
         return elements.getName(cs);
+    }
+
+    public static String getInternalForm(TypeElement type)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
     
 }

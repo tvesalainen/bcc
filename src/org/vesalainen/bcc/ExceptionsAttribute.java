@@ -20,26 +20,62 @@ package org.vesalainen.bcc;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import javax.lang.model.element.TypeElement;
+import org.vesalainen.bcc.model.E;
 
 /**
  * @author Timo Vesalainen
  */
 public class ExceptionsAttribute extends AttributeInfo
 {
-    private int[] exceptionIndexes;
-    
-    public ExceptionsAttribute(ClassFile classFile, int attribute_name_index, int... exceptionIndexes)
+    private List<Integer> exceptionIndexes = new ArrayList<>();
+    /**
+     * @param classFile
+     * @param attribute_name_index
+     * @param exceptionIndexes 
+     */
+    ExceptionsAttribute(ClassFile classFile)
     {
-        super(classFile, attribute_name_index, 0);
-        this.exceptionIndexes = exceptionIndexes;
+        super(classFile, "Exceptions");
     }
 
+    /**
+     * @deprecated Use addThrowable
+     * @param classFile
+     * @param attribute_name_index
+     * @param exceptionIndexes 
+     */
+    ExceptionsAttribute(ClassFile classFile, int attribute_name_index, int... exceptionIndexes)
+    {
+        super(classFile, "Exceptions");
+        for (int ei : exceptionIndexes)
+        {
+            this.exceptionIndexes.add(ei);
+        }
+    }
+
+    ExceptionsAttribute(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
+    {
+        super(classFile, attribute_name_index, attribute_length);
+        int number_of_exceptions = in.readUnsignedShort();
+        for (int ii=0;ii<number_of_exceptions;ii++)
+        {
+            exceptionIndexes.add(in.readUnsignedShort());
+        }
+    }
+
+    public void addThrowable(TypeElement thr)
+    {
+        exceptionIndexes.add(classFile.getClassIndex(thr));
+    }
     @Override
     public void write(DataOutput out) throws IOException
     {
         out.writeShort(attribute_name_index);
-        out.writeInt(2+2*exceptionIndexes.length);
-        out.writeShort(exceptionIndexes.length);
+        out.writeInt(2+2*exceptionIndexes.size());
+        out.writeShort(exceptionIndexes.size());
         for (int ei : exceptionIndexes)
         {
             out.writeShort(ei);

@@ -22,6 +22,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.AnnotationValueVisitor;
 import org.vesalainen.bcc.ClassFile;
 
 /**
@@ -41,7 +42,8 @@ public class ArrayValue extends ElementValue
         }
     }
 
-    public List<ElementValue> getValues()
+    @Override
+    public Object getValue()
     {
         return values;
     }
@@ -78,5 +80,11 @@ public class ArrayValue extends ElementValue
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    @Override
+    public <R, P> R accept(AnnotationValueVisitor<R, P> v, P p)
+    {
+        return v.visit(this, p);
     }
 }

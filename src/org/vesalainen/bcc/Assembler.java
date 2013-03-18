@@ -18,14 +18,14 @@ package org.vesalainen.bcc;
 
 import org.vesalainen.bcc.Label.Branch;
 import java.io.IOException;
-import java.lang.reflect.Member;
-import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.type.Generics;
 
 /**
@@ -51,7 +51,7 @@ public class Assembler implements OpCode
     protected Deque<TypeASM> asmStack = new ArrayDeque<>();
     private int nextBranch;
     protected TypeASM asm;
-    protected Map<ObjectType,TypeASM> types;
+    protected Map<TypeKind,TypeASM> types;
     private BooleanASM z;
     private ByteASM b;
     private CharASM c;
@@ -69,7 +69,7 @@ public class Assembler implements OpCode
     public Assembler()
     {
         out = new CodeDataOutput(this);
-        types = new EnumMap<>(ObjectType.class);
+        types = new EnumMap<>(TypeKind.class);
         z = new BooleanASM(out, labels);
         b = new ByteASM(out, labels);
         c = new CharASM(out, labels);
@@ -80,16 +80,17 @@ public class Assembler implements OpCode
         d = new DoubleASM(out, labels);
         a = new ReferenceASM(out, labels);
         v = new VoidASM(out, labels);
-        types.put(ObjectType.BOOLEAN, z);
-        types.put(ObjectType.BYTE, b);
-        types.put(ObjectType.CHAR, c);
-        types.put(ObjectType.SHORT, s);
-        types.put(ObjectType.INT, i);
-        types.put(ObjectType.LONG, l);
-        types.put(ObjectType.FLOAT, f);
-        types.put(ObjectType.DOUBLE, d);
-        types.put(ObjectType.REF, a);
-        types.put(ObjectType.VOID, v);
+        types.put(TypeKind.BOOLEAN, z);
+        types.put(TypeKind.BYTE, b);
+        types.put(TypeKind.CHAR, c);
+        types.put(TypeKind.SHORT, s);
+        types.put(TypeKind.INT, i);
+        types.put(TypeKind.LONG, l);
+        types.put(TypeKind.FLOAT, f);
+        types.put(TypeKind.DOUBLE, d);
+        types.put(TypeKind.ARRAY, a);
+        types.put(TypeKind.DECLARED, a);
+        types.put(TypeKind.VOID, v);
     }
 
     protected Assembler(CodeDataOutput out, Map<String, Label> labels)
@@ -191,31 +192,16 @@ public class Assembler implements OpCode
     {
         return out.position();
     }
-    public TypeASM type(Type cls)
-    {
-        return type(ObjectType.valueOf(cls));
-    }
-    public TypeASM type(Member field)
-    {
-        return type(ObjectType.valueOf(Generics.getType(field)));
-    }
-    private TypeASM type(ObjectType ot)
-    {
-        return types.get(ot);
-    }
-    /**
-     * @param cls
-     */
-    private void pushType(Type cls)
-    {
-        pushType(ObjectType.valueOf(cls));
-    }
     /**
      * @param type
      */
-    private void pushType(ObjectType type)
+    private void pushType(TypeMirror type)
     {
-        asm = types.get(type);
+        asm = types.get(type.getKind());
+        if (asm == null)
+        {
+            throw new IllegalArgumentException(type+" wrong type");
+        }
         asmStack.push(asm);
     }
     /**
@@ -233,7 +219,7 @@ public class Assembler implements OpCode
         asm.txor();
     }
 
-    public void txor(Type type) throws IOException
+    public void txor(TypeMirror type) throws IOException
     {
         pushType(type);
         txor();
@@ -247,7 +233,7 @@ public class Assembler implements OpCode
         asm.tushr();
     }
 
-    public void tushr(Type type) throws IOException
+    public void tushr(TypeMirror type) throws IOException
     {
         pushType(type);
         tushr();
@@ -261,7 +247,7 @@ public class Assembler implements OpCode
         asm.tsub();
     }
 
-    public void tsub(Type type) throws IOException
+    public void tsub(TypeMirror type) throws IOException
     {
         pushType(type);
         tsub();
@@ -275,7 +261,7 @@ public class Assembler implements OpCode
         asm.tstore(index);
     }
 
-    public void tstore(Type type, int index) throws IOException
+    public void tstore(TypeMirror type, int index) throws IOException
     {
         pushType(type);
         tstore(index);
@@ -289,7 +275,7 @@ public class Assembler implements OpCode
         asm.tshr();
     }
 
-    public void tshr(Type type) throws IOException
+    public void tshr(TypeMirror type) throws IOException
     {
         pushType(type);
         tshr();
@@ -303,7 +289,7 @@ public class Assembler implements OpCode
         asm.tshl();
     }
 
-    public void tshl(Type type) throws IOException
+    public void tshl(TypeMirror type) throws IOException
     {
         pushType(type);
         tshl();
@@ -317,7 +303,7 @@ public class Assembler implements OpCode
         asm.treturn();
     }
 
-    public void treturn(Type type) throws IOException
+    public void treturn(TypeMirror type) throws IOException
     {
         pushType(type);
         treturn();
@@ -331,7 +317,7 @@ public class Assembler implements OpCode
         asm.trem();
     }
 
-    public void trem(Type type) throws IOException
+    public void trem(TypeMirror type) throws IOException
     {
         pushType(type);
         trem();
@@ -345,7 +331,7 @@ public class Assembler implements OpCode
         asm.tor();
     }
 
-    public void tor(Type type) throws IOException
+    public void tor(TypeMirror type) throws IOException
     {
         pushType(type);
         tor();
@@ -359,7 +345,7 @@ public class Assembler implements OpCode
         asm.tneg();
     }
 
-    public void tneg(Type type) throws IOException
+    public void tneg(TypeMirror type) throws IOException
     {
         pushType(type);
         tneg();
@@ -373,7 +359,7 @@ public class Assembler implements OpCode
         asm.tmul();
     }
 
-    public void tmul(Type type) throws IOException
+    public void tmul(TypeMirror type) throws IOException
     {
         pushType(type);
         tmul();
@@ -387,7 +373,7 @@ public class Assembler implements OpCode
         asm.tload(index);
     }
 
-    public void tload(Type type, int index) throws IOException
+    public void tload(TypeMirror type, int index) throws IOException
     {
         pushType(type);
         tload(index);
@@ -401,7 +387,7 @@ public class Assembler implements OpCode
         asm.tipush(b);
     }
 
-    public void tipush(Type type, int b) throws IOException
+    public void tipush(TypeMirror type, int b) throws IOException
     {
         pushType(type);
         tipush(b);
@@ -415,7 +401,7 @@ public class Assembler implements OpCode
         asm.tinc(index, con);
     }
 
-    public void tinc(Type type, int index, int con) throws IOException
+    public void tinc(TypeMirror type, int index, int con) throws IOException
     {
         pushType(type);
         tinc(index, con);
@@ -429,7 +415,7 @@ public class Assembler implements OpCode
         asm.tdiv();
     }
 
-    public void tdiv(Type type) throws IOException
+    public void tdiv(TypeMirror type) throws IOException
     {
         pushType(type);
         tdiv();
@@ -450,7 +436,7 @@ public class Assembler implements OpCode
         asm.tconst(i);
     }
 
-    public void tconst(Type type, int i) throws IOException
+    public void tconst(TypeMirror type, int i) throws IOException
     {
         pushType(type);
         tconst(i);
@@ -462,7 +448,7 @@ public class Assembler implements OpCode
         asm.tcmpl();
     }
 
-    public void tcmpl(Type type) throws IOException
+    public void tcmpl(TypeMirror type) throws IOException
     {
         pushType(type);
         tcmpl();
@@ -476,7 +462,7 @@ public class Assembler implements OpCode
         asm.tcmpg();
     }
 
-    public void tcmpg(Type type) throws IOException
+    public void tcmpg(TypeMirror type) throws IOException
     {
         pushType(type);
         tcmpg();
@@ -490,7 +476,7 @@ public class Assembler implements OpCode
         asm.tcmp();
     }
 
-    public void tcmp(Type type) throws IOException
+    public void tcmp(TypeMirror type) throws IOException
     {
         pushType(type);
         tcmp();
@@ -506,7 +492,7 @@ public class Assembler implements OpCode
         asm.tastore();
     }
 
-    public void tastore(Type type) throws IOException
+    public void tastore(TypeMirror type) throws IOException
     {
         pushType(type);
         tastore();
@@ -521,7 +507,7 @@ public class Assembler implements OpCode
         asm.tand();
     }
 
-    public void tand(Type type) throws IOException
+    public void tand(TypeMirror type) throws IOException
     {
         pushType(type);
         tand();
@@ -542,7 +528,7 @@ public class Assembler implements OpCode
      * @param type
      * @throws IOException
      */
-    public void taload(Type type) throws IOException
+    public void taload(TypeMirror type) throws IOException
     {
         pushType(type);
         taload();
@@ -557,7 +543,7 @@ public class Assembler implements OpCode
         asm.tadd();
     }
 
-    public void tadd(Type type) throws IOException
+    public void tadd(TypeMirror type) throws IOException
     {
         pushType(type);
         tadd();
@@ -582,7 +568,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmpne(Type type, String target) throws IOException
+    public void if_tcmpne(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmpne(target);
@@ -603,7 +589,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmplt(Type type, String target) throws IOException
+    public void if_tcmplt(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmplt(target);
@@ -624,7 +610,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmple(Type type, String target) throws IOException
+    public void if_tcmple(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmple(target);
@@ -645,7 +631,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmpgt(Type type, String target) throws IOException
+    public void if_tcmpgt(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmpgt(target);
@@ -666,7 +652,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmpge(Type type, String target) throws IOException
+    public void if_tcmpge(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmpge(target);
@@ -686,7 +672,7 @@ public class Assembler implements OpCode
      * @param target
      * @throws IOException 
      */
-    public void if_tcmpeq(Type type, String target) throws IOException
+    public void if_tcmpeq(TypeMirror type, String target) throws IOException
     {
         pushType(type);
         if_tcmpeq(target);
@@ -2207,29 +2193,7 @@ public class Assembler implements OpCode
     {
         s.i2t();
     }
-    /**
-     * Return true if type is byte, char, short, int or float
-     * @param type
-     * @return
-     */
-    public boolean category1(Type type)
-    {
-        if (Generics.isPrimitive(type))
-        {
-            return !category2(type);
-        }
-        return false;
-    }
 
-    /**
-     * Return true if type is long or double
-     * @param type
-     * @return
-     */
-    public boolean category2(Type type)
-    {
-        return long.class.equals(type) || double.class.equals(type);
-    }
     /**
      * Return a unique branch name
      * @return 
@@ -2250,144 +2214,78 @@ public class Assembler implements OpCode
         block.setEnd(position());
     }
     
-    public void convert(Type from, Type to) throws IOException
+    public void convert(TypeMirror from, TypeMirror to) throws IOException
     {
-        if (int.class.equals(from))
+        switch (from.getKind())
         {
-            if (int.class.equals(to))
-            {
-            }
-            else
-            {
-                if (long.class.equals(to))
+            case INT:
+                switch (to.getKind())
                 {
-                    i2l();
-                }
-                else
-                {
-                    if (float.class.equals(to))
-                    {
+                    case INT:
+                        break;
+                    case LONG:
+                        i2l();
+                        break;
+                    case FLOAT:
                         i2f();
-                    }
-                    else
-                    {
-                        if (double.class.equals(to))
-                        {
-                            i2d();
-                        }
-                        else
-                        {
-                            throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (long.class.equals(from))
-            {
-                if (int.class.equals(to))
-                {
-                    l2i();
-                }
-                else
-                {
-                    if (long.class.equals(to))
-                    {
-                    }
-                    else
-                    {
-                        if (float.class.equals(to))
-                        {
-                            l2f();
-                        }
-                        else
-                        {
-                            if (double.class.equals(to))
-                            {
-                                l2d();
-                            }
-                            else
-                            {
-                                throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (float.class.equals(from))
-                {
-                    if (int.class.equals(to))
-                    {
-                        f2i();
-                    }
-                    else
-                    {
-                        if (long.class.equals(to))
-                        {
-                            f2l();
-                        }
-                        else
-                        {
-                            if (float.class.equals(to))
-                            {
-                            }
-                            else
-                            {
-                                if (double.class.equals(to))
-                                {
-                                    f2d();
-                                }
-                                else
-                                {
-                                    throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
-                                }
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (double.class.equals(from))
-                    {
-                        if (int.class.equals(to))
-                        {
-                            d2i();
-                        }
-                        else
-                        {
-                            if (long.class.equals(to))
-                            {
-                                d2l();
-                            }
-                            else
-                            {
-                                if (float.class.equals(to))
-                                {
-                                    d2f();
-                                }
-                                else
-                                {
-                                    if (double.class.equals(to))
-                                    {
-                                    }
-                                    else
-                                    {
-                                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
+                        break;
+                    case DOUBLE:
+                        i2d();
+                        break;
+                    default:
                         throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
-                    }
                 }
-            }
+            case LONG:
+                switch (to.getKind())
+                {
+                    case INT:
+                        l2i();
+                        break;
+                    case LONG:
+                        break;
+                    case FLOAT:
+                        l2f();
+                        break;
+                    case DOUBLE:
+                        l2d();
+                        break;
+                    default:
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                }
+            case FLOAT:
+                switch (to.getKind())
+                {
+                    case INT:
+                        f2i();
+                        break;
+                    case LONG:
+                        f2l();
+                        break;
+                    case FLOAT:
+                        break;
+                    case DOUBLE:
+                        f2d();
+                        break;
+                    default:
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                }
+            case DOUBLE:
+                switch (to.getKind())
+                {
+                    case INT:
+                        d2i();
+                        break;
+                    case LONG:
+                        d2l();
+                        break;
+                    case FLOAT:
+                        d2f();
+                        break;
+                    case DOUBLE:
+                        break;
+                    default:
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                }
         }
     }
 }

@@ -31,16 +31,18 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.annotation.ModelUtil;
 
 /**
  * @author Timo Vesalainen
  */
-public abstract class ElementImpl<T extends TypeMirror> implements Element
+public abstract class ElementImpl<T extends TypeMirror> implements Element, UpdateableElement
 {
     protected T type;
+    protected Element enclosingElement;
     protected ElementKind kind;
     protected Name simpleName;
-    protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);;
+    protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
     protected Annotation[] annotations;
     protected List<AnnotationMirror> annotationMirrors = new ArrayList<>();
 
@@ -49,69 +51,47 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element
         this.kind = kind;
         this.simpleName = E.getName(name);
         annotations = new Annotation[] {};
-        annotationMirrors = new ArrayList<>();
     }
     ElementImpl(ElementKind kind, Annotation[] annotations, String name)
     {
         this.kind = kind;
         this.simpleName = E.getName(name);
         this.annotations = annotations;
-        annotationMirrors = new ArrayList<>();
     }
     ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
     {
         this.kind = kind;
         this.simpleName = E.getName(name);
         annotations = element.getAnnotations();
-        annotationMirrors = new ArrayList<>();
         for (Annotation annotation : element.getDeclaredAnnotations())
         {
             annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
         }
-        if (java.lang.reflect.Modifier.isAbstract(modifier))
-        {
-            modifiers.add(Modifier.ABSTRACT);
-        }
-        if (java.lang.reflect.Modifier.isFinal(modifier))
-        {
-            modifiers.add(Modifier.FINAL);
-        }
-        if (java.lang.reflect.Modifier.isNative(modifier))
-        {
-            modifiers.add(Modifier.NATIVE);
-        }
-        if (java.lang.reflect.Modifier.isPrivate(modifier))
-        {
-            modifiers.add(Modifier.PRIVATE);
-        }
-        if (java.lang.reflect.Modifier.isProtected(modifier))
-        {
-            modifiers.add(Modifier.PROTECTED);
-        }
-        if (java.lang.reflect.Modifier.isPublic(modifier))
-        {
-            modifiers.add(Modifier.PUBLIC);
-        }
-        if (java.lang.reflect.Modifier.isStatic(modifier))
-        {
-            modifiers.add(Modifier.STATIC);
-        }
-        if (java.lang.reflect.Modifier.isStrict(modifier))
-        {
-            modifiers.add(Modifier.STRICTFP);
-        }
-        if (java.lang.reflect.Modifier.isSynchronized(modifier))
-        {
-            modifiers.add(Modifier.SYNCHRONIZED);
-        }
-        if (java.lang.reflect.Modifier.isTransient(modifier))
-        {
-            modifiers.add(Modifier.TRANSIENT);
-        }
-        if (java.lang.reflect.Modifier.isVolatile(modifier))
-        {
-            modifiers.add(Modifier.VOLATILE);
-        }
+        ModelUtil.setModifiers(modifiers, modifier);
+    }
+
+    @Override
+    public Element getEnclosingElement()
+    {
+        return enclosingElement;
+    }
+
+    @Override
+    public void setEnclosingElement(Element enclosingElement)
+    {
+        this.enclosingElement = enclosingElement;
+    }
+
+    @Override
+    public void setModifiers(Modifier... modifier)
+    {
+        modifiers.clear();
+        modifiers.addAll(Arrays.asList(modifier));
+    }
+
+    public void setSimpleName(Name simpleName)
+    {
+        this.simpleName = simpleName;
     }
 
     @Override

@@ -40,7 +40,6 @@ import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
  */
 public class VariableElementImpl extends ElementImpl<TypeMirror> implements VariableElement
 {
-    private Element enclosingElement;
     private Object constantValue;
 
     public static class VariableBuilder
@@ -144,12 +143,6 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
     {
         super(ElementKind.PARAMETER, annotation, "");
         type = TypeMirrorFactory.get(param);
-    }
-
-    @Override
-    public Element getEnclosingElement()
-    {
-        return enclosingElement;
     }
 
     @Override

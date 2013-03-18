@@ -25,5 +25,5 @@ import java.io.IOException;
  */
 public interface Writable
 {
-    public void write(DataOutput out) throws IOException;
+    void write(DataOutput out) throws IOException;
 }

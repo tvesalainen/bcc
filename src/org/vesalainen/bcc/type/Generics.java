@@ -35,6 +35,7 @@ import org.vesalainen.bcc.SubClass;
 
 /**
  * @author Timo Vesalainen
+ * @deprecated 
  */
 public class Generics
 {
@@ -84,7 +85,11 @@ public class Generics
         }
         return false;
     }
-
+    /**
+     * Internal form is like Ljava/lang.String or Z or [J
+     * @param type
+     * @return 
+     */
     public static String getInternalForm(Type type)
     {
         if (type instanceof Class<?>)
@@ -105,7 +110,11 @@ public class Generics
             }
         }
     }
-
+    /**
+     * Internal form is like Ljava/lang.String or Z or [J
+     * @param clazz
+     * @return 
+     */
     public static String getInternalForm(Class<?> clazz)
     {
         if (clazz.isArray())

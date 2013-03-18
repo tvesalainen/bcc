@@ -20,6 +20,7 @@ package org.vesalainen.bcc.annotation;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import javax.lang.model.element.AnnotationValueVisitor;
 import org.vesalainen.bcc.ClassFile;
 import org.vesalainen.bcc.ConstantInfo;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
@@ -72,6 +73,7 @@ public class ConstValueIndex extends ElementValue
                 throw new IllegalArgumentException("unknown element value tag " + tag);
         }
     }
+    @Override
     public Object getValue()
     {
         ConstantInfo constantInfo = getConstantInfo();
@@ -119,5 +121,11 @@ public class ConstValueIndex extends ElementValue
     public String toString()
     {
         return getValue().toString();
+    }
+
+    @Override
+    public <R, P> R accept(AnnotationValueVisitor<R, P> v, P p)
+    {
+        return v.visit(this, p);
     }
 }

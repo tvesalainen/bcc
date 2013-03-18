@@ -16,7 +16,7 @@
  */
 package org.vesalainen.bcc;
 
-import org.vesalainen.bcc.type.Descriptor;
+import org.vesalainen.bcc.type.ODescriptor;
 import org.vesalainen.bcc.type.ClassWrapper;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -24,15 +24,22 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import javax.annotation.processing.Filer;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
 import org.vesalainen.bcc.ConstantInfo.ConstantFloat;
@@ -44,9 +51,13 @@ import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.ConstantInfo.Methodref;
 import org.vesalainen.bcc.ConstantInfo.NameAndType;
 import org.vesalainen.bcc.ConstantInfo.Utf8;
+import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.ElementFactory;
+import org.vesalainen.bcc.model.ExecutableElementImpl;
+import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
 import org.vesalainen.bcc.type.Generics;
 import org.vesalainen.bcc.type.MethodWrapper;
-import org.vesalainen.bcc.type.Signature;
+import org.vesalainen.bcc.type.OSignature;
 
 /**
  *
@@ -79,10 +90,10 @@ public class SubClass extends ClassFile
         this_class = resolveClassIndex(thisClass);
         super_class = resolveClassIndex(superClass);
 
-        if (Signature.needsSignature(thisClass))
+        if (OSignature.needsSignature(thisClass))
         {
             int nameIndex = resolveNameIndex("Signature");
-            String signature = Signature.getClassSignature(thisClass);
+            String signature = OSignature.getClassSignature(thisClass);
             int signatureIndex = resolveNameIndex(signature);
             SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
             addAttribute(sa);
@@ -165,9 +176,9 @@ public class SubClass extends ClassFile
      * @param constructor
      * @return
      */
-    public int resolveConstructorIndex(Member constructor)
+    public int resolveConstructorIndex(Constructor constructor)
     {
-        return resolveMethodIndex(constructor);
+        return resolveMethodIndex(ElementFactory.get(constructor));
     }
     
     /**
@@ -179,9 +190,9 @@ public class SubClass extends ClassFile
     public int resolveFieldIndex(Member field)
     {
         Type declaringClass = field.getDeclaringClass();
-        String descriptor = Descriptor.getFieldDesriptor(field);
+        String descriptor = ODescriptor.getFieldDesriptor(field);
         int index = resolveFieldIndex(declaringClass, Generics.getName(field), descriptor);
-        addWrapper(index, field);
+        addElement(index, field);
         return index;
     }
     /**
@@ -194,7 +205,7 @@ public class SubClass extends ClassFile
      */
     public int resolveFieldIndex(Type declaringClass, String name, Type type)
     {
-        return resolveFieldIndex(declaringClass, name, Descriptor.getFieldDesriptor(type));
+        return resolveFieldIndex(declaringClass, name, ODescriptor.getFieldDesriptor(type));
     }
     /**
      * Returns the constant map index to field
@@ -235,24 +246,32 @@ public class SubClass extends ClassFile
     /**
      * Returns the constant map index to method
      * If entry doesn't exist it is created.
-     * @param clazz
-     * @param methodName
-     * @param descriptor
-     * @param interf
+     * @param method
      * @return
      */
-    public int resolveMethodIndex(Member method)
+    public int resolveMethodIndex(Method method)
+    {
+        return resolveMethodIndex(ElementFactory.get(method));
+    }
+    /**
+     * Returns the constant map index to method
+     * If entry doesn't exist it is created.
+     * @param method
+     * @return
+     */
+    public int resolveMethodIndex(ExecutableElement method)
     {
         int size = 0;
         int index = 0;
         constantReadLock.lock();
-        Type declaringClass = Generics.getDeclaringClass(method);
-        String declaringClassname = Generics.getFullyQualifiedForm(declaringClass);
-        String descriptor = Descriptor.getMethodDesriptor(method);
+        TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        String declaringClassname = declaringClass.getQualifiedName().toString();
+        String descriptor = Descriptor.getDesriptor(method);
+        String name = method.getSimpleName().toString();
         try
         {
             size = getConstantPoolSize();
-            index = getRefIndex(Methodref.class, declaringClassname, Generics.getName(method), descriptor);
+            index = getRefIndex(Methodref.class, declaringClassname, name, descriptor);
         }
         finally
         {
@@ -262,8 +281,8 @@ public class SubClass extends ClassFile
         {
             // add entry to constant pool
             int ci = resolveClassIndex(declaringClass);
-            int nati = resolveNameAndTypeIndex(Generics.getName(method), descriptor);
-            if (Generics.isInterfaceMethod(method))
+            int nati = resolveNameAndTypeIndex(name, descriptor);
+            if (ElementKind.INTERFACE == method.getKind())
             {
                 index = addConstantInfo(new InterfaceMethodref(ci, nati), size);
             }
@@ -272,7 +291,7 @@ public class SubClass extends ClassFile
                 index = addConstantInfo(new Methodref(ci, nati), size);
             }
         }
-        addWrapper(index, method);
+        addElement(index, method);
         return index;
     }
     /**
@@ -339,10 +358,20 @@ public class SubClass extends ClassFile
     /**
      * Returns the constant map index to class
      * If entry doesn't exist it is created.
-     * @param cls
+     * @param type
      * @return
      */
-    public final int resolveClassIndex(Type type)
+    public final int resolveClassIndex(Class<?> type)
+    {
+        return resolveClassIndex(E.getTypeElement(type.getCanonicalName()));
+    }
+    /**
+     * Returns the constant map index to class
+     * If entry doesn't exist it is created.
+     * @param type
+     * @return
+     */
+    public final int resolveClassIndex(TypeElement type)
     {
         int size = 0;
         int index = 0;
@@ -358,11 +387,11 @@ public class SubClass extends ClassFile
         }
         if (index == -1)
         {
-            String name = Generics.getInternalForm(type);
+            String name = E.getInternalForm(type);
             int nameIndex = resolveNameIndex(name);
             index = addConstantInfo(new Clazz(nameIndex), size);
         }
-        addWrapper(index, type);
+        addElement(index, type);
         return index;
     }
     /**
@@ -509,7 +538,7 @@ public class SubClass extends ClassFile
 
     public int getThisDescriptorIndex()
     {
-        return resolveNameIndex(Descriptor.getFieldDesriptor(thisClass));
+        return resolveNameIndex(ODescriptor.getFieldDesriptor(thisClass));
     }
     
     public void implement(Member method) throws IOException
@@ -562,13 +591,16 @@ public class SubClass extends ClassFile
 
     public MethodCompiler createStaticInitializer()
     {
-        String methodName = "<clinit>";
-        int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = "()V";
-        int descriptorIndex = resolveNameIndex(methodDescription);
-        int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(this, codeIndex);
-        MethodInfo methodInfo = new MethodInfo(Modifier.STATIC, nameIndex, descriptorIndex, code);
+        DeclaredType dt = (DeclaredType)asType();
+        ConstructorBuilder builder = new ConstructorBuilder(
+                this, 
+                ElementKind.STATIC_INIT, 
+                "<clinit>", 
+                dt.getTypeArguments(), 
+                typeParameterMap
+                );
+        builder.addModifier(Modifier.STATIC);
+        MethodInfo methodInfo = new MethodInfo(this, builder.getExecutableElement());
         addMethodInfo(methodInfo);
         MethodCompiler mc = new MethodCompiler(this, Modifier.STATIC, code, new Type[]{}, void.class, methodName);
         methodInfo.setMc(mc);
@@ -582,17 +614,17 @@ public class SubClass extends ClassFile
      */
     public void defineField(int modifier, String fieldName, Type type)
     {
-        if (Signature.needsSignature(type))
+        if (OSignature.needsSignature(type))
         {
             int nameIndex = resolveNameIndex("Signature");
-            String signature = Signature.getFieldSignature(type);
+            String signature = OSignature.getFieldSignature(type);
             int signatureIndex = resolveNameIndex(signature);
             SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
-            defineField(modifier, fieldName, Descriptor.getFieldDesriptor(type), sa);
+            defineField(modifier, fieldName, ODescriptor.getFieldDesriptor(type), sa);
         }
         else
         {
-            defineField(modifier, fieldName, Descriptor.getFieldDesriptor(type));
+            defineField(modifier, fieldName, ODescriptor.getFieldDesriptor(type));
         }
     }
     /**
@@ -607,7 +639,7 @@ public class SubClass extends ClassFile
         {
             throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
         }
-        String descriptor = Descriptor.getFieldDesriptor(int.class);
+        String descriptor = ODescriptor.getFieldDesriptor(int.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
         ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
@@ -625,7 +657,7 @@ public class SubClass extends ClassFile
         {
             throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
         }
-        String descriptor = Descriptor.getFieldDesriptor(long.class);
+        String descriptor = ODescriptor.getFieldDesriptor(long.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
         ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
@@ -643,7 +675,7 @@ public class SubClass extends ClassFile
         {
             throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
         }
-        String descriptor = Descriptor.getFieldDesriptor(float.class);
+        String descriptor = ODescriptor.getFieldDesriptor(float.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
         ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
@@ -661,7 +693,7 @@ public class SubClass extends ClassFile
         {
             throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
         }
-        String descriptor = Descriptor.getFieldDesriptor(double.class);
+        String descriptor = ODescriptor.getFieldDesriptor(double.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
         ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
@@ -679,7 +711,7 @@ public class SubClass extends ClassFile
         {
             throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
         }
-        String descriptor = Descriptor.getFieldDesriptor(String.class);
+        String descriptor = ODescriptor.getFieldDesriptor(String.class);
         int attribute_name_index = resolveNameIndex("ConstantValue");
         int constantvalue_index = resolveConstantIndex(constant);
         ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
@@ -705,29 +737,21 @@ public class SubClass extends ClassFile
         ExceptionsAttribute ea = createExceptionsAttribute(exceptionTypes);
         MethodWrapper mw = new MethodWrapper(modifier, superClass, methodName, returnType, parameters);
         mw.setExceptions(exceptionTypes);
-        if (Signature.needsSignature(mw))
-        {
-            int nameIndex2 = resolveNameIndex("Signature");
-            String signature = Signature.getMethodSignature(mw);
-            int signatureIndex = resolveNameIndex(signature);
-            sa = new SignatureAttribute(this, nameIndex2, signatureIndex);
-        }
         
         int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = Descriptor.getMethodDesriptor(returnType, parameters);
+        String methodDescription = ODescriptor.getMethodDesriptor(returnType, parameters);
         int descriptorIndex = resolveNameIndex(methodDescription);
         int methodIndex = resolveMethodIndex(thisClass, methodName, methodDescription, false);
         if (Modifier.isAbstract(modifier))
         {
-            methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, sa, ea);
+            methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, ea);
             addMethodInfo(methodInfo);
             return null;
         }
         else
         {
-            int codeIndex = resolveNameIndex("Code");
-            CodeAttribute code = new CodeAttribute(this, codeIndex);
-            methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, sa, ea);
+            CodeAttribute code = new CodeAttribute(this);
+            methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
             addMethodInfo(methodInfo);
             MethodCompiler mc = new MethodCompiler(this, modifier, code, parameters, returnType, methodName);
             methodInfo.setMc(mc);
@@ -750,12 +774,11 @@ public class SubClass extends ClassFile
     {
         String methodName = "<init>";
         int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = Descriptor.getMethodDesriptor(constructor);
+        String methodDescription = ODescriptor.getMethodDesriptor(constructor);
         int descriptorIndex = resolveNameIndex(methodDescription);
-        int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(this, codeIndex);
+        CodeAttribute code = new CodeAttribute(this);
         ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(constructor));
-        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, ea);
+        MethodInfo methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(constructor);
         Type[] parameters = Generics.getParameterTypes(constructor);
@@ -776,12 +799,11 @@ public class SubClass extends ClassFile
     {
         String methodName = Generics.getName(method);
         int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = Descriptor.getMethodDesriptor(method);
+        String methodDescription = ODescriptor.getMethodDesriptor(method);
         int descriptorIndex = resolveNameIndex(methodDescription);
-        int codeIndex = resolveNameIndex("Code");
-        CodeAttribute code = new CodeAttribute(this, codeIndex);
+        CodeAttribute code = new CodeAttribute(this);
         ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(method));
-        MethodInfo methodInfo = new MethodInfo(modifier, nameIndex, descriptorIndex, code, ea);
+        MethodInfo methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
         addMethodInfo(methodInfo);
         int methodIndex = resolveMethodIndex(method);   //thisClass, methodName, methodDescription, false);
         Type[] parameters = Generics.getParameterTypes(method);
@@ -850,7 +872,7 @@ public class SubClass extends ClassFile
                 LineNumberTable lnt = new LineNumberTable(this, ani);
                 ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
                 dump.print(mi.getMc(), lnt);
-                mi.getCodeAttribute().addAttribute(lnt);
+                mi.getCodeAttribute().addLineNumberTable(lnt);
             }
             //out.close();
         }
@@ -870,7 +892,7 @@ public class SubClass extends ClassFile
             LineNumberTable lnt = new LineNumberTable(this, ani);
             ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
             dump.print(mi.getMc(), lnt);
-            mi.getCodeAttribute().addAttribute(lnt);
+            mi.getCodeAttribute().addLineNumberTable(lnt);
         }
         ani = resolveNameIndex("SourceFile");
         int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
@@ -908,7 +930,7 @@ public class SubClass extends ClassFile
         {
             indexes[index++] = resolveClassIndex(t);
         }
-        int ni = this.resolveNameIndex("Exceptions");
+        int ni = resolveNameIndex("Exceptions");
         return new ExceptionsAttribute(this, ni, indexes);
     }
 

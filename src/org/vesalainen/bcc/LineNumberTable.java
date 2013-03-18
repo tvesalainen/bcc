@@ -29,12 +29,12 @@ public class LineNumberTable extends AttributeInfo
 {
     private List<LineNumber> lineNumbers = new ArrayList<LineNumber>();
 
-    public LineNumberTable(ClassFile classFile, int attribute_name_index)
+    LineNumberTable(ClassFile classFile)
     {
-        super(classFile, attribute_name_index, 0);
+        super(classFile, "LineNumberTable");
     }
 
-    public void addLineNumber(int pc, int line)
+    void addLineNumber(int pc, int line)
     {
         lineNumbers.add(new LineNumber(pc, line));
     }

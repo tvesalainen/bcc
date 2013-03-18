@@ -24,6 +24,7 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 
 /**
+ * @deprecated 
  * @author Timo Vesalainen
  */
 public class TypeFactory

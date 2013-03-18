@@ -51,12 +51,6 @@ public class PackageElementImpl extends ElementImpl<NoType> implements PackageEl
     }
 
     @Override
-    public Element getEnclosingElement()
-    {
-        return null;
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public List<? extends Element> getEnclosedElements()
     {

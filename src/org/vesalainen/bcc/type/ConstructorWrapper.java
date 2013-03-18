@@ -22,6 +22,7 @@ import java.lang.reflect.Type;
 
 /**
  * @author tkv
+ * @deprecated 
  */
 public class ConstructorWrapper extends MethodWrapper
 {

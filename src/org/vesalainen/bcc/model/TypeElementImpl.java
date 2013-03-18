@@ -50,7 +50,6 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     private NestingKind nestingKind = NestingKind.TOP_LEVEL;
     private Name qualifiedName;
     private TypeMirror superclass = T.getNoType(TypeKind.NONE);
-    private Element enclosingElement;
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
 
     public static class ClassBuilder
@@ -413,12 +412,6 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     public List<? extends TypeMirror> getInterfaces()
     {
         return interfaces;
-    }
-
-    @Override
-    public Element getEnclosingElement()
-    {
-        return enclosingElement;
     }
 
     @Override

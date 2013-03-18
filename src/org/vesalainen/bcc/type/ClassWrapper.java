@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * ClassWrapper wraps Class except when class doesn't exist.
  * @author tkv
+ * @deprecated 
  */
 public class ClassWrapper implements Serializable, AnnotatedElement, GenericDeclaration, Type
 {

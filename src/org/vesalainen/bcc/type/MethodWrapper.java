@@ -34,6 +34,7 @@ import org.vesalainen.bcc.MethodImplementor;
 import org.vesalainen.bcc.SubClass;
 
 /**
+ * @deprecated 
  *
  * @author tkv
  */
@@ -115,8 +116,8 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
             interf,
             new Annotation[]{},
             null,
-            Descriptor.getReturnType(descriptor),
-            Descriptor.getParameters(descriptor)
+            ODescriptor.getReturnType(descriptor),
+            ODescriptor.getParameters(descriptor)
             );
     }
 
@@ -381,7 +382,7 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
 
     public static Type getReturnType(String descriptor)
     {
-        return Descriptor.getReturnType(descriptor);
+        return ODescriptor.getReturnType(descriptor);
     }
 
     public Type[] getParameterTypes()
@@ -391,7 +392,7 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
 
     public String getDescriptor()
     {
-        return Descriptor.getMethodDesriptor(this);
+        return ODescriptor.getMethodDesriptor(this);
     }
 
     @Override

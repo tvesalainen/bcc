@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.T;
 import org.vesalainen.bcc.type.Generics;
 
 /**
@@ -52,7 +54,7 @@ public class ByteCodeVerifier extends OpCodeUtil
     private ExceptionTable[] exceptionTable;
     private MethodCompiler mc;
     private boolean[] coverage; // TODO evaluate BitSet!
-    private Type[] lvType;
+    private TypeMirror[] lvType;
 
     public ByteCodeVerifier(
             byte[] code,
@@ -67,21 +69,21 @@ public class ByteCodeVerifier extends OpCodeUtil
         this.cf = classFile;
         this.mc = mc;
         coverage = new boolean[code.length];
-        lvType = new Type[mc.localSize()];
+        lvType = new TypeMirror[mc.localSize()];
         int index = 0;
         lvType[index++] = classFile.getClassName();
 
-        for (Type param : mc.getParameters())
+        for (TypeMirror param : mc.getParameters())
         {
-            if (Generics.isInteger(param))
+            if (T.isInteger(param))
             {
-                lvType[index] = int.class;
+                lvType[index] = T.Int;
             }
             else
             {
                 lvType[index] = param;
             }
-            if (c2(lvType[index]))
+            if (T.isCategory2(lvType[index]))
             {
                 index++;
             }
@@ -112,7 +114,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
         catch (Throwable ex)
         {
-            String at = mc.getMethodName()+" At "+opCodePosition+": ";
+            String at = mc.getMethodDescription()+" At "+opCodePosition+": ";
             ByteCodeDump dump = new ByteCodeDump(code, cf);
             try
             {
@@ -152,7 +154,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             {
                 System.err.println(clist.get(ii)+"-"+clist.get(ii+1));
             }
-            throw new IllegalArgumentException(mc.getMethodName()+": part of code not covered");
+            throw new IllegalArgumentException(mc.getMethodDescription()+": part of code not covered");
         }
     }
     private void branch(int pc, int offset, OperandStack s, Type[] lv)
@@ -161,7 +163,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         int target = pc+offset;
         if (target < 0 || target > 0xffff)
         {
-            throw new VerifyError(mc.getMethodName()+" goto target illegal "+target);
+            throw new VerifyError(mc.getMethodDescription()+" goto target illegal "+target);
         }
         Deque<Type> old = stackAt.get(target);
         if (old != null)
@@ -170,14 +172,14 @@ public class ByteCodeVerifier extends OpCodeUtil
             String stackNow = s.toString();
             if (!stackBefore.equals(stackNow))
             {
-                throw new VerifyError(mc.getMethodName()+" stack differs in branch "+pc+" -> "+target
+                throw new VerifyError(mc.getMethodDescription()+" stack differs in branch "+pc+" -> "+target
                         +"  before:"+stackBefore+"  now   :"+stackNow);
             }
             Type[] lvBefore = lvAt.get(target);
             Type[] lvNow = lv;
             if (!compare(lvBefore, lvNow))
             {
-                throw new VerifyError(mc.getMethodName()+" local variables differ in branch "+pc+" -> "+target
+                throw new VerifyError(mc.getMethodDescription()+" local variables differ in branch "+pc+" -> "+target
                         +"  before:"+Arrays.toString(lvBefore)+"  now   :"+Arrays.toString(lvNow));
             }
 

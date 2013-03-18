@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Timo Vesalainen
+ * Copyright (C) 2013 Timo Vesalainen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,26 +14,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package org.vesalainen.bcc;
 
-import java.io.DataOutput;
-import java.io.IOException;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 
 /**
- *
- * @author tkv
+ * @author Timo Vesalainen
  */
-public class SyntheticAttribute extends AttributeInfo
+public class Parameter extends LocalVariable
 {
-    public SyntheticAttribute(ClassFile classFile)
+
+    public Parameter(ExecutableElement enclosingElement, TypeMirror type)
     {
-        super(classFile, "Synthetic");
+        this(enclosingElement, type, "");
     }
 
-    public void write(DataOutput out) throws IOException
+    public Parameter(ExecutableElement enclosingElement, TypeMirror type, CharSequence simpleName)
     {
-        out.writeShort(attribute_name_index);
-        out.writeInt(0);
+        super(enclosingElement, type, ElementKind.PARAMETER, simpleName);
     }
 
 }

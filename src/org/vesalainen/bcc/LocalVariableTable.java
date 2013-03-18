@@ -21,6 +21,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.bcc.model.T;
 
 /**
  *
@@ -28,14 +32,13 @@ import java.util.List;
  */
 public class LocalVariableTable extends AttributeInfo
 {
-    private ClassFile classFile;
     private List<LocalVariable> localVariables = new ArrayList<>();
-    private int length;
+    private int codeLength;
 
-    public LocalVariableTable(ClassFile classFile, int attribute_name_index, int codelength)
+    LocalVariableTable(ClassFile classFile, int codelength)
     {
-        super(classFile, attribute_name_index, 0);
-        this.length = codelength;
+        super(classFile, "LocalVariableTable");
+        this.codeLength = codelength;
     }
 
     LocalVariableTable(ClassFile classFile, int attribute_name_index, int attribute_length, DataInput in) throws IOException
@@ -48,6 +51,16 @@ public class LocalVariableTable extends AttributeInfo
         }
     }
 
+    public void addLocalVariable(VariableElement ve, int index)
+    {
+        localVariables.add(new LocalVariable(ve, index));
+    }
+    /**
+     * @deprecated 
+     * @param nameIndex
+     * @param descriptorIndex
+     * @param index 
+     */
     public void addLocalVariable(int nameIndex, int descriptorIndex, int index)
     {
         localVariables.add(new LocalVariable(nameIndex, descriptorIndex, index));
@@ -61,7 +74,7 @@ public class LocalVariableTable extends AttributeInfo
     @Override
     public void write(DataOutput out) throws IOException
     {
-        assert length > 0;
+        assert codeLength > 0;
         out.writeShort(attribute_name_index);
         out.writeInt(localVariables.size()*10+2);
         out.writeShort(localVariables.size());
@@ -79,11 +92,20 @@ public class LocalVariableTable extends AttributeInfo
 
     public class LocalVariable implements Writable
     {
+        private int startPc;
+        private int length = codeLength;
         private int nameIndex;
         private int descriptorIndex;
         private int index;
 
-        public LocalVariable(int nameIndex, int descriptorIndex, int index)
+        private LocalVariable(VariableElement ve, int index)
+        {
+            this.nameIndex = classFile.getNameIndex(ve.getSimpleName().toString());
+            this.descriptorIndex = classFile.getNameIndex(Descriptor.getDesriptor(ve));
+            this.index = index;
+        }
+
+        private LocalVariable(int nameIndex, int descriptorIndex, int index)
         {
             this.nameIndex = nameIndex;
             this.descriptorIndex = descriptorIndex;
@@ -92,25 +114,26 @@ public class LocalVariableTable extends AttributeInfo
 
         private LocalVariable(DataInput in) throws IOException
         {
-            int start = in.readShort();
-            int end = in.readShort();
-            nameIndex = in.readShort();
-            descriptorIndex = in.readShort();
-            index = in.readShort();
+            startPc = in.readUnsignedShort();
+            length = in.readUnsignedShort();
+            nameIndex = in.readUnsignedShort();
+            descriptorIndex = in.readUnsignedShort();
+            index = in.readUnsignedShort();
         }
 
+        @Override
         public void write(DataOutput out) throws IOException
         {
-            out.writeShort(0);
+            out.writeShort(startPc);
             out.writeShort(length);
             out.writeShort(nameIndex);
             out.writeShort(descriptorIndex);
             out.writeShort(index);
         }
 
-        public int getDescriptorIndex()
+        public TypeMirror getType()
         {
-            return descriptorIndex;
+            return T.typeFromDescriptor(classFile.getString(descriptorIndex));
         }
 
         public int getIndex()
@@ -118,9 +141,9 @@ public class LocalVariableTable extends AttributeInfo
             return index;
         }
 
-        public int getNameIndex()
+        public String getSimpleName()
         {
-            return nameIndex;
+            return classFile.getString(nameIndex);
         }
 
     }

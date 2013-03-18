@@ -20,6 +20,7 @@ package org.vesalainen.bcc.annotation;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import javax.lang.model.element.AnnotationValueVisitor;
 import org.vesalainen.bcc.ClassFile;
 
 /**
@@ -64,6 +65,18 @@ public class EnumConstValue extends ElementValue
     public String toString()
     {
         return getDescriptor()+"."+getName();
+    }
+
+    @Override
+    public Object getValue()
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public <R, P> R accept(AnnotationValueVisitor<R, P> v, P p)
+    {
+        return v.visit(this, p);
     }
     
 }
