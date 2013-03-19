@@ -45,6 +45,9 @@ import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +61,16 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVisitor;
 import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.ClassFile.ClassType;
 import org.vesalainen.bcc.ConstantInfo.Filler;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.LocalVariableTable.LocalVariable;
@@ -144,16 +153,35 @@ public class ClassFile implements Writable, TypeElement
     private List<MethodInfo> methods = new ArrayList<>();
     private List<AttributeInfo> attributes = new ArrayList<>();
 
-    protected TypeMirror superClass;
-
-    private Map<Integer,Element> elementMap = new HashMap<>();
+    private Map<Integer,Element> indexedElementMap = new HashMap<>();
     private Map<Class<? extends ConstantInfo>,List<ConstantInfo>> constantPoolMap = new HashMap<>();
     private Map<ConstantInfo,Integer> constantPoolIndexMap = new HashMap<>();
-    private Name qualifiedName;
     protected Map<String, TypeParameterElement> typeParameterMap = new HashMap<>();
     
-    protected ClassFile()
+    protected TypeElement superClass;
+    protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+    protected ClassType type;
+    protected Name qualifiedName;
+    protected PackageElement packageElement;
+    protected List<Element> enclosedElements;
+    private Name simpleName;
+
+    protected ClassFile(TypeElement superClass, String qualifiedName, Modifier... modifiers)
     {
+        this.superClass = superClass;
+        this.qualifiedName = E.getName(qualifiedName);
+        this.modifiers.addAll(Arrays.asList(modifiers));
+        int idx = qualifiedName.lastIndexOf('.');
+        if (idx != -1)
+        {
+            packageElement = E.getPackageElement(qualifiedName.substring(0, idx));
+            simpleName = E.getName(qualifiedName.substring(idx+1));
+        }
+        else
+        {
+            packageElement = E.getPackageElement("");
+            simpleName = E.getName(qualifiedName);
+        }
     }
     public ClassFile(Class<?> cls) throws IOException
     {
@@ -205,12 +233,16 @@ public class ClassFile implements Writable, TypeElement
         int fields_count = oin.readUnsignedShort();
         for (int ii = 0; ii < fields_count; ii++)
         {
-            fields.add(new FieldInfo(oin));
+            FieldInfo fieldInfo = new FieldInfo(oin);
+            fields.add(fieldInfo);
+            enclosedElements.add(fieldInfo);
         }
         int methods_count = oin.readUnsignedShort();
         for (int ii = 0; ii < methods_count; ii++)
         {
-            methods.add(new MethodInfo(this, oin));
+            MethodInfo methodInfo = new MethodInfo(this, oin);
+            methods.add(methodInfo);
+            enclosedElements.add(methodInfo);
         }
         int attributes_count = oin.readUnsignedShort();
         for (int ii = 0; ii < attributes_count; ii++)
@@ -221,24 +253,6 @@ public class ClassFile implements Writable, TypeElement
         superClass = E.fromDescriptor(getString(superClazz.getName_index())).asType();
         Clazz clazz = (Clazz) getConstantInfo(this_class);
         qualifiedName = E.getName(Descriptor.getFullyQualifiedForm(getString(clazz.getName_index())));
-    }
-
-    @Override
-    public Name getQualifiedName()
-    {
-        return qualifiedName;
-    }
-
-    @Override
-    public List<? extends AnnotationMirror> getAnnotationMirrors()
-    {
-        return ModelUtil.getAnnotationMirrors(attributes);
-    }
-
-    @Override
-    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
-    {
-        return ModelUtil.getAnnotation(attributes, annotationType);
     }
 
     public int getConstantPoolSize()
@@ -452,25 +466,22 @@ public class ClassFile implements Writable, TypeElement
             throw new IllegalArgumentException("method "+methodInfo.getName_index()+" "+methodInfo.getDescriptor_index()+" exists already");
         }
         methods.add(methodInfo);
+        enclosedElements.add(methodInfo);
     }
 
     public void addFieldInfo(FieldInfo fieldInfo)
     {
         if (fields.contains(fieldInfo))
         {
-            throw new IllegalArgumentException("field "+fieldInfo.getName_index()+" "+fieldInfo.getDescriptor_index()+" exists already");
+            throw new IllegalArgumentException("field "+fieldInfo+" exists already");
         }
         fields.add(fieldInfo);
+        enclosedElements.add(fieldInfo);
     }
 
     public List<FieldInfo> getFields()
     {
         return fields;
-    }
-
-    private boolean hasMethodInfo(MethodInfo methodInfo)
-    {
-        return methods.contains(methodInfo);
     }
 
     public List<MethodInfo> getMethodInfos()
@@ -510,11 +521,6 @@ public class ClassFile implements Writable, TypeElement
             args[lv.getIndex()] = lv.getSimpleName();
         }
         return args;
-    }
-
-    public TypeElement getSuperclass()
-    {
-        return superClass;
     }
 
     public int getAccess_flags()
@@ -597,9 +603,9 @@ public class ClassFile implements Writable, TypeElement
         return index;
     }
     
-    protected void addElement(int index, Element element)
+    protected void addIndexedElement(int index, Element element)
     {
-        elementMap.put(index, element);
+        indexedElementMap.put(index, element);
     }
 
     private List<ConstantInfo> listConstantInfo(Class<? extends ConstantInfo> cls)
@@ -625,13 +631,13 @@ public class ClassFile implements Writable, TypeElement
         attributes.add(ai);
     }
     /**
-     * Returns a wrapped element from constant map
+     * Returns a element from constant map
      * @param index
      * @return
      */
-    public Element getElement(int index)
+    Element getIndexedElement(int index)
     {
-        Element ae = elementMap.get(index);
+        Element ae = indexedElementMap.get(index);
         if (ae == null)
         {
             throw new VerifyError("constant pool at "+index+" not proper type");
@@ -781,6 +787,7 @@ public class ClassFile implements Writable, TypeElement
      * @param out
      * @throws IOException
      */
+    @Override
     public void write(DataOutput out) throws IOException
     {
         out.writeInt(magic);
@@ -809,6 +816,7 @@ public class ClassFile implements Writable, TypeElement
         {
             mi.write(out);
         }
+        addSignatureIfNeed();
         out.writeShort(attributes.size());
         for (AttributeInfo ai : attributes)
         {
@@ -816,109 +824,133 @@ public class ClassFile implements Writable, TypeElement
         }
 
     }
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args)
+
+    private void addSignatureIfNeed()
     {
-        try
+        String signature = Signature.getSignature(this);
+        if (!signature.isEmpty())
         {
-            File sample = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\JavaLPG\\dist\\JavaLPG.jar");
-            ClassFinder f = new ClassFinder(sample);
-            ClassFile cf = f.find("org.vesalainen.parser.util.InputReader");
-            FileInputStream fis = new FileInputStream(sample);
-            byte[] code1 = new byte[(int)sample.length()];
-            fis.read(code1);
-            fis.close();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(baos);
-            cf.write(dos);
-            dos.close();
-            byte[] code2 = baos.toByteArray();
-            if (code1.length != code2.length)
-            {
-                System.err.println("lengths differ");
-            }
-            else
-            {
-                for (int ii=0;ii<code1.length;ii++)
-                {
-                    if (code1[ii] != code2[ii])
-                    {
-                        System.err.println(ii+": "+code1[ii]+" <> "+code2[ii]);
-                    }
-                }
-            }
-            Class<?> cls = Class.forName("org.vesalainen.jvm.Sample");
-            Field field = cls.getField("key1");
-            Method method = cls.getMethod("test", Integer.TYPE);
-            int index = cf.getFieldIndex(field);
-            index = cf.getMethodIndex(method);
+            attributes.add(new SignatureAttribute(this, signature));
         }
-        catch (Exception ex)
-        {
-            ex.printStackTrace();
-        }
+    }
+    @Override
+    public Name getQualifiedName()
+    {
+        return qualifiedName;
+    }
+
+    @Override
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
+    {
+        return ModelUtil.getAnnotationMirrors(attributes);
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        return ModelUtil.getAnnotation(attributes, annotationType);
+    }
+
+    @Override
+    public TypeMirror getSuperclass()
+    {
+        return superClass.asType();
     }
 
     @Override
     public List<? extends Element> getEnclosedElements()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return enclosedElements;
     }
 
     @Override
     public NestingKind getNestingKind()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return NestingKind.TOP_LEVEL;
     }
 
     @Override
     public Name getSimpleName()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return simpleName;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<? extends TypeMirror> getInterfaces()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return Collections.EMPTY_LIST;
     }
 
     @Override
     public List<? extends TypeParameterElement> getTypeParameters()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return superClass.getTypeParameters();
     }
 
     @Override
     public Element getEnclosingElement()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return packageElement;
     }
 
     @Override
     public TypeMirror asType()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return type;
     }
 
     @Override
     public ElementKind getKind()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return ElementKind.CLASS;
     }
 
     @Override
     public Set<Modifier> getModifiers()
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return modifiers;
     }
 
     @Override
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return v.visitType(this, p);
     }
 
+    public class ClassType implements DeclaredType
+    {
+
+        @Override
+        public Element asElement()
+        {
+            return ClassFile.this;
+        }
+
+        @Override
+        public TypeMirror getEnclosingType()
+        {
+            return packageElement.asType();
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public List<? extends TypeMirror> getTypeArguments()
+        {
+            return Collections.EMPTY_LIST;
+        }
+
+        @Override
+        public TypeKind getKind()
+        {
+            return TypeKind.DECLARED;
+        }
+
+        @Override
+        public <R, P> R accept(TypeVisitor<R, P> v, P p)
+        {
+            return v.visitDeclared(this, p);
+        }
+        
+    }
 }

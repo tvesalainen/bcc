@@ -19,108 +19,196 @@ package org.vesalainen.bcc;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.annotation.dump.Signature;
 
 /**
  *
  * @author tkv
  */
-public class FieldInfo implements Writable
+public class FieldInfo implements Writable, VariableElement
 {
+    /**
+     * Declared public; may be accessed from outside its package.
+     */
+    public static final int ACC_PUBLIC = 0x0001;
+    /**
+     * Declared private; accessible only within the defining class.
+     */
+    public static final int ACC_PRIVATE = 0x0002;
+    /**
+     * Declared protected; may be accessed within subclasses.
+     */
+    public static final int ACC_PROTECTED = 0x0004;
+    /**
+     * Declared static.
+     */
+    public static final int ACC_STATIC = 0x0008;
+    /**
+     * Declared final; no subclasses allowed.
+     */
+    public static final int ACC_FINAL = 0x0010;
+    /**
+     * Declared volatile; cannot be cached.
+     */
+    public static final int ACC_VOLATILE = 0x0040;
+    /**
+     * Declared transient; not written or read by a persistent object manager.
+     */
+    public static final int ACC_TRANSIENT = 0x0080;
+    /**
+     * Declared synthetic; Not present in the source code.
+     */
+    public static final int ACC_SYNTHETIC = 0x1000;
+    /**
+     * Declared as an element of an enum.
+     */
+    public static final int ACC_ENUM = 0x4000;
+    
     private ClassFile classFile;
-    private int access_flags;
-    private int name_index;
-    private int descriptor_index;
-    private int attributes_count;
-    private AttributeInfo[] attributes;
+    private VariableElement variableElement;
+    private List<AttributeInfo> attributes = new ArrayList<>();
+    private boolean synthetic;
 
-    public FieldInfo(ClassFile classFile, int access_flags, int name_index, int descriptor_index, AttributeInfo... attributes)
+    public FieldInfo(ClassFile classFile, VariableElement variableElement)
     {
         this.classFile = classFile;
-        this.access_flags = access_flags;
-        this.name_index = name_index;
-        this.descriptor_index = descriptor_index;
-        this.attributes_count = attributes.length;
-        this.attributes = attributes;
+        this.variableElement = variableElement;
     }
 
     public FieldInfo(DataInput in) throws IOException
     {
-        access_flags = in.readUnsignedShort();
-        name_index = in.readUnsignedShort();
-        descriptor_index = in.readUnsignedShort();
-        attributes_count = in.readUnsignedShort();
-        attributes = new AttributeInfo[attributes_count];
+        int access_flags = in.readUnsignedShort();
+        int name_index = in.readUnsignedShort();
+        int descriptor_index = in.readUnsignedShort();
+        int attributes_count = in.readUnsignedShort();
         for (int ii=0;ii<attributes_count;ii++)
         {
-            attributes[ii] = new AttributeInfo(classFile, in);
+            attributes.add(new AttributeInfo(classFile, in));
         }
     }
 
     public void write(DataOutput out) throws IOException
     {
-        out.writeShort(access_flags);
-        out.writeShort(name_index);
-        out.writeShort(descriptor_index);
-        out.writeShort(attributes.length);
-        for (int ii=0;ii<attributes_count;ii++)
+        addSignatureIfNeed();
+        out.writeShort(addModifiers());
+        out.writeShort(classFile.getNameIndex(getSimpleName()));
+        out.writeShort(classFile.getNameIndex(Descriptor.getDesriptor(this)));
+        out.writeShort(attributes.size());
+        for (AttributeInfo ai : attributes)
         {
-            attributes[ii].write(out);
+            ai.write(out);
         }
     }
 
-    public int getAccess_flags()
+    private void addSignatureIfNeed()
     {
-        return access_flags;
-    }
-
-    public AttributeInfo[] getAttributes()
-    {
-        return attributes;
-    }
-
-    public int getAttributes_count()
-    {
-        return attributes_count;
-    }
-
-    public int getDescriptor_index()
-    {
-        return descriptor_index;
-    }
-
-    public int getName_index()
-    {
-        return name_index;
-    }
-
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
+        String signature = Signature.getSignature(this);
+        if (!signature.isEmpty())
         {
-            return false;
+            attributes.add(new SignatureAttribute(classFile, signature));
         }
-        if (getClass() != obj.getClass())
-        {
-            return false;
-        }
-        final FieldInfo other = (FieldInfo) obj;
-        if (this.name_index != other.name_index)
-        {
-            return false;
-        }
-        if (this.descriptor_index != other.descriptor_index)
-        {
-            return false;
-        }
-        return true;
-    }
-
-    public int hashCode()
-    {
-        int hash = 7;
-        hash = 67 * hash + this.name_index;
-        hash = 67 * hash + this.descriptor_index;
-        return hash;
     }
     
+    private int addModifiers()
+    {
+        int flags = 0;
+        if (synthetic)
+        {
+            flags |= ACC_SYNTHETIC;
+        }
+        for (Modifier m : getModifiers())
+        {
+            switch (m)
+            {
+                case PUBLIC:
+                    flags |= ACC_PUBLIC;
+                    break;
+                case PRIVATE:
+                    flags |= ACC_PRIVATE;
+                    break;
+                case PROTECTED:
+                    flags |= ACC_PROTECTED;
+                    break;
+                case STATIC:
+                    flags |= ACC_STATIC;
+                    break;
+                case FINAL:
+                    flags |= ACC_FINAL;
+                    break;
+                case VOLATILE:
+                    flags |= ACC_VOLATILE;
+                    break;
+                case TRANSIENT:
+                    flags |= ACC_TRANSIENT;
+                    break;
+                default:
+                    throw new IllegalArgumentException(m+" is not valid method flag");
+            }
+        }
+        return flags;
+    }
+    public Object getConstantValue()
+    {
+        return variableElement.getConstantValue();
+    }
+
+    public TypeMirror asType()
+    {
+        return variableElement.asType();
+    }
+
+    public ElementKind getKind()
+    {
+        return variableElement.getKind();
+    }
+
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
+    {
+        return variableElement.getAnnotationMirrors();
+    }
+
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        return variableElement.getAnnotation(annotationType);
+    }
+
+    public Set<Modifier> getModifiers()
+    {
+        return variableElement.getModifiers();
+    }
+
+    public Name getSimpleName()
+    {
+        return variableElement.getSimpleName();
+    }
+
+    public Element getEnclosingElement()
+    {
+        return variableElement.getEnclosingElement();
+    }
+
+    public List<? extends Element> getEnclosedElements()
+    {
+        return variableElement.getEnclosedElements();
+    }
+
+    public <R, P> R accept(ElementVisitor<R, P> v, P p)
+    {
+        return variableElement.accept(v, p);
+    }
+
+
 }

@@ -16,11 +16,15 @@
  */
 package org.vesalainen.bcc;
 
-import org.vesalainen.bcc.type.ConstructorWrapper;
 import java.io.IOException;
-import java.lang.reflect.Member;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.ElementFactory;
 
 /**
  *
@@ -29,59 +33,63 @@ import java.lang.reflect.Type;
 public abstract class FieldInitializer
 {
 
-    protected Member field;
+    protected VariableElement field;
 
-    protected FieldInitializer(Member field)
+    protected FieldInitializer(Field field)
+    {
+        this(ElementFactory.get(field));
+    }
+    protected FieldInitializer(VariableElement field)
     {
         this.field = field;
     }
 
     public abstract void init(MethodCompiler c) throws IOException;
 
-    public static FieldInitializer getInstance(Member field, boolean value)
+    public static FieldInitializer getInstance(Field field, boolean value)
     {
         return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, byte value)
+    public static FieldInitializer getInstance(Field field, byte value)
     {
         return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, char value)
+    public static FieldInitializer getInstance(Field field, char value)
     {
         return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, short value)
+    public static FieldInitializer getInstance(Field field, short value)
     {
         return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, int value)
+    public static FieldInitializer getInstance(Field field, int value)
     {
         return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, long value)
+    public static FieldInitializer getInstance(Field field, long value)
     {
         return new LongInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, float value)
+    public static FieldInitializer getInstance(Field field, float value)
     {
         return new FloatInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, double value)
+    public static FieldInitializer getInstance(Field field, double value)
     {
         return new DoubleInit(field, value);
     }
-    public static FieldInitializer getInstance(Member field, String value)
+    public static FieldInitializer getInstance(Field field, String value)
     {
         return new StringInit(field, value);
     }
-    public static FieldInitializer getObjectInstance(Member field, Type cls)
+    public static FieldInitializer getObjectInstance(Field field, Class<?> cls)
     {
         return new ObjectInit(field, cls);
     }
     public static class IntInit extends FieldInitializer
     {
         int value;
-        public IntInit(Member field, boolean value)
+        public IntInit(Field field, boolean value)
         {
             super(field);
             if (value)
@@ -90,25 +98,25 @@ public abstract class FieldInitializer
             }
         }
 
-        public IntInit(Member field, byte value)
+        public IntInit(Field field, byte value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Member field, char value)
+        public IntInit(Field field, char value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Member field, short value)
+        public IntInit(Field field, short value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Member field, int value)
+        public IntInit(Field field, int value)
         {
             super(field);
             this.value = value;
@@ -117,7 +125,7 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.iconst(value);
                 c.putstatic(field);
@@ -133,7 +141,7 @@ public abstract class FieldInitializer
     public static class FloatInit extends FieldInitializer
     {
         private float value;
-        public FloatInit(Member field, float value)
+        public FloatInit(Field field, float value)
         {
             super(field);
             this.value = value;
@@ -142,7 +150,7 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.fconst(value);
                 c.putstatic(field);
@@ -159,7 +167,7 @@ public abstract class FieldInitializer
     public static class DoubleInit extends FieldInitializer
     {
         private double value;
-        public DoubleInit(Member field, double value)
+        public DoubleInit(Field field, double value)
         {
             super(field);
             this.value = value;
@@ -168,7 +176,7 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.dconst(value);
                 c.putstatic(field);
@@ -185,7 +193,7 @@ public abstract class FieldInitializer
     public static class LongInit extends FieldInitializer
     {
         private long value;
-        public LongInit(Member field, long value)
+        public LongInit(Field field, long value)
         {
             super(field);
             this.value = value;
@@ -194,7 +202,7 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.lconst(value);
                 c.putstatic(field);
@@ -211,7 +219,7 @@ public abstract class FieldInitializer
     public static class StringInit extends FieldInitializer
     {
         private String value;
-        public StringInit(Member field, String value)
+        public StringInit(Field field, String value)
         {
             super(field);
             this.value = value;
@@ -220,7 +228,7 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.ldc(value);
                 c.putstatic(field);
@@ -234,21 +242,26 @@ public abstract class FieldInitializer
         }
 
     }
+
     public static class ObjectInit extends FieldInitializer
     {
-        private Type cls;
-        private Member constructor;
-        public ObjectInit(Member field, Type cls)
+        private TypeElement cls;
+        private ExecutableElement constructor;
+        public ObjectInit(Field field, Class<?> cls)
+        {
+            this(ElementFactory.get(field), ElementFactory.get(cls));
+        }
+        public ObjectInit(VariableElement field, TypeElement cls)
         {
             super(field);
             this.cls = cls;
-            constructor = new ConstructorWrapper(cls);
+            constructor = E.findConstructor(cls);
         }
 
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            if (Modifier.isStatic(field.getModifiers()))
+            if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.anew(cls);
                 c.dup();
@@ -265,4 +278,5 @@ public abstract class FieldInitializer
             }
         }
     }
+
 }

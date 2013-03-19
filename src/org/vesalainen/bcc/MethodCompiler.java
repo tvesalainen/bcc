@@ -484,7 +484,6 @@ public class MethodCompiler extends Assembler
      */
     public void tload(String name) throws IOException
     {
-        check(name);
         TypeMirror cn = getLocalType(name);
         int index = getLocalVariableIndex(name);
         if (T.isPrimitive(cn))
@@ -506,7 +505,6 @@ public class MethodCompiler extends Assembler
      */
     public void tstore(String name) throws IOException
     {
-        check(name);
         TypeMirror cn = getLocalType(name);
         int index = getLocalVariableIndex(name);
         if (T.isPrimitive(cn))
@@ -529,7 +527,6 @@ public class MethodCompiler extends Assembler
      */
     public void tinc(String name, int con) throws IOException
     {
-        check(name);
         TypeMirror cn = getLocalType(name);
         int index = getLocalVariableIndex(name);
         tinc(cn, index, con);
@@ -750,19 +747,27 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getfield(Field field) throws IOException
+    public void getfield(VariableElement field) throws IOException
     {
+        if (field.getModifiers().contains(Modifier.STATIC))
+        {
+            throw new IllegalArgumentException(field+" is static");
+        }
         int index = subClass.resolveFieldIndex(field);
         getfield(index);
     }
     /**
-     * Get static field from class
-     * <p>Stack: ..., =&gt; ..., value
+     * Fetch field from object
+     * <p>Stack: ..., objectref =&gt; ..., value
      * @param field
      * @throws IOException
      */
-    public void getstatic(Field field) throws IOException
+    public void getstatic(VariableElement field) throws IOException
     {
+        if (!field.getModifiers().contains(Modifier.STATIC))
+        {
+            throw new IllegalArgumentException(field+" is not static");
+        }
         int index = subClass.resolveFieldIndex(field);
         getstatic(index);
     }
@@ -772,34 +777,43 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void get(Field field) throws IOException
+    public void getfield(Field field) throws IOException
     {
-        if (Modifier.isStatic(field.getModifiers()))
-        {
-            getstatic(field);
-        }
-        else
-        {
-            getfield(field);
-        }
+        getfield(ElementFactory.get(field));
+    }
+    /**
+     * Get field from class
+     * <p>Stack: ..., =&gt; ..., value
+     * @param field
+     * @throws IOException
+     */
+    public void getstatic(Field field) throws IOException
+    {
+        getstatic(ElementFactory.get(field));
     }
     /**
      * Set field in object
      * <p>Stack: ..., objectref, value =&gt; ...
      */
-    public void putfield(Field field) throws IOException
+    public void putfield(VariableElement field) throws IOException
     {
+        if (field.getModifiers().contains(Modifier.STATIC))
+        {
+            throw new IllegalArgumentException(field+" is static");
+        }
         int index = subClass.resolveFieldIndex(field);
         putfield(index);
     }
     /**
-     * Set static field in class
-     * <p>Stack: ..., value =&gt; ...
-     * @param field
-     * @throws IOException
+     * Set static field in object
+     * <p>Stack: ..., objectref, value =&gt; ...
      */
-    public void putstatic(Field field) throws IOException
+    public void putstatic(VariableElement field) throws IOException
     {
+        if (!field.getModifiers().contains(Modifier.STATIC))
+        {
+            throw new IllegalArgumentException(field+" is not static");
+        }
         int index = subClass.resolveFieldIndex(field);
         putstatic(index);
     }
@@ -809,16 +823,19 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void put(Field field) throws IOException
+    public void putfield(Field field) throws IOException
     {
-        if (java.lang.reflect.Modifier.isStatic(field.getModifiers()))
-        {
-            putstatic(field);
-        }
-        else
-        {
-            putfield(field);
-        }
+        putfield(ElementFactory.get(field));
+    }
+    /**
+     * Set field in class
+     * <p>Stack: ..., value =&gt; ...
+     * @param field
+     * @throws IOException
+     */
+    public void putstatic(Field field) throws IOException
+    {
+        putstatic(ElementFactory.get(field));
     }
     /**
      * @param constructor
@@ -960,40 +977,7 @@ public class MethodCompiler extends Assembler
 
     public void invokevirtual(Class<?> clazz, String name, Class<?>... parameters) throws IOException
     {
-        invokevirtual(findMethod(clazz, name, parameters));
-    }
-    private ExecutableElement findMethod(Class<?> clazz, String name, Class<?>... parameters) throws IOException
-    {
-        TypeElement te = ElementFactory.get(clazz);
-        List<TypeMirror> callerParams = new ArrayList<>();
-        for (Class<?> p : parameters)
-        {
-            callerParams.add(T.getTypeFor(p));
-        }
-        for (ExecutableElement method : ElementFilter.methodsIn(te.getEnclosedElements()))
-        {
-            if (name.contentEquals(method.getSimpleName()))
-            {
-                if (callerParams.size() == method.getParameters().size())
-                {
-                    boolean ok = true;
-                    List<? extends VariableElement> calleeParams = method.getParameters();
-                    for (int ii=0;ii<callerParams.size();ii++)
-                    {
-                        if (!T.isAssignable(callerParams.get(ii), calleeParams.get(ii).asType()))
-                        {
-                            ok = false;
-                            continue;
-                        }
-                    }
-                    if (ok)
-                    {
-                        return method;
-                    }
-                }
-            }
-        }
-        throw new IOException("method "+name+" int "+clazz+" not found");
+        invokevirtual(E.findMethod(clazz, name, parameters));
     }
 
     private int argumentCount(List<? extends VariableElement> parameters)
@@ -1048,57 +1032,6 @@ public class MethodCompiler extends Assembler
         code.setMax_stack(ver.getMaxStack());
         code.addLocalVariables(localVariables);
     }
-    /**
-     * Load a local variable and convert it to reference, or leave as it is if
-     * it is not primitive. Eg. int becomes Integer.
-     * <p>Stack: ..., =&gt; ..., value
-     * @param fromVariable
-     * @throws IOException
-     * @throws NoSuchMethodException
-     * @throws NoSuchFieldException
-     * @throws ClassNotFoundException
-     */
-    public void convertToReference(String fromVariable) throws IOException, NoSuchMethodException, NoSuchFieldException, ClassNotFoundException, IllegalConversionException
-    {
-        TypeMirror from = this.getLocalType(fromVariable);
-        if (T.isPrimitive(from))
-        {
-            switch (from.getKind())
-            {
-                case BOOLEAN:
-                    convert(fromVariable, Boolean.class);
-                    break;
-                case BYTE:
-                    convert(fromVariable, Byte.class);
-                    break;
-                case CHAR:
-                    convert(fromVariable, Character.class);
-                    break;
-                case SHORT:
-                    convert(fromVariable, Short.class);
-                    break;
-                case INT:
-                    convert(fromVariable, Integer.class);
-                    break;
-                case LONG:
-                    convert(fromVariable, Long.class);
-                    break;
-                case FLOAT:
-                    convert(fromVariable, Float.class);
-                    break;
-                case DOUBLE:
-                    convert(fromVariable, Double.class);
-                    break;
-                default:
-                    throw new IllegalConversionException("unknown primitive type "+from);
-            }
-        }
-        else
-        {
-            tload(fromVariable);
-        }
-    }
-
     @Override
     public String toString()
     {
@@ -1333,13 +1266,30 @@ public class MethodCompiler extends Assembler
      * @param size
      * @throws IOException
      */
-    public void addNewArray(String name, Type aClass, int size) throws IOException
+    public void addNewArray(String name, Class<?> aClass, int size) throws IOException
     {
-        addVariable(name, aClass);
-        newarray(aClass, size);
-        if (!Generics.isPrimitive(Generics.getComponentType(aClass)))
+        addNewArray(name, T.getTypeFor(aClass), size);
+    }
+    /**
+     * Create new array
+     * <p>Stack: ..., count =&gt; ..., arrayref
+     * @param name
+     * @param type
+     * @param size
+     * @throws IOException
+     */
+    public void addNewArray(String name, TypeMirror type, int size) throws IOException
+    {
+        if (type.getKind() != TypeKind.ARRAY)
         {
-            checkcast(aClass);
+            throw new IllegalArgumentException(type+" is not array");
+        }
+        ArrayType at = (ArrayType) type;
+        addVariable(name, at);
+        newarray(type, size);
+        if (!T.isPrimitive(at.getComponentType()))
+        {
+            checkcast(type);
         }
         tstore(name);
     }
@@ -1349,17 +1299,29 @@ public class MethodCompiler extends Assembler
      * @param objectref
      * @throws IOException
      */
-    public void checkcast(Type objectref) throws IOException
+    public void checkcast(Class<?> objectref) throws IOException
     {
-        if (Generics.isPrimitive(objectref))
+        checkcast(T.getTypeFor(objectref));
+    }
+    /**
+     * Check whether object is of given type
+     * <p>Stack: ..., objectref =&gt; ..., objectref
+     * @param objectref
+     * @throws IOException
+     */
+    public void checkcast(TypeMirror objectref) throws IOException
+    {
+        if (objectref.getKind() != TypeKind.DECLARED)
         {
             throw new IllegalArgumentException("checkcast type must be objectref");
         }
-        int index = subClass.resolveClassIndex(objectref);
+        DeclaredType dt = (DeclaredType) objectref;
+        int index = subClass.resolveClassIndex((TypeElement)dt.asElement());
         checkcast(index);
     }
 
     /**
+     * @deprecated This is not tested!
      * Convert a local variable to given type. (if it is possible)
      * <p>Stack: ..., =&gt; ..., objectref
      * @param fromVariable
@@ -1369,218 +1331,137 @@ public class MethodCompiler extends Assembler
      * @throws NoSuchFieldException
      * @throws ClassNotFoundException
      */
-    public void convert(String fromVariable, Type to) throws IOException, NoSuchMethodException, NoSuchFieldException, ClassNotFoundException, IllegalConversionException
+    public void convert(String fromVariable, TypeMirror to) throws IOException, NoSuchMethodException, NoSuchFieldException, ClassNotFoundException, IllegalConversionException
     {
-        try
+        TypeMirror from = getLocalType(fromVariable);
+        if (T.isSameType(from, to))
         {
-            Type from = getLocalType(fromVariable);
-            if (from.equals(to))
+            tload(fromVariable);
+            return;
+        }
+        if (to.getKind() == TypeKind.DECLARED)
+        {
+            DeclaredType dt = (DeclaredType) to;
+            TypeElement te = (TypeElement) dt.asElement();
+            ExecutableElement c = E.findConstructor(te, from);
+            if (c != null)
             {
+                anew(te);
+                dup();
                 tload(fromVariable);
+                invokespecial(c);
                 return;
             }
-            try
+            ExecutableElement m = E.findMethod(te, "valueOf", from);
+            if (m != null && m.getModifiers().contains(Modifier.STATIC) && T.isAssignable(m.getReturnType(), to))
             {
-                Constructor c = Generics.getConstructor(to, from);
-                if (c != null)
-                {
-                    anew(to);
-                    dup();
-                    tload(fromVariable);
-                    invokespecial(c);
-                    return;
-                }
-            }
-            catch (NoSuchMethodException ex)
-            {
-            }
-            try
-            {
-                Member m = Generics.getMethod(to, "valueOf", from);
-                if (m != null && Modifier.isStatic(Generics.getModifiers(m)) && to.equals(Generics.getReturnType(m)))
-                {
-                    tload(fromVariable);
-                    invokestatic(m);
-                    return;
-                }
-            }
-            catch (NoSuchMethodException ex)
-            {
-            }
-            try
-            {
-                String str = Generics.getName(to) + "Value";
-                Member m = Generics.getMethod(from, str); // xxxValue()
-                // xxxValue()
-                // xxxValue()
-                if (m != null && to.equals(Generics.getReturnType(m)))
-                {
-                    tload(fromVariable);
-                    invokevirtual(m);
-                    return;
-                }
-            }
-            catch (NoSuchMethodException ex)
-            {
-            }
-            if (Generics.isPrimitive(from))
-            {
-                ObjectType fromType = ObjectType.valueOf(from);
-                ObjectType toType = ObjectType.valueOf(to);
-                switch (fromType)
-                {
-                    case BYTE:
-                    case CHAR:
-                    case SHORT:
-                    case INT:
-                        switch (toType)
-                        {
-                            case BYTE:
-                            case CHAR:
-                            case SHORT:
-                            case INT:
-                            case LONG:
-                            case FLOAT:
-                            case DOUBLE:
-                                tload(fromVariable);
-                                i2t();
-                                break;
-                            default:
-                                throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                        }
-                        break;
-                    case LONG:
-                        switch (toType)
-                        {
-                            case BYTE:
-                            case CHAR:
-                            case SHORT:
-                            case INT:
-                                tload(fromVariable);
-                                l2t();
-                                break;
-                            case FLOAT:
-                            case DOUBLE:
-                                tload(fromVariable);
-                                l2t();
-                                break;
-                            default:
-                                throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                        }
-                        break;
-                    case FLOAT:
-                        switch (toType)
-                        {
-                            case BYTE:
-                            case CHAR:
-                            case SHORT:
-                            case INT:
-                                tload(fromVariable);
-                                f2t();
-                                break;
-                            case LONG:
-                            case DOUBLE:
-                                tload(fromVariable);
-                                f2t();
-                                break;
-                            default:
-                                throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                        }
-                        break;
-                    case DOUBLE:
-                        switch (toType)
-                        {
-                            case BYTE:
-                            case CHAR:
-                            case SHORT:
-                            case INT:
-                                tload(fromVariable);
-                                d2t();
-                                break;
-                            case LONG:
-                            case FLOAT:
-                                tload(fromVariable);
-                                d2t();
-                                break;
-                            default:
-                                throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                        }
-                        break;
-                    default:
-                        throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                }
-            }
-            else
-            {
-                if (String.class.equals(to))
-                {
-                    tload(fromVariable);
-                    invokevirtual(Generics.getMethod(from, "toString"));
-                    return;
-                }
-            }
-            if (Generics.isPrimitive(to))
-            {
-                Type toc = null;
-                ObjectType ot = ObjectType.valueOf(to);
-                switch (ot)
-                {
-                    case INT:
-                        toc = Integer.class;
-                        break;
-                    case BYTE:
-                        toc = Byte.class;
-                        break;
-                    case BOOLEAN:
-                        toc = Boolean.class;
-                        break;
-                    case CHAR:
-                        toc = Character.class;
-                        break;
-                    case SHORT:
-                        toc = Short.class;
-                        break;
-                    case LONG:
-                        toc = Long.class;
-                        break;
-                    case FLOAT:
-                        toc = Float.class;
-                        break;
-                    case DOUBLE:
-                        toc = Double.class;
-                        break;
-                    default:
-                        throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
-                }
-                try
-                {
-                    String str = "parse" + Generics.getName(to).substring(0, 1).toUpperCase() + Generics.getName(to).substring(1);
-                    Member m = Generics.getMethod(toc, str, from);
-                    if (m != null && Modifier.isStatic(m.getModifiers()) && to.equals(Generics.getReturnType(m)))
-                    {
-                        tload(fromVariable);
-                        invokestatic(m);
-                        return;
-                    }
-                }
-                catch (NoSuchMethodException ex)
-                {
-                }
+                tload(fromVariable);
+                invokestatic(m);
+                return;
             }
         }
-        catch (IOException | SecurityException | IllegalConversionException | NoSuchMethodException ex)
+        if (from.getKind() == TypeKind.DECLARED && T.isPrimitive(to))
         {
-            throw new IllegalConversionException("Cannot convert from " + fromVariable + " to " + to, ex);
+            DeclaredType dt = (DeclaredType) from;
+            TypeElement te = (TypeElement) dt.asElement();
+            String str = to.getKind().name().toLowerCase() + "Value";
+            ExecutableElement m = E.findMethod(te, str);
+            // xxxValue()
+            // xxxValue()
+            if (m != null && T.isAssignable(m.getReturnType(), to))
+            {
+                tload(fromVariable);
+                invokevirtual(m);
+                return;
+            }
+        }
+        if (T.isPrimitive(from))
+        {
+            switch (from.getKind())
+            {
+                case BYTE:
+                case CHAR:
+                case SHORT:
+                case INT:
+                    switch (to.getKind())
+                    {
+                        case BYTE:
+                        case CHAR:
+                        case SHORT:
+                        case INT:
+                        case LONG:
+                        case FLOAT:
+                        case DOUBLE:
+                            tload(fromVariable);
+                            i2t();
+                            break;
+                        default:
+                            throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
+                    }
+                    break;
+                case LONG:
+                    switch (to.getKind())
+                    {
+                        case BYTE:
+                        case CHAR:
+                        case SHORT:
+                        case INT:
+                            tload(fromVariable);
+                            l2t();
+                            break;
+                        case FLOAT:
+                        case DOUBLE:
+                            tload(fromVariable);
+                            l2t();
+                            break;
+                        default:
+                            throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
+                    }
+                    break;
+                case FLOAT:
+                    switch (to.getKind())
+                    {
+                        case BYTE:
+                        case CHAR:
+                        case SHORT:
+                        case INT:
+                            tload(fromVariable);
+                            f2t();
+                            break;
+                        case LONG:
+                        case DOUBLE:
+                            tload(fromVariable);
+                            f2t();
+                            break;
+                        default:
+                            throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
+                    }
+                    break;
+                case DOUBLE:
+                    switch (to.getKind())
+                    {
+                        case BYTE:
+                        case CHAR:
+                        case SHORT:
+                        case INT:
+                            tload(fromVariable);
+                            d2t();
+                            break;
+                        case LONG:
+                        case FLOAT:
+                            tload(fromVariable);
+                            d2t();
+                            break;
+                        default:
+                            throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
+                    }
+                    break;
+                default:
+                    throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
+            }
         }
     }
 
-    private void check(String name)
-    {
-        if (!localClassMap.containsKey(name))
-        {
-            throw new IllegalArgumentException("local variable "+name+" not found");
-        }
-    }
     /**
      * Adds an exception handler. If one of catchTypes is thrown inside block the
      * execution continues at handler address. Thrown object is pushed in stack.

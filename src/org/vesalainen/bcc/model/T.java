@@ -55,6 +55,18 @@ public class T
     public static PrimitiveType Long;
     public static PrimitiveType Float;
     public static PrimitiveType Double;
+    public static ArrayType ByteA;
+    public static ArrayType BooleanA;
+    public static ArrayType CharA;
+    public static ArrayType ShortA;
+    public static ArrayType IntA;
+    public static ArrayType LongA;
+    public static ArrayType FloatA;
+    public static ArrayType DoubleA;
+    public static ArrayType StringA;
+    public static ArrayType ObjectA;
+    public static final DeclaredType String = (DeclaredType) getTypeFor(String.class);
+    public static final DeclaredType Object = (DeclaredType) getTypeFor(Object.class);
     public static final TypeMirror ReturnAddress = new ReturnAddress();
     
     private static Types types;
@@ -79,6 +91,16 @@ public class T
         Long = types.getPrimitiveType(TypeKind.LONG);
         Float = types.getPrimitiveType(TypeKind.FLOAT);
         Double = types.getPrimitiveType(TypeKind.DOUBLE);
+        ByteA = types.getArrayType(Byte);
+        BooleanA = types.getArrayType(Boolean);
+        CharA = types.getArrayType(Char);
+        ShortA = types.getArrayType(Short);
+        IntA = types.getArrayType(Int);
+        LongA = types.getArrayType(Long);
+        FloatA = types.getArrayType(Float);
+        DoubleA = types.getArrayType(Double);
+        StringA = types.getArrayType(String);
+        ObjectA = types.getArrayType(Object);
     }
 
     public static boolean isPrimitive(TypeMirror type)

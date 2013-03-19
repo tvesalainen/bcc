@@ -17,7 +17,7 @@
 package org.vesalainen.bcc;
 
 /**
- *
+ *@deprecated 
  * @author tkv
  */
 public class Null

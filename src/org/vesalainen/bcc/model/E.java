@@ -17,7 +17,9 @@
 
 package org.vesalainen.bcc.model;
 
+import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -27,6 +29,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import org.vesalainen.annotation.dump.Descriptor;
 
@@ -36,6 +41,79 @@ import org.vesalainen.annotation.dump.Descriptor;
 public class E 
 {
     private static Elements elements = new ElementsImpl();
+
+    public static ExecutableElement findMethod(Class<?> cls, String name, Class<?>... parameters) throws IOException
+    {
+        TypeElement typeElement = E.getTypeElement(cls.getCanonicalName());
+        TypeMirror[] params = new TypeMirror[parameters.length];
+        for (int ii=0;ii<params.length;ii++)
+        {
+            params[ii] = T.getTypeFor(parameters[ii]);
+        }
+        return findMethod(typeElement, name, params);
+    }
+    public static ExecutableElement findConstructor(Class<?> cls, Class<?>... parameters) throws IOException
+    {
+        TypeElement typeElement = E.getTypeElement(cls.getCanonicalName());
+        TypeMirror[] params = new TypeMirror[parameters.length];
+        for (int ii=0;ii<params.length;ii++)
+        {
+            params[ii] = T.getTypeFor(parameters[ii]);
+        }
+        return findConstructor(typeElement, params);
+    }
+    public static ExecutableElement findMethod(TypeElement typeElement, String name, TypeMirror... parameters)
+    {
+        for (ExecutableElement method : ElementFilter.methodsIn(E.getAllMembers(typeElement)))
+        {
+            if (name.contentEquals(method.getSimpleName()))
+            {
+                if (parameters.length == method.getParameters().size())
+                {
+                    boolean ok = true;
+                    List<? extends VariableElement> calleeParams = method.getParameters();
+                    for (int ii=0;ii<parameters.length;ii++)
+                    {
+                        if (!T.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                        {
+                            ok = false;
+                            continue;
+                        }
+                    }
+                    if (ok)
+                    {
+                        return method;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static ExecutableElement findConstructor(TypeElement typeElement, TypeMirror... parameters)
+    {
+        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements()))
+        {
+            if (parameters.length == method.getParameters().size())
+            {
+                boolean ok = true;
+                List<? extends VariableElement> calleeParams = method.getParameters();
+                for (int ii=0;ii<parameters.length;ii++)
+                {
+                    if (!T.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                    {
+                        ok = false;
+                        continue;
+                    }
+                }
+                if (ok)
+                {
+                    return method;
+                }
+            }
+        }
+        return null;
+    }
 
     public static TypeElement fromDescriptor(String fieldDescriptor)
     {

@@ -17,11 +17,10 @@
 package org.vesalainen.bcc;
 
 import java.io.IOException;
-import java.lang.reflect.Member;
-import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,9 +28,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.model.T;
-import org.vesalainen.bcc.type.Generics;
 
 /**
  *
@@ -39,15 +43,15 @@ import org.vesalainen.bcc.type.Generics;
  */
 public class ByteCodeVerifier extends OpCodeUtil
 {
-    private static final Type returnAddress = ReturnAddress.class;
+    private static final TypeMirror returnAddress = T.ReturnAddress;
 
     private ClassFile cf;
     private Deque<Context> branch = new ArrayDeque<>();
     private CodeDataInput in;
     private int opCodePosition;
     private Set<Integer> goneThrough = new HashSet<>();
-    private Map<Integer,Deque<Type>> stackAt = new HashMap<>();
-    private Map<Integer,Type[]> lvAt = new HashMap<>();
+    private Map<Integer,Deque<TypeMirror>> stackAt = new HashMap<>();
+    private Map<Integer,TypeMirror[]> lvAt = new HashMap<>();
     private int maxLocal;
     private int maxStack;
     private byte[] code;
@@ -71,7 +75,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         coverage = new boolean[code.length];
         lvType = new TypeMirror[mc.localSize()];
         int index = 0;
-        lvType[index++] = classFile.getClassName();
+        lvType[index++] = classFile.asType();
 
         for (TypeMirror param : mc.getParameters())
         {
@@ -99,7 +103,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             for (ExceptionTable et : exceptionTable)
             {
                 OperandStack os = new OperandStack();
-                os.add(Throwable.class);
+                os.add(T.getTypeFor(Throwable.class));
                 branch.add(new Context(et.getHandler(), os, lvType));
             }
             while (!branch.isEmpty())
@@ -157,7 +161,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             throw new IllegalArgumentException(mc.getMethodDescription()+": part of code not covered");
         }
     }
-    private void branch(int pc, int offset, OperandStack s, Type[] lv)
+    private void branch(int pc, int offset, OperandStack s, TypeMirror[] lv)
     {
         maxStack = Math.max(maxStack, s.getMax());
         int target = pc+offset;
@@ -165,7 +169,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         {
             throw new VerifyError(mc.getMethodDescription()+" goto target illegal "+target);
         }
-        Deque<Type> old = stackAt.get(target);
+        Deque<TypeMirror> old = stackAt.get(target);
         if (old != null)
         {
             String stackBefore = old.toString();
@@ -175,8 +179,8 @@ public class ByteCodeVerifier extends OpCodeUtil
                 throw new VerifyError(mc.getMethodDescription()+" stack differs in branch "+pc+" -> "+target
                         +"  before:"+stackBefore+"  now   :"+stackNow);
             }
-            Type[] lvBefore = lvAt.get(target);
-            Type[] lvNow = lv;
+            TypeMirror[] lvBefore = lvAt.get(target);
+            TypeMirror[] lvNow = lv;
             if (!compare(lvBefore, lvNow))
             {
                 throw new VerifyError(mc.getMethodDescription()+" local variables differ in branch "+pc+" -> "+target
@@ -196,7 +200,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
     }
 
-    private boolean compare(Type[] lvBefore, Type[] lvNow)
+    private boolean compare(TypeMirror[] lvBefore, TypeMirror[] lvNow)
     {
         for (int ii=0;ii<lvNow.length;ii++)
         {
@@ -212,19 +216,19 @@ public class ByteCodeVerifier extends OpCodeUtil
             {
                 return false;
             }
-            if (!Generics.isPrimitive(lvBefore[ii]) && Generics.isPrimitive(lvNow[ii]))
+            if (!T.isPrimitive(lvBefore[ii]) && T.isPrimitive(lvNow[ii]))
             {
                 return false;
             }
-            if (Generics.isPrimitive(lvBefore[ii]) && !Generics.isPrimitive(lvNow[ii]))
+            if (T.isPrimitive(lvBefore[ii]) && !T.isPrimitive(lvNow[ii]))
             {
                 return false;
             }
-            if (!Generics.isPrimitive(lvBefore[ii]) && !Generics.isPrimitive(lvNow[ii]))
+            if (!T.isPrimitive(lvBefore[ii]) && !T.isPrimitive(lvNow[ii]))
             {
                 continue;
             }
-            if (!lvBefore[ii].equals(lvNow[ii]))
+            if (!T.isSameType(lvBefore[ii], lvNow[ii]))
             {
                 return false;
             }
@@ -234,7 +238,7 @@ public class ByteCodeVerifier extends OpCodeUtil
     private int run(Context ctx) throws IOException, ClassNotFoundException
     {
         OperandStack s = ctx.getS(); // stack
-        Type[] lv = ctx.getLvType();
+        TypeMirror[] lv = ctx.getLvType();
         in = in.branch(ctx.getPc());
         int pc = 0;  // index
         int i = 0;  // index
@@ -243,20 +247,22 @@ public class ByteCodeVerifier extends OpCodeUtil
         int def = 0;
         int low = 0;
         int high = 0;
-        Type v1;
-        Type v2 = null;
-        Type v3;
-        Type v4;
-        Member fi;
-        Member me = null;
+        TypeMirror v1 = null;
+        TypeMirror v2 = null;
+        TypeMirror v3;
+        TypeMirror v4;
+        ArrayType a1;
+        VariableElement fi;
+        ExecutableElement me = null;
         ConstantInfo ci = null;
-        Type cw;
-        Member co;
+        TypeMirror cw;
+        ExecutableElement co;
+        TypeElement te;
         while (in.available() > 0)
         {
             pc = in.pc();
             opCodePosition = pc;
-            Deque<Type> ns = new LinkedList<>();
+            Deque<TypeMirror> ns = new LinkedList<>();
             ns.addAll(s);
             stackAt.put(pc, ns);
             lvAt.put(pc, lv.clone());
@@ -275,28 +281,28 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case ICONST_3:
                 case ICONST_4:
                 case ICONST_5:
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case LCONST_0:
                 case LCONST_1:
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case FCONST_0:
                 case FCONST_1:
                 case FCONST_2:
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case DCONST_0:
                 case DCONST_1:
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case BIPUSH:
                     in.readByte();
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case SIPUSH:
                     in.readShort();
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case LDC:
                     i = in.readUnsignedByte();
@@ -304,13 +310,13 @@ public class ByteCodeVerifier extends OpCodeUtil
                     switch (ci.getTag())
                     {
                         case ConstantInfo.CONSTANT_Integer:
-                            s.push(int.class);
+                            s.push(T.Int);
                             break;
                         case ConstantInfo.CONSTANT_Float:
-                            s.push(float.class);
+                            s.push(T.Float);
                             break;
                         case ConstantInfo.CONSTANT_String:
-                            s.push(String.class);
+                            s.push(T.String);
                             break;
                         default:
                             throw new VerifyError("illegal constant info for ldc "+ci.getTag());
@@ -322,13 +328,13 @@ public class ByteCodeVerifier extends OpCodeUtil
                     switch (ci.getTag())
                     {
                         case ConstantInfo.CONSTANT_Integer:
-                            s.push(int.class);
+                            s.push(T.Int);
                             break;
                         case ConstantInfo.CONSTANT_Float:
-                            s.push(float.class);
+                            s.push(T.Float);
                             break;
                         case ConstantInfo.CONSTANT_String:
-                            s.push(String.class);
+                            s.push(T.String);
                             break;
                         default:
                             throw new VerifyError("illegal constant info for ldc_w "+ci.getTag());
@@ -340,10 +346,10 @@ public class ByteCodeVerifier extends OpCodeUtil
                     switch (ci.getTag())
                     {
                         case ConstantInfo.CONSTANT_Long:
-                            s.push(long.class);
+                            s.push(T.Long);
                             break;
                         case ConstantInfo.CONSTANT_Double:
-                            s.push(double.class);
+                            s.push(T.Double);
                             break;
                         default:
                             throw new VerifyError("illegal constant info for ldc2_w "+ci.getTag());
@@ -351,43 +357,43 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case ILOAD:
                     i = in.readUnsignedByte();
-                    if (!int.class.equals(lvType[i]))
+                    if (!T.isSameType(T.Int,lvType[i]))
                     {
                         throw new VerifyError("local variable "+i+" "+mc.getLocalName(i)+" not initialized to int");
                     }
                     maxLocal = Math.max(i, maxLocal);
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case LLOAD:
                     i = in.readUnsignedByte();
-                    if (!long.class.equals(lvType[i]) || lvType[i+1] != null)
+                    if (!T.isSameType(T.Long, lvType[i]) || lvType[i+1] != null)
                     {
                         throw new VerifyError("local variable "+i+" "+mc.getLocalName(i)+" not initialized to long");
                     }
                     maxLocal = Math.max(i, maxLocal);
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case FLOAD:
                     i = in.readUnsignedByte();
-                    if (!float.class.equals(lvType[i]))
+                    if (!T.isSameType(T.Float, lvType[i]))
                     {
                         throw new VerifyError("local variable "+i+" "+mc.getLocalName(i)+" not initialized to float");
                     }
                     maxLocal = Math.max(i, maxLocal);
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case DLOAD:
                     i = in.readUnsignedByte();
-                    if (!double.class.equals(lvType[i]) || lvType[i+1] != null)
+                    if (!T.isSameType(T.Double, lvType[i]) || lvType[i+1] != null)
                     {
                         throw new VerifyError("local variable "+i+" "+mc.getLocalName(i)+" not initialized to double");
                     }
                     maxLocal = Math.max(i, maxLocal);
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case ALOAD:
                     i = in.readUnsignedByte();
-                    if (lvType[i] == null || Generics.isPrimitive(lvType[i]))
+                    if (lvType[i] == null || T.isPrimitive(lvType[i]))
                     {
                         throw new VerifyError("local variable "+i+" "+mc.getLocalName(i)+" not initialized to reference");
                     }
@@ -395,135 +401,135 @@ public class ByteCodeVerifier extends OpCodeUtil
                     s.push(mc.getLocalType(i));
                     break;
                 case ILOAD_0:
-                    if (!int.class.equals(lvType[0]))
+                    if (!T.isSameType(T.Int, lvType[0]))
                     {
                         throw new VerifyError("local variable 0 "+mc.getLocalName(0)+" not initialized to int");
                     }
                     maxLocal = Math.max(0, maxLocal);
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case ILOAD_1:
-                    if (!int.class.equals(lvType[1]))
+                    if (!T.isSameType(T.Int, lvType[1]))
                     {
                         throw new VerifyError("local variable 1 "+mc.getLocalName(1)+" not initialized to int");
                     }
                     maxLocal = Math.max(1, maxLocal);
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case ILOAD_2:
-                    if (!int.class.equals(lvType[2]))
+                    if (!T.isSameType(T.Int, lvType[2]))
                     {
                         throw new VerifyError("local variable 2 "+mc.getLocalName(2)+" not initialized to int");
                     }
                     maxLocal = Math.max(2, maxLocal);
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case ILOAD_3:
-                    if (!int.class.equals(lvType[3]))
+                    if (!T.isSameType(T.Int, lvType[3]))
                     {
                         throw new VerifyError("local variable 3 "+mc.getLocalName(3)+" not initialized to int");
                     }
                     maxLocal = Math.max(3, maxLocal);
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case LLOAD_0:
-                    if (!long.class.equals(lvType[0]) || lvType[1] != null)
+                    if (!T.isSameType(T.Long, lvType[0]) || lvType[1] != null)
                     {
                         throw new VerifyError("local variable 0 "+mc.getLocalName(0)+" not initialized to long");
                     }
                     maxLocal = Math.max(0, maxLocal);
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case LLOAD_1:
-                    if (!long.class.equals(lvType[1]) || lvType[2] != null)
+                    if (!T.isSameType(T.Long, lvType[1]) || lvType[2] != null)
                     {
                         throw new VerifyError("local variable 1 "+mc.getLocalName(1)+" not initialized to long");
                     }
                     maxLocal = Math.max(1, maxLocal);
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case LLOAD_2:
-                    if (!long.class.equals(lvType[2]) || lvType[3] != null)
+                    if (!T.isSameType(T.Long, lvType[2]) || lvType[3] != null)
                     {
                         throw new VerifyError("local variable 2 "+mc.getLocalName(2)+" not initialized to long");
                     }
                     maxLocal = Math.max(2, maxLocal);
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case LLOAD_3:
-                    if (!long.class.equals(lvType[3]) || lvType[4] != null)
+                    if (!T.isSameType(T.Long, lvType[3]) || lvType[4] != null)
                     {
                         throw new VerifyError("local variable 3 "+mc.getLocalName(3)+" not initialized to long");
                     }
                     maxLocal = Math.max(3, maxLocal);
-                    s.push(long.class);
+                    s.push(T.Long);
                     break;
                 case FLOAD_0:
-                    if (!float.class.equals(lvType[0]))
+                    if (!T.isSameType(T.Float, lvType[0]))
                     {
                         throw new VerifyError("local variable 0 "+mc.getLocalName(0)+" not initialized to float");
                     }
                     maxLocal = Math.max(0, maxLocal);
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case FLOAD_1:
-                    if (!float.class.equals(lvType[1]))
+                    if (!T.isSameType(T.Float, lvType[1]))
                     {
                         throw new VerifyError("local variable 1 "+mc.getLocalName(1)+" not initialized to float");
                     }
                     maxLocal = Math.max(1, maxLocal);
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case FLOAD_2:
-                    if (!float.class.equals(lvType[2]))
+                    if (!T.isSameType(T.Float, lvType[2]))
                     {
                         throw new VerifyError("local variable 2 "+mc.getLocalName(2)+" not initialized to float");
                     }
                     maxLocal = Math.max(2, maxLocal);
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case FLOAD_3:
-                    if (!float.class.equals(lvType[3]))
+                    if (!T.isSameType(T.Float, lvType[3]))
                     {
                         throw new VerifyError("local variable 3 "+mc.getLocalName(3)+" not initialized to float");
                     }
                     maxLocal = Math.max(3, maxLocal);
-                    s.push(float.class);
+                    s.push(T.Float);
                     break;
                 case DLOAD_0:
-                    if (!double.class.equals(lvType[0]) || lvType[1] != null)
+                    if (!T.isSameType(T.Double, lvType[0]) || lvType[1] != null)
                     {
                         throw new VerifyError("local variable 0 "+mc.getLocalName(0)+" not initialized to double");
                     }
                     maxLocal = Math.max(0, maxLocal);
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case DLOAD_1:
-                    if (!double.class.equals(lvType[1]) || lvType[2] != null)
+                    if (!T.isSameType(T.Double, lvType[1]) || lvType[2] != null)
                     {
                         throw new VerifyError("local variable 1 "+mc.getLocalName(1)+" not initialized to double");
                     }
                     maxLocal = Math.max(1, maxLocal);
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case DLOAD_2:
-                    if (!double.class.equals(lvType[2]) || lvType[3] != null)
+                    if (!T.isSameType(T.Double, lvType[2]) || lvType[3] != null)
                     {
                         throw new VerifyError("local variable 2 "+mc.getLocalName(2)+" not initialized to double");
                     }
                     maxLocal = Math.max(2, maxLocal);
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case DLOAD_3:
-                    if (!double.class.equals(lvType[3]) || lvType[4] != null)
+                    if (!T.isSameType(T.Double, lvType[3]) || lvType[4] != null)
                     {
                         throw new VerifyError("local variable 3 "+mc.getLocalName(3)+" not initialized to double");
                     }
                     maxLocal = Math.max(3, maxLocal);
-                    s.push(double.class);
+                    s.push(T.Double);
                     break;
                 case ALOAD_0:
-                    if (lvType[0] == null || Generics.isPrimitive(lvType[0]))
+                    if (lvType[0] == null || T.isPrimitive(lvType[0]))
                     {
                         throw new VerifyError("local variable 0 "+mc.getLocalName(0)+" not initialized to reference");
                     }
@@ -531,7 +537,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     s.push(mc.getLocalType(0));
                     break;
                 case ALOAD_1:
-                    if (lvType[1] == null || Generics.isPrimitive(lvType[1]))
+                    if (lvType[1] == null || T.isPrimitive(lvType[1]))
                     {
                         throw new VerifyError("local variable 1 "+mc.getLocalName(1)+" not initialized to reference");
                     }
@@ -539,7 +545,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     s.push(mc.getLocalType(1));
                     break;
                 case ALOAD_2:
-                    if (lvType[2] == null || Generics.isPrimitive(lvType[2]))
+                    if (lvType[2] == null || T.isPrimitive(lvType[2]))
                     {
                         throw new VerifyError("local variable 2 "+mc.getLocalName(2)+" not initialized to reference");
                     }
@@ -547,7 +553,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     s.push(mc.getLocalType(2));
                     break;
                 case ALOAD_3:
-                    if (lvType[3] == null || Generics.isPrimitive(lvType[3]))
+                    if (lvType[3] == null || T.isPrimitive(lvType[3]))
                     {
                         throw new VerifyError("local variable 3 "+mc.getLocalName(3)+" not initialized to reference");
                     }
@@ -555,70 +561,70 @@ public class ByteCodeVerifier extends OpCodeUtil
                     s.push(mc.getLocalType(3));
                     break;
                 case IALOAD:
-                    verify(int.class, s.pop());
-                    verify(int[].class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    verify(T.IntA, s.pop());
+                    s.push(T.Int);
                     break;
                 case LALOAD:
-                    verify(int.class, s.pop());
-                    verify(long[].class, s.pop());
-                    s.push(long.class);
+                    verify(T.Int, s.pop());
+                    verify(T.LongA, s.pop());
+                    s.push(T.Long);
                     break;
                 case FALOAD:
-                    verify(int.class, s.pop());
-                    verify(float[].class, s.pop());
-                    s.push(float.class);
+                    verify(T.Int, s.pop());
+                    verify(T.FloatA, s.pop());
+                    s.push(T.Float);
                     break;
                 case DALOAD:
-                    verify(int.class, s.pop());
-                    verify(double[].class, s.pop());
-                    s.push(double.class);
+                    verify(T.Int, s.pop());
+                    verify(T.DoubleA, s.pop());
+                    s.push(T.Double);
                     break;
                 case AALOAD:
-                    verify(int.class, s.pop());
-                    v1 = s.pop();
-                    verify(Object[].class, v1);
-                    s.push(Generics.getComponentType(v1));
+                    verify(T.Int, s.pop());
+                    a1 = (ArrayType) s.pop();
+                    verify(T.ObjectA, v1);
+                    s.push(a1.getComponentType());
                     break;
                 case BALOAD:
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     verifyByteOrBooleanArray(s.pop());
-                    s.push(int.class);
+                    s.push(T.Int);
                     break;
                 case CALOAD:
-                    verify(int.class, s.pop());
-                    verify(char[].class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    verify(T.CharA, s.pop());
+                    s.push(T.Int);
                     break;
                 case SALOAD:
-                    verify(int.class, s.pop());
-                    verify(short[].class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    verify(T.ShortA, s.pop());
+                    s.push(T.Int);
                     break;
                 case ISTORE:
                     i = in.readUnsignedByte();
                     maxLocal = Math.max(i, maxLocal);
-                    verify(int.class, s.pop());
-                    lvType[i] = int.class;
+                    verify(T.Int, s.pop());
+                    lvType[i] = T.Int;
                     break;
                 case LSTORE:
                     i = in.readUnsignedByte();
                     maxLocal = Math.max(i, maxLocal);
-                    verify(long.class, s.pop());
-                    lvType[i] = long.class;
+                    verify(T.Long, s.pop());
+                    lvType[i] = T.Long;
                     lvType[i+1] = null;
                     break;
                 case FSTORE:
                     i = in.readUnsignedByte();
                     maxLocal = Math.max(i, maxLocal);
-                    verify(float.class, s.pop());
-                    lvType[i] = float.class;
+                    verify(T.Float, s.pop());
+                    lvType[i] = T.Float;
                     break;
                 case DSTORE:
                     i = in.readUnsignedByte();
                     maxLocal = Math.max(i, maxLocal);
-                    verify(double.class, s.pop());
-                    lvType[i] = double.class;
+                    verify(T.Double, s.pop());
+                    lvType[i] = T.Double;
                     lvType[i+1] = null;
                     break;
                 case ASTORE:
@@ -629,90 +635,90 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case ISTORE_0:
                     maxLocal = Math.max(0, maxLocal);
-                    verify(int.class, s.pop());
-                    lvType[0] = int.class;
+                    verify(T.Int, s.pop());
+                    lvType[0] = T.Int;
                     break;
                 case ISTORE_1:
                     maxLocal = Math.max(1, maxLocal);
-                    verify(int.class, s.pop());
-                    lvType[1] = int.class;
+                    verify(T.Int, s.pop());
+                    lvType[1] = T.Int;
                     break;
                 case ISTORE_2:
                     maxLocal = Math.max(2, maxLocal);
-                    verify(int.class, s.pop());
-                    lvType[2] = int.class;
+                    verify(T.Int, s.pop());
+                    lvType[2] = T.Int;
                     break;
                 case ISTORE_3:
                     maxLocal = Math.max(3, maxLocal);
-                    verify(int.class, s.pop());
-                    lvType[3] = int.class;
+                    verify(T.Int, s.pop());
+                    lvType[3] = T.Int;
                     break;
                 case LSTORE_0:
                     maxLocal = Math.max(0, maxLocal);
-                    verify(long.class, s.pop());
-                    lvType[0] = long.class;
+                    verify(T.Long, s.pop());
+                    lvType[0] = T.Long;
                     lvType[1] = null;
                     break;
                 case LSTORE_1:
                     maxLocal = Math.max(1, maxLocal);
-                    verify(long.class, s.pop());
-                    lvType[1] = long.class;
+                    verify(T.Long, s.pop());
+                    lvType[1] = T.Long;
                     lvType[2] = null;
                     break;
                 case LSTORE_2:
                     maxLocal = Math.max(2, maxLocal);
-                    verify(long.class, s.pop());
-                    lvType[2] = long.class;
+                    verify(T.Long, s.pop());
+                    lvType[2] = T.Long;
                     lvType[3] = null;
                     break;
                 case LSTORE_3:
                     maxLocal = Math.max(3, maxLocal);
-                    verify(long.class, s.pop());
-                    lvType[3] = long.class;
+                    verify(T.Long, s.pop());
+                    lvType[3] = T.Long;
                     lvType[4] = null;
                     break;
                 case FSTORE_0:
                     maxLocal = Math.max(0, maxLocal);
-                    verify(float.class, s.pop());
-                    lvType[0] = float.class;
+                    verify(T.Float, s.pop());
+                    lvType[0] = T.Float;
                     break;
                 case FSTORE_1:
                     maxLocal = Math.max(1, maxLocal);
-                    verify(float.class, s.pop());
-                    lvType[1] = float.class;
+                    verify(T.Float, s.pop());
+                    lvType[1] = T.Float;
                     break;
                 case FSTORE_2:
                     maxLocal = Math.max(2, maxLocal);
-                    verify(float.class, s.pop());
-                    lvType[2] = float.class;
+                    verify(T.Float, s.pop());
+                    lvType[2] = T.Float;
                     break;
                 case FSTORE_3:
                     maxLocal = Math.max(3, maxLocal);
-                    verify(float.class, s.pop());
-                    lvType[3] = float.class;
+                    verify(T.Float, s.pop());
+                    lvType[3] = T.Float;
                     break;
                 case DSTORE_0:
                     maxLocal = Math.max(0, maxLocal);
-                    verify(double.class, s.pop());
-                    lvType[0] = double.class;
+                    verify(T.Double, s.pop());
+                    lvType[0] = T.Double;
                     lvType[1] = null;
                     break;
                 case DSTORE_1:
                     maxLocal = Math.max(1, maxLocal);
-                    verify(double.class, s.pop());
-                    lvType[1] = double.class;
+                    verify(T.Double, s.pop());
+                    lvType[1] = T.Double;
                     lvType[2] = null;
                     break;
                 case DSTORE_2:
                     maxLocal = Math.max(2, maxLocal);
-                    verify(double.class, s.pop());
-                    lvType[2] = double.class;
+                    verify(T.Double, s.pop());
+                    lvType[2] = T.Double;
                     lvType[3] = null;
                     break;
                 case DSTORE_3:
                     maxLocal = Math.max(3, maxLocal);
-                    verify(double.class, s.pop());
-                    lvType[3] = double.class;
+                    verify(T.Double, s.pop());
+                    lvType[3] = T.Double;
                     lvType[4] = null;
                     break;
                 case ASTORE_0:
@@ -736,44 +742,44 @@ public class ByteCodeVerifier extends OpCodeUtil
                     lvType[3] = getLocalType(3);
                     break;
                 case IASTORE:
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(int[].class, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.IntA, s.pop());
                     break;
                 case LASTORE:
-                    verify(long.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(long[].class, s.pop());
+                    verify(T.Long, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.LongA, s.pop());
                     break;
                 case FASTORE:
-                    verify(float.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(float[].class, s.pop());
+                    verify(T.Float, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.FloatA, s.pop());
                     break;
                 case DASTORE:
-                    verify(double.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(double[].class, s.pop());
+                    verify(T.Double, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.DoubleA, s.pop());
                     break;
                 case AASTORE:
                     verifyReferenceOrArray(s.pop());
-                    verify(int.class, s.pop());
-                    verify(Object[].class, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.ObjectA, s.pop());
                     break;
                 case BASTORE:
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
                     verifyByteOrBooleanArray(s.pop());
                     break;
                 case CASTORE:
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(char[].class, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.CharA, s.pop());
                     break;
                 case SASTORE:
-                    verify(short.class, s.pop());
-                    verify(int.class, s.pop());
-                    verify(short[].class, s.pop());
+                    verify(T.Short, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.ShortA, s.pop());
                     break;
                 case POP:
                     verify1(s.pop());
@@ -926,9 +932,9 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case IAND:
                 case IOR:
                 case IXOR:
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
+                    s.push(T.Int);
                     break;
                 case LADD:
                 case LSUB:
@@ -938,52 +944,52 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case LAND:
                 case LOR:
                 case LXOR:
-                    verify(long.class, s.pop());
-                    verify(long.class, s.pop());
-                    s.push(long.class);
+                    verify(T.Long, s.pop());
+                    verify(T.Long, s.pop());
+                    s.push(T.Long);
                     break;
                 case FADD:
                 case FSUB:
                 case FMUL:
                 case FDIV:
                 case FREM:
-                    verify(float.class, s.pop());
-                    verify(float.class, s.pop());
-                    s.push(float.class);
+                    verify(T.Float, s.pop());
+                    verify(T.Float, s.pop());
+                    s.push(T.Float);
                     break;
                 case DADD:
                 case DSUB:
                 case DMUL:
                 case DDIV:
-                    verify(double.class, s.pop());
-                    verify(double.class, s.pop());
-                    s.push(double.class);
+                    verify(T.Double, s.pop());
+                    verify(T.Double, s.pop());
+                    s.push(T.Double);
                     break;
                 case INEG:
-                    verify(int.class, s.peek());
+                    verify(T.Int, s.peek());
                     break;
                 case LNEG:
-                    verify(long.class, s.peek());
+                    verify(T.Long, s.peek());
                     break;
                 case FNEG:
-                    verify(float.class, s.peek());
+                    verify(T.Float, s.peek());
                     break;
                 case DNEG:
-                    verify(double.class, s.peek());
+                    verify(T.Double, s.peek());
                     break;
                 case ISHL:
                 case ISHR:
                 case IUSHR:
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
+                    s.push(T.Int);
                     break;
                 case LSHL:
                 case LSHR:
                 case LUSHR:
-                    verify(int.class, s.pop());
-                    verify(long.class, s.pop());
-                    s.push(long.class);
+                    verify(T.Int, s.pop());
+                    verify(T.Long, s.pop());
+                    s.push(T.Long);
                     break;
                 case IINC:
                     i = in.readUnsignedByte();
@@ -991,75 +997,75 @@ public class ByteCodeVerifier extends OpCodeUtil
                     c = in.readByte();
                     break;
                 case I2L:
-                    verify(int.class, s.pop());
-                    s.push(long.class);
+                    verify(T.Int, s.pop());
+                    s.push(T.Long);
                     break;
                 case I2F:
-                    verify(int.class, s.pop());
-                    s.push(float.class);
+                    verify(T.Int, s.pop());
+                    s.push(T.Float);
                     break;
                 case I2D:
-                    verify(int.class, s.pop());
-                    s.push(double.class);
+                    verify(T.Int, s.pop());
+                    s.push(T.Double);
                     break;
                 case L2I:
-                    verify(long.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Long, s.pop());
+                    s.push(T.Int);
                     break;
                 case L2F:
-                    verify(long.class, s.pop());
-                    s.push(float.class);
+                    verify(T.Long, s.pop());
+                    s.push(T.Float);
                     break;
                 case L2D:
-                    verify(long.class, s.pop());
-                    s.push(double.class);
+                    verify(T.Long, s.pop());
+                    s.push(T.Double);
                     break;
                 case F2I:
-                    verify(float.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Float, s.pop());
+                    s.push(T.Int);
                     break;
                 case F2L:
-                    verify(float.class, s.pop());
-                    s.push(long.class);
+                    verify(T.Float, s.pop());
+                    s.push(T.Long);
                     break;
                 case F2D:
-                    verify(float.class, s.pop());
-                    s.push(double.class);
+                    verify(T.Float, s.pop());
+                    s.push(T.Double);
                     break;
                 case D2I:
-                    verify(double.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Double, s.pop());
+                    s.push(T.Int);
                     break;
                 case D2L:
-                    verify(double.class, s.pop());
-                    s.push(long.class);
+                    verify(T.Double, s.pop());
+                    s.push(T.Long);
                     break;
                 case D2F:
-                    verify(double.class, s.pop());
-                    s.push(float.class);
+                    verify(T.Double, s.pop());
+                    s.push(T.Float);
                     break;
                 case I2B:
                 case I2C:
                 case I2S:
-                    verify(int.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Int, s.pop());
+                    s.push(T.Int);
                     break;
                 case LCMP:
-                    verify(long.class, s.pop());
-                    verify(long.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Long, s.pop());
+                    verify(T.Long, s.pop());
+                    s.push(T.Int);
                     break;
                 case FCMPL:
                 case FCMPG:
-                    verify(float.class, s.pop());
-                    verify(float.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Float, s.pop());
+                    verify(T.Float, s.pop());
+                    s.push(T.Int);
                     break;
                 case DCMPL:
                 case DCMPG:
-                    verify(double.class, s.pop());
-                    verify(double.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Double, s.pop());
+                    verify(T.Double, s.pop());
+                    s.push(T.Int);
                     break;
                 case IFEQ:
                 case IFNE:
@@ -1068,7 +1074,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case IFGT:
                 case IFLE:
                     o = in.readShort();
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     branch(pc, o, s, lv);
                     break;
                 case IF_ICMPEQ:
@@ -1078,15 +1084,15 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case IF_ICMPGT:
                 case IF_ICMPLE:
                     o = in.readShort();
-                    verify(int.class, s.pop());
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
+                    verify(T.Int, s.pop());
                     branch(pc, o, s, lv);
                     break;
                 case IF_ACMPEQ:
                 case IF_ACMPNE:
                     o = in.readShort();
-                    verify(Object.class, s.pop());
-                    verify(Object.class, s.pop());
+                    verify(T.Object, s.pop());
+                    verify(T.Object, s.pop());
                     branch(pc, o, s, lv);
                     break;
                 case GOTO:
@@ -1123,7 +1129,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     def = in.readInt();
                     low = in.readInt();
                     high = in.readInt();
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     branch(pc, def, s, lv);
                     for (int ii=0;ii<high-low+1;ii++)
                     {
@@ -1138,7 +1144,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     }
                     def = in.readInt();
                     high = in.readInt();
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     branch(pc, def, s, lv);
                     low = Integer.MIN_VALUE;
                     for (int ii=0;ii<high;ii++)
@@ -1158,7 +1164,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     {
                         throw new VerifyError("stack empty when return "+s);
                     }
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     if (!s.isEmpty())
                     {
                         throw new VerifyError("stack not empty when return "+s);
@@ -1169,7 +1175,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     {
                         throw new VerifyError("stack empty when return "+s);
                     }
-                    verify(long.class, s.pop());
+                    verify(T.Long, s.pop());
                     if (!s.isEmpty())
                     {
                         throw new VerifyError("stack not empty when return "+s);
@@ -1180,7 +1186,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     {
                         throw new VerifyError("stack empty when return "+s);
                     }
-                    verify(float.class, s.pop());
+                    verify(T.Float, s.pop());
                     if (!s.isEmpty())
                     {
                         throw new VerifyError("stack not empty when return "+s);
@@ -1191,7 +1197,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     {
                         throw new VerifyError("stack empty when return "+s);
                     }
-                    verify(double.class, s.pop());
+                    verify(T.Double, s.pop());
                     if (!s.isEmpty())
                     {
                         throw new VerifyError("stack not empty when return "+s);
@@ -1216,58 +1222,58 @@ public class ByteCodeVerifier extends OpCodeUtil
                     return s.getMax();
                 case GETSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (Member) cf.getElement(i);
-                    s.push(Generics.getType(fi));
+                    fi = (VariableElement) cf.getIndexedElement(i);
+                    s.push(fi.asType());
                     break;
                 case PUTSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (Member) cf.getElement(i);
-                    verify(Generics.getType(fi), s.pop());
+                    fi = (VariableElement) cf.getIndexedElement(i);
+                    verify(fi.asType(), s.pop());
                     break;
                 case GETFIELD:
                     i = in.readUnsignedShort();
-                    verify(Object.class, s.pop());
-                    fi = (Member) cf.getElement(i);
-                    s.push(Generics.getType(fi));
+                    verify(T.Object, s.pop());
+                    fi = (VariableElement) cf.getIndexedElement(i);
+                    s.push(fi.asType());
                     break;
                 case PUTFIELD:
                     i = in.readUnsignedShort();
-                    fi = (Member) cf.getElement(i);
-                    verify(Generics.getType(fi), s.pop());
-                    verify(Object.class, s.pop());
+                    fi = (VariableElement) cf.getIndexedElement(i);
+                    verify(fi.asType(), s.pop());
+                    verify(T.Object, s.pop());
                     break;
                 case INVOKEVIRTUAL:
                     i = in.readUnsignedShort();
-                    me =  (Member) cf.getElement(i);
+                    me =  (ExecutableElement) cf.getIndexedElement(i);
                     verifyMethod(s, me);
                     verifyVirtualClass(s.pop(), me);
-                    s.push(Generics.getReturnType(me));
+                    s.push(me.getReturnType());
                     break;
                 case INVOKESPECIAL: // TODO is there any different in these options
                     i = in.readUnsignedShort();
-                    if (Generics.isConstructor(cf.getElement(i)))
+                    if (cf.getIndexedElement(i).getKind() == ElementKind.CONSTRUCTOR)
                     {
-                        co = (Member) cf.getElement(i);
-                        verifyConstructor(s, co);
+                        co = (ExecutableElement) cf.getIndexedElement(i);
+                        verifyMethod(s, co);
                         verifyClass(s.pop(), co);
                     }
                     else
                     {
-                        me =  (Member) cf.getElement(i);
+                        me =  (ExecutableElement) cf.getIndexedElement(i);
                         verifyMethod(s, me);
                         verifyClass(s.pop(), me);
-                        s.push(Generics.getReturnType(me));
+                        s.push(me.getReturnType());
                     }
                     break;
                 case INVOKESTATIC:
                     i = in.readUnsignedShort();
-                    me =  (Member) cf.getElement(i);
+                    me =  (ExecutableElement) cf.getIndexedElement(i);
                     verifyMethod(s, me);
-                    s.push(Generics.getReturnType(me));
+                    s.push(me.getReturnType());
                     break;
                 case INVOKEINTERFACE:
                     i = in.readUnsignedShort();
-                    me =  (Member) cf.getElement(i);
+                    me =  (ExecutableElement) cf.getIndexedElement(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {
@@ -1280,41 +1286,42 @@ public class ByteCodeVerifier extends OpCodeUtil
                     }
                     verifyMethod(s, me);
                     verifyClass(s.pop(), me);
-                    s.push(Generics.getReturnType(me));
+                    s.push(me.getReturnType());
                     break;
                 case NEW:
                     i = in.readUnsignedShort();
-                    cw = (Type) cf.getElement(i);
+                    te = (TypeElement) cf.getIndexedElement(i);
+                    cw = te.asType();
                     s.push(cw);
                     break;
                 case NEWARRAY:
                     i = in.readByte();
-                    verify(int.class, s.pop());
+                    verify(T.Int, s.pop());
                     switch (i)
                     {
                         case 4:
-                            s.push(boolean[].class);
+                            s.push(T.BooleanA);
                             break;
                         case 5:
-                            s.push(char[].class);
+                            s.push(T.CharA);
                             break;
                         case 6:
-                            s.push(float[].class);
+                            s.push(T.FloatA);
                             break;
                         case 7:
-                            s.push(double[].class);
+                            s.push(T.DoubleA);
                             break;
                         case 8:
-                            s.push(byte[].class);
+                            s.push(T.ByteA);
                             break;
                         case 9:
-                            s.push(short[].class);
+                            s.push(T.ShortA);
                             break;
                         case 10:
-                            s.push(int[].class);
+                            s.push(T.IntA);
                             break;
                         case 11:
-                            s.push(long[].class);
+                            s.push(T.LongA);
                             break;
                         default:
                             throw new VerifyError("array type illegal");
@@ -1322,32 +1329,32 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case ANEWARRAY:
                     i = in.readUnsignedShort();
-                    verify(int.class, s.pop());
-                    cw = (Type) cf.getElement(i);
-                    s.push(Object[].class);
+                    verify(T.Int, s.pop());
+                    te = (TypeElement) cf.getIndexedElement(i);
+                    s.push(T.ObjectA);
                     break;
                 case ARRAYLENGTH:
-                    verify(Object[].class, s.pop());
-                    s.push(int.class);
+                    verify(T.ObjectA, s.pop());
+                    s.push(T.Int);
                     break;
                 case ATHROW:
-                    verify(Object.class, s.pop());
+                    verify(T.Object, s.pop());
                     return s.getMax();
                 case CHECKCAST:
                     i = in.readUnsignedShort();
                     v1 = s.pop();
-                    verify(Object.class, v1);
-                    cw = (Type) cf.getElement(i);
-                    s.push(cw);
+                    verify(T.Object, v1);
+                    te = (TypeElement) cf.getIndexedElement(i);
+                    s.push(te.asType());
                     break;
                 case INSTANCEOF:
                     i = in.readUnsignedShort();
-                    verify(Object.class, s.pop());
-                    s.push(int.class);
+                    verify(T.Object, s.pop());
+                    s.push(T.Int);
                     break;
                 case MONITORENTER:
                 case MONITOREXIT:
-                    verify(Object.class, s.pop());
+                    verify(T.Object, s.pop());
                     break;
                 case WIDE:
                     i = in.readUnsignedByte();
@@ -1356,22 +1363,22 @@ public class ByteCodeVerifier extends OpCodeUtil
                         case ILOAD:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            s.push(int.class);
+                            s.push(T.Int);
                             break;
                         case LLOAD:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            s.push(long.class);
+                            s.push(T.Long);
                             break;
                         case FLOAD:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            s.push(float.class);
+                            s.push(T.Float);
                             break;
                         case DLOAD:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            s.push(double.class);
+                            s.push(T.Double);
                             break;
                         case ALOAD:
                             i = in.readUnsignedShort();
@@ -1381,22 +1388,22 @@ public class ByteCodeVerifier extends OpCodeUtil
                         case ISTORE:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            verify(int.class, s.pop());
+                            verify(T.Int, s.pop());
                             break;
                         case LSTORE:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            verify(long.class, s.pop());
+                            verify(T.Long, s.pop());
                             break;
                         case FSTORE:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            verify(float.class, s.pop());
+                            verify(T.Float, s.pop());
                             break;
                         case DSTORE:
                             i = in.readUnsignedShort();
                             maxLocal = Math.max(i, maxLocal);
-                            verify(double.class, s.pop());
+                            verify(T.Double, s.pop());
                             break;
                         case ASTORE:
                             i = in.readUnsignedShort();
@@ -1418,8 +1425,8 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case MULTIANEWARRAY:
                     i = in.readUnsignedShort();
-                    verify(int.class, s.pop());
-                    cw = (Type) cf.getElement(i);
+                    verify(T.Int, s.pop());
+                    te = (TypeElement) cf.getIndexedElement(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {
@@ -1427,13 +1434,13 @@ public class ByteCodeVerifier extends OpCodeUtil
                     }
                     for (int ii=0;ii<i;ii++)
                     {
-                        verify(int.class, s.pop());
+                        verify(T.Int, s.pop());
                     }
-                    s.push(Object[].class);
+                    s.push(T.ObjectA);
                     break;
                 case IFNULL:
                 case IFNONNULL:
-                    verify(Object.class, s.pop());
+                    verify(T.Object, s.pop());
                     o = in.readShort();
                     branch(pc, o, s, lv);
                     break;
@@ -1450,23 +1457,23 @@ public class ByteCodeVerifier extends OpCodeUtil
         throw new VerifyError("running past code");
     }
 
-    private void verify(Type assignee, Type assignable)
+    private void verify(TypeMirror assignee, TypeMirror assignable)
     {
-        if (Generics.isInteger(assignee) && Generics.isInteger(assignable))
+        if (T.isInteger(assignee) && T.isInteger(assignable))
         {
             return;
         }
-        if (assignable == null && !Generics.isPrimitive(assignee) )
+        if (assignable.getKind() == TypeKind.NULL && !T.isPrimitive(assignee) )
         {
             return;
         }
-        if (!Generics.isAssignableFrom(assignee, assignable))
+        if (!T.isAssignable(assignable, assignee))
         {
             throw new VerifyError(assignee+" not assignable from "+assignable);
         }
     }
 
-    private void verify1(Type cls)
+    private void verify1(TypeMirror cls)
     {
         if (!c1(cls))
         {
@@ -1474,7 +1481,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
     }
 
-    private void verify2(Type cls)
+    private void verify2(TypeMirror cls)
     {
         if (!c2(cls))
         {
@@ -1482,14 +1489,14 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
     }
 
-    private boolean c1(Type cls)
+    private boolean c1(TypeMirror cls)
     {
         return !c2(cls);
     }
 
-    private boolean c2(Type cls)
+    private boolean c2(TypeMirror cls)
     {
-        return Generics.isCategory2(cls);
+        return T.isCategory2(cls);
     }
 
     public int getMaxStack()
@@ -1497,9 +1504,9 @@ public class ByteCodeVerifier extends OpCodeUtil
         return maxStack;
     }
 
-    private Type getLocalType(int index)
+    private TypeMirror getLocalType(int index)
     {
-        Type lc = mc.getLocalType(index);
+        TypeMirror lc = mc.getLocalType(index);
         if (lc != null)
         {
             return lc;
@@ -1510,9 +1517,9 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
     }
 
-    private void verifyLocalType(int index, Type cls)
+    private void verifyLocalType(int index, TypeMirror cls)
     {
-        Type lc = mc.getLocalType(index);
+        TypeMirror lc = mc.getLocalType(index);
         if (lc != null)
         {
             verify(lc, cls);
@@ -1523,10 +1530,10 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
     }
 
-    private void verifyClass(Type objectRef, Member method)
+    private void verifyClass(TypeMirror objectRef, ExecutableElement method)
     {
-        Type declaringClass = Generics.getDeclaringClass(method);
-        if (!Generics.isAssignableFrom(declaringClass, objectRef))
+        TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        if (!T.isAssignable(objectRef, declaringClass.asType()))
         {
             throw new VerifyError("object "+objectRef+" for method "+method+" not compatible");
         }
@@ -1539,93 +1546,51 @@ public class ByteCodeVerifier extends OpCodeUtil
         */
     }
 
-    private void verifyVirtualClass(Type objectRef, Member method)
+    private void verifyVirtualClass(TypeMirror objectRef, ExecutableElement method)
     {
-        Type declaringClass = Generics.getDeclaringClass(method);
-        if (!Generics.isAssignableFrom(declaringClass, objectRef))
+        TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        if (!T.isAssignable(objectRef, declaringClass.asType()))
         {
             throw new VerifyError("object "+objectRef+" for method "+method+" not compatible");
         }
-        Type thisClass = mc.getLocalType(0);
-        if (thisClass.equals(objectRef))
-        {
-            SubClass subClass = mc.getSubClass();
-            if (!subClass.referencesMethod(method))
-            {
-                throw new VerifyError("object "+objectRef+" for method "+method+" not compatible");
-            }
-        }
-        else
-        {
-            // must be an existing super class
-            Type superClass;
-            superClass = objectRef;
-            Member m = findSuperClassMethod(superClass, method);
-            if (method == null)
-            {
-                throw new VerifyError("object "+objectRef+" for method "+method+" not compatible");
-            }
-        }
+        TypeMirror thisClass = mc.getLocalType(0);
     }
-    private Member findSuperClassMethod(Type superClass, Member me) throws SecurityException
+
+    private void verifyReferenceOrArray(TypeMirror cw)
     {
-        Type[] parameters;
-        parameters = Generics.getParameterTypes(me);
-        try
+        switch (cw.getKind())
         {
-            return Generics.getDeclaredMethod(superClass, Generics.getName(me), parameters);
-        }
-        catch (NoSuchMethodException ex)
-        {
-            superClass = Generics.getSuperclass(superClass);
-            if (superClass != null)
-            {
-                return findSuperClassMethod(superClass, me);
-            }
-            else
-            {
-                return null;
-            }
+            case ARRAY:
+            case DECLARED:
+                return;
+            default:
+            throw new VerifyError(cw+" not assignable to array");
         }
     }
 
-    private void verifyReferenceOrArray(Type cw)
+    private void verifyByteOrBoolean(TypeMirror cw)
     {
-        if (Generics.isArray(cw))
+        switch (cw.getKind())
         {
-            return;
+            case BYTE:
+            case BOOLEAN:
+                return;
+            default:
+            throw new VerifyError(cw+" not byte or boolean");
         }
-        if (Generics.isReference(cw))
-        {
-            return;
-        }
-        throw new VerifyError(cw+" not assignable to array");
     }
 
-    private void verifyByteOrBoolean(Type cw)
+    private void verifyByteOrBooleanArray(TypeMirror cw)
     {
-        if (byte.class.equals(cw))
+        switch (cw.getKind())
         {
-            return;
+            case ARRAY:
+                ArrayType at = (ArrayType) cw;
+                verifyByteOrBoolean(at.getComponentType());
+                return;
+            default:
+            throw new VerifyError(cw+" not byte or boolean array");
         }
-        if (boolean.class.equals(cw))
-        {
-            return;
-        }
-        throw new VerifyError(cw+" not byte or boolean");
-    }
-
-    private void verifyByteOrBooleanArray(Type cw)
-    {
-        if (byte[].class.equals(cw))
-        {
-            return;
-        }
-        if (boolean[].class.equals(cw))
-        {
-            return;
-        }
-        throw new VerifyError(cw+" not byte or boolean");
     }
 
     private class Context
@@ -1633,16 +1598,16 @@ public class ByteCodeVerifier extends OpCodeUtil
 
         private int pc;
         private OperandStack s;
-        private Type[] lvType;
+        private TypeMirror[] lvType;
 
-        public Context(int pc, OperandStack s, Type[] lvType)
+        public Context(int pc, OperandStack s, TypeMirror[] lvType)
         {
             this.pc = pc;
             this.s = new OperandStack(s);
             this.lvType = lvType.clone();
         }
 
-        public Type[] getLvType()
+        public TypeMirror[] getLvType()
         {
             return lvType.clone();
         }
@@ -1657,7 +1622,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             return new OperandStack(s);
         }
     }
-    private class OperandStack extends LinkedList<Type>
+    private class OperandStack extends LinkedList<TypeMirror>
     {
         private int max;
         private int size;
@@ -1685,9 +1650,9 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
 
         @Override
-        public void push(Type e)
+        public void push(TypeMirror e)
         {
-            if (!void.class.equals(e))
+            if (e.getKind() != TypeKind.VOID)
             {
                 super.push(e);
                 if (c1(e))
@@ -1703,9 +1668,9 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
 
         @Override
-        public Type pop()
+        public TypeMirror pop()
         {
-            Type cls = super.pop();
+            TypeMirror cls = super.pop();
             if (c1(cls))
             {
                 size--;
@@ -1718,32 +1683,27 @@ public class ByteCodeVerifier extends OpCodeUtil
         }
 
     }
-    public static void verifyConstructor(Deque<Type> stack, Member method) throws ClassNotFoundException
+    public static void verifyMethod(Deque<TypeMirror> stack, ExecutableElement method) throws ClassNotFoundException
     {
-        Type[] parameters = Generics.getParameterTypes(method);
-        for (int ii=parameters.length-1;ii>=0;ii--)
+        List<VariableElement> parameters = new ArrayList<>();
+        parameters.addAll(method.getParameters());
+        Collections.reverse(parameters);
+        int index = 0;
+        for (VariableElement ve : parameters)
         {
-            Type sub = stack.pop();
-            if (!Generics.isAssignableFrom(parameters[ii], sub))
+            TypeMirror sub = stack.pop();
+            if (T.isInteger(ve.asType()) && T.isInteger(sub))
             {
-                throw new VerifyError("method "+method+"expected "+parameters[ii]+" but got "+sub+" for arg "+ii);
+                // boolean, byte, char, short, int are assignable at byte code
             }
-        }
-    }
-    public static void verifyMethod(Deque<Type> stack, Member method) throws ClassNotFoundException
-    {
-        Type[] parameters = Generics.getParameterTypes(method);
-        for (int ii=parameters.length-1;ii>=0;ii--)
-        {
-            Type sub = stack.pop();
-            if (Generics.isInteger(parameters[ii]) && Generics.isInteger(sub))
+            else
             {
-                continue;   // boolean, byte, char, short, int are assignable at byte code
+                if (!T.isAssignable(sub, ve.asType()))
+                {
+                    throw new VerifyError("method "+method+"expected "+ve+" but got "+sub+" for arg "+index);
+                }
             }
-            if (!Generics.isAssignableFrom(parameters[ii], sub))
-            {
-                throw new VerifyError("method "+method+" expected "+parameters[ii]+" but got "+sub+" for arg "+ii);
-            }
+            index++;
         }
     }
 }

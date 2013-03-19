@@ -36,6 +36,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
@@ -74,7 +75,7 @@ public class SubClass extends ClassFile
     private ReadLock constantReadLock = constantLock.readLock();
     private WriteLock constantWriteLock = constantLock.writeLock();
 
-    public SubClass(ClassWrapper thisClass) throws IOException
+    public SubClass(TypeElement thisClass) throws IOException
     {
         this.thisClass = thisClass;
         this.superClass = thisClass.getSuperclass();
@@ -187,25 +188,13 @@ public class SubClass extends ClassFile
      * @param field
      * @return
      */
-    public int resolveFieldIndex(Member field)
+    public int resolveFieldIndex(VariableElement field)
     {
-        Type declaringClass = field.getDeclaringClass();
-        String descriptor = ODescriptor.getFieldDesriptor(field);
-        int index = resolveFieldIndex(declaringClass, Generics.getName(field), descriptor);
-        addElement(index, field);
+        TypeElement declaringClass = (TypeElement) field.getEnclosingElement();
+        String descriptor = Descriptor.getDesriptor(field);
+        int index = resolveFieldIndex(declaringClass, field.getSimpleName().toString(), descriptor);
+        addIndexedElement(index, field);
         return index;
-    }
-    /**
-     * Returns the constant map index to field
-     * If entry doesn't exist it is created.
-     * @param declaringClass
-     * @param name
-     * @param type
-     * @return 
-     */
-    public int resolveFieldIndex(Type declaringClass, String name, Type type)
-    {
-        return resolveFieldIndex(declaringClass, name, ODescriptor.getFieldDesriptor(type));
     }
     /**
      * Returns the constant map index to field
@@ -215,7 +204,7 @@ public class SubClass extends ClassFile
      * @param descriptor
      * @return
      */
-    public int resolveFieldIndex(Type declaringClass, String name, String descriptor)
+    public int resolveFieldIndex(TypeElement declaringClass, String name, String descriptor)
     {
         int size = 0;
         int index = 0;
@@ -223,7 +212,7 @@ public class SubClass extends ClassFile
         try
         {
             size = getConstantPoolSize();
-            index = getRefIndex(Fieldref.class, Generics.getFullyQualifiedForm(declaringClass), name, descriptor);
+            index = getRefIndex(Fieldref.class, declaringClass.getQualifiedName().toString(), name, descriptor);
         }
         finally
         {
@@ -291,7 +280,7 @@ public class SubClass extends ClassFile
                 index = addConstantInfo(new Methodref(ci, nati), size);
             }
         }
-        addElement(index, method);
+        addIndexedElement(index, method);
         return index;
     }
     /**
@@ -391,7 +380,7 @@ public class SubClass extends ClassFile
             int nameIndex = resolveNameIndex(name);
             index = addConstantInfo(new Clazz(nameIndex), size);
         }
-        addElement(index, type);
+        addIndexedElement(index, type);
         return index;
     }
     /**

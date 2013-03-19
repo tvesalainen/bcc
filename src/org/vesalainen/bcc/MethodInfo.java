@@ -21,7 +21,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -36,15 +35,9 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ExecutableType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.type.TypeVariable;
-import javax.lang.model.type.TypeVisitor;
 import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.annotation.dump.Signature;
-import org.vesalainen.bcc.annotation.ModelUtil;
-import org.vesalainen.bcc.model.E;
 import org.vesalainen.bcc.model.T;
 
 /**
