@@ -18,9 +18,6 @@ package org.vesalainen.bcc;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.ElementKind;
@@ -31,17 +28,12 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import org.vesalainen.bcc.model.E;
 import org.vesalainen.bcc.model.ElementFactory;
 import org.vesalainen.bcc.model.T;
 import org.vesalainen.bcc.model.UpdateableElement;
-import org.vesalainen.bcc.type.ODescriptor;
-import org.vesalainen.bcc.type.Generics;
-import org.vesalainen.bcc.type.OSignature;
 
 /**
  *
@@ -53,7 +45,7 @@ public class MethodCompiler extends Assembler
     private SubClass subClass;
     private CodeAttribute code;
     private List<VariableElement> localVariables = new ArrayList<>();
-    private Method debug;
+    private ExecutableElement debugMethod;
     private boolean compiled;
     private String subroutine;
     private boolean optimize = true;
@@ -79,9 +71,10 @@ public class MethodCompiler extends Assembler
             }
             else
             {
-                localVariables.add(ElementFactory.createUpdateableElement(ve));
+                localVariables.add(E.createUpdateableElement(ve));
             }
         }
+        methodInfo.setMc(this);
     }
 
     public ExecutableElement getExecutableElement()
@@ -543,9 +536,9 @@ public class MethodCompiler extends Assembler
         treturn(executableElement.getReturnType());
     }
 
-    public void setDebug(Method debug)
+    public void setDebug(ExecutableElement debug)
     {
-        this.debug = debug;
+        this.debugMethod = debug;
     }
     /**
      * Labels a current position
@@ -556,13 +549,13 @@ public class MethodCompiler extends Assembler
     public void fixAddress(String name) throws IOException
     {
         super.fixAddress(name);
-        if (debug != null)
+        if (debugMethod != null)
         {
             int position = position();
             tload("this");
             ldc(position);
             ldc(name.toString());
-            invokevirtual(debug);
+            invokevirtual(debugMethod);
         }
     }
     /**
@@ -747,7 +740,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getfield(VariableElement field) throws IOException
+    public void getField(VariableElement field) throws IOException
     {
         if (field.getModifiers().contains(Modifier.STATIC))
         {
@@ -762,7 +755,7 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getstatic(VariableElement field) throws IOException
+    public void getStaticField(VariableElement field) throws IOException
     {
         if (!field.getModifiers().contains(Modifier.STATIC))
         {
@@ -777,9 +770,9 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getfield(Field field) throws IOException
+    public void getField(Class<?> cls, String name) throws IOException
     {
-        getfield(ElementFactory.get(field));
+        getField(E.getField(cls, name));
     }
     /**
      * Get field from class
@@ -787,15 +780,15 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void getstatic(Field field) throws IOException
+    public void getStaticField(Class<?> cls, String name) throws IOException
     {
-        getstatic(ElementFactory.get(field));
+        getStaticField(E.getField(cls, name));
     }
     /**
      * Set field in object
      * <p>Stack: ..., objectref, value =&gt; ...
      */
-    public void putfield(VariableElement field) throws IOException
+    public void putField(VariableElement field) throws IOException
     {
         if (field.getModifiers().contains(Modifier.STATIC))
         {
@@ -808,7 +801,7 @@ public class MethodCompiler extends Assembler
      * Set static field in object
      * <p>Stack: ..., objectref, value =&gt; ...
      */
-    public void putstatic(VariableElement field) throws IOException
+    public void putStaticField(VariableElement field) throws IOException
     {
         if (!field.getModifiers().contains(Modifier.STATIC))
         {
@@ -823,9 +816,9 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void putfield(Field field) throws IOException
+    public void putField(Class<?> cls, String name) throws IOException
     {
-        putfield(ElementFactory.get(field));
+        putField(E.getField(cls, name));
     }
     /**
      * Set field in class
@@ -833,25 +826,25 @@ public class MethodCompiler extends Assembler
      * @param field
      * @throws IOException
      */
-    public void putstatic(Field field) throws IOException
+    public void putStaticField(Class<?> cls, String name) throws IOException
     {
-        putstatic(ElementFactory.get(field));
+        putStaticField(E.getField(cls, name));
     }
     /**
      * @param constructor
      * @throws IOException 
      */
-    public void invoke(Constructor constructor) throws IOException
+    public void invokeConstructor(Class<?> cls, Class<?>... parameters) throws IOException
     {
-        invoke(ElementFactory.get(constructor));
+        invoke(E.getConstructor(cls, parameters));
     }
     /**
      * @param method
      * @throws IOException 
      */
-    public void invoke(Method method) throws IOException
+    public void invokeMethod(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invoke(ElementFactory.get(method));
+        invoke(E.getMethod(cls, name, parameters));
     }
     /**
      * @param method
@@ -893,9 +886,9 @@ public class MethodCompiler extends Assembler
      * @param parameters
      * @throws IOException
      */
-    public void invokespecial(Method method) throws IOException
+    public void invokespecial(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokespecial(ElementFactory.get(method));
+        invokespecial(E.getMethod(cls, name, parameters));
     }
 
     /**
@@ -925,9 +918,9 @@ public class MethodCompiler extends Assembler
      * @param parameters
      * @throws IOException
      */
-    public void invokevirtual(Method method) throws IOException
+    public void invokevirtual(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokevirtual(ElementFactory.get(method));
+        invokevirtual(E.getMethod(cls, name, parameters));
     }
     /**
      * Invoke instance method; dispatch based on classIf method is interface
@@ -958,9 +951,9 @@ public class MethodCompiler extends Assembler
      * @param method
      * @throws IOException
      */
-    public void invokestatic(Method method) throws IOException
+    public void invokestatic(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokestatic(ElementFactory.get(method));
+        invokestatic(E.getMethod(cls, name, parameters));
     }
 
     /**
@@ -973,11 +966,6 @@ public class MethodCompiler extends Assembler
     {
         int index = subClass.resolveMethodIndex(method);
         invokestatic(index);
-    }
-
-    public void invokevirtual(Class<?> clazz, String name, Class<?>... parameters) throws IOException
-    {
-        invokevirtual(E.findMethod(clazz, name, parameters));
     }
 
     private int argumentCount(List<? extends VariableElement> parameters)
@@ -1146,7 +1134,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invoke(SwitchException.class.getConstructor());
+        invokeConstructor(SwitchException.class);
         athrow();
     }
     /**
@@ -1223,7 +1211,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invoke(SwitchException.class.getConstructor());
+        invokeConstructor(SwitchException.class);
         athrow();
     }
     /**
@@ -1255,7 +1243,7 @@ public class MethodCompiler extends Assembler
         fixAddress(def);
         anew(SwitchException.class);
         dup();
-        invoke(SwitchException.class.getConstructor());
+        invokeConstructor(SwitchException.class);
         athrow();
     }
     /**
@@ -1343,7 +1331,7 @@ public class MethodCompiler extends Assembler
         {
             DeclaredType dt = (DeclaredType) to;
             TypeElement te = (TypeElement) dt.asElement();
-            ExecutableElement c = E.findConstructor(te, from);
+            ExecutableElement c = E.getConstructor(te, from);
             if (c != null)
             {
                 anew(te);
@@ -1352,7 +1340,7 @@ public class MethodCompiler extends Assembler
                 invokespecial(c);
                 return;
             }
-            ExecutableElement m = E.findMethod(te, "valueOf", from);
+            ExecutableElement m = E.getMethod(te, "valueOf", from);
             if (m != null && m.getModifiers().contains(Modifier.STATIC) && T.isAssignable(m.getReturnType(), to))
             {
                 tload(fromVariable);
@@ -1365,7 +1353,7 @@ public class MethodCompiler extends Assembler
             DeclaredType dt = (DeclaredType) from;
             TypeElement te = (TypeElement) dt.asElement();
             String str = to.getKind().name().toLowerCase() + "Value";
-            ExecutableElement m = E.findMethod(te, str);
+            ExecutableElement m = E.getMethod(te, str);
             // xxxValue()
             // xxxValue()
             if (m != null && T.isAssignable(m.getReturnType(), to))

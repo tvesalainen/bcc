@@ -52,11 +52,6 @@ public class ElementFactory
     private static Map<Type,VariableElement> variableElementMap = new HashMap<>();
     private static Map<Enum,VariableElement> variableElementEnumMap = new HashMap<>();
     
-    public static <E extends Element> E createUpdateableElement(E element)
-    {
-        UpdateableElementImpl<E> uei = new UpdateableElementImpl<>();
-        return uei.getUpdateableElement(element);
-    }
     public static TypeElementImpl.ClassBuilder classBuilder()
     {
         return new TypeElementImpl.ClassBuilder();

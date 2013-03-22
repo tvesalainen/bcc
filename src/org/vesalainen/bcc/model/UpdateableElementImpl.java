@@ -54,9 +54,7 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
                 enclosingElement = (Element) args[0];
                 return null;
             case "setModifiers":
-                Modifier[] ms = (Modifier[]) args[0];
-                modifier.clear();
-                modifier.addAll(Arrays.asList(ms));
+                modifier = (Set<Modifier>) args[0];
                 return null;
             case "setSimpleName":
                 name = (Name) args[0];

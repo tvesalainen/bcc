@@ -16,16 +16,12 @@
  */
 package org.vesalainen.bcc;
 
-import org.vesalainen.bcc.type.ODescriptor;
-import org.vesalainen.bcc.type.ClassWrapper;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
@@ -34,13 +30,16 @@ import javax.annotation.processing.Filer;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.bcc.AccessFlags.MethodFlags;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
 import org.vesalainen.bcc.ConstantInfo.ConstantFloat;
@@ -53,12 +52,11 @@ import org.vesalainen.bcc.ConstantInfo.Methodref;
 import org.vesalainen.bcc.ConstantInfo.NameAndType;
 import org.vesalainen.bcc.ConstantInfo.Utf8;
 import org.vesalainen.bcc.model.E;
-import org.vesalainen.bcc.model.ElementFactory;
-import org.vesalainen.bcc.model.ExecutableElementImpl;
 import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
-import org.vesalainen.bcc.type.Generics;
-import org.vesalainen.bcc.type.MethodWrapper;
-import org.vesalainen.bcc.type.OSignature;
+import org.vesalainen.bcc.model.ExecutableElementImpl.MethodBuilder;
+import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.UpdateableElement;
+import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
 /**
  *
@@ -66,7 +64,6 @@ import org.vesalainen.bcc.type.OSignature;
  */
 public class SubClass extends ClassFile
 {
-    private ClassFile superClassFile;
     private ReentrantLock intfLock = new ReentrantLock();
     private ReentrantLock fieldLock = new ReentrantLock();
     private ReentrantLock attrLock = new ReentrantLock();
@@ -75,30 +72,16 @@ public class SubClass extends ClassFile
     private ReadLock constantReadLock = constantLock.readLock();
     private WriteLock constantWriteLock = constantLock.writeLock();
 
-    public SubClass(TypeElement thisClass) throws IOException
+    public SubClass(TypeElement superClass, String qualifiedName, Modifier... modifiers) throws IOException
     {
-        this.thisClass = thisClass;
-        this.superClass = thisClass.getSuperclass();
-        if (superClass instanceof Class<?>)
-        {
-            Class<?> sCls = (Class<?>) superClass;
-            this.superClassFile = new ClassFile(sCls);
-        }
+        super(superClass, qualifiedName, modifiers);
+        
         magic = 0xcafebabe;
         minor_version = 0;
         major_version = 49;
-        access_flags = ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC;
-        this_class = resolveClassIndex(thisClass);
+        this_class = resolveClassIndex(this);
         super_class = resolveClassIndex(superClass);
 
-        if (OSignature.needsSignature(thisClass))
-        {
-            int nameIndex = resolveNameIndex("Signature");
-            String signature = OSignature.getClassSignature(thisClass);
-            int signatureIndex = resolveNameIndex(signature);
-            SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
-            addAttribute(sa);
-        }
     }
 
     @Override
@@ -172,23 +155,12 @@ public class SubClass extends ClassFile
     }
     
     /**
-     * Returns the constant map index to constructor
-     * If entry doesn't exist it is created.
-     * @param constructor
-     * @return
-     */
-    public int resolveConstructorIndex(Constructor constructor)
-    {
-        return resolveMethodIndex(ElementFactory.get(constructor));
-    }
-    
-    /**
      * Returns the constant map index to field.
      * If entry doesn't exist it is created.
      * @param field
      * @return
      */
-    public int resolveFieldIndex(VariableElement field)
+    int resolveFieldIndex(VariableElement field)
     {
         TypeElement declaringClass = (TypeElement) field.getEnclosingElement();
         String descriptor = Descriptor.getDesriptor(field);
@@ -204,7 +176,7 @@ public class SubClass extends ClassFile
      * @param descriptor
      * @return
      */
-    public int resolveFieldIndex(TypeElement declaringClass, String name, String descriptor)
+    private int resolveFieldIndex(TypeElement declaringClass, String name, String descriptor)
     {
         int size = 0;
         int index = 0;
@@ -227,28 +199,13 @@ public class SubClass extends ClassFile
         }
         return index;
     }
-    public int resolveMethodIndex(Type declaringClass, String methodName, String methodDescription, boolean b)
-    {
-        MethodWrapper method = new MethodWrapper(declaringClass, methodName, methodDescription, b);
-        return resolveMethodIndex(method);
-    }
     /**
      * Returns the constant map index to method
      * If entry doesn't exist it is created.
      * @param method
      * @return
      */
-    public int resolveMethodIndex(Method method)
-    {
-        return resolveMethodIndex(ElementFactory.get(method));
-    }
-    /**
-     * Returns the constant map index to method
-     * If entry doesn't exist it is created.
-     * @param method
-     * @return
-     */
-    public int resolveMethodIndex(ExecutableElement method)
+    int resolveMethodIndex(ExecutableElement method)
     {
         int size = 0;
         int index = 0;
@@ -289,7 +246,7 @@ public class SubClass extends ClassFile
      * @param name
      * @return
      */
-    public final int resolveNameIndex(String name)
+    final int resolveNameIndex(String name)
     {
         int size = 0;
         int index = 0;
@@ -319,7 +276,7 @@ public class SubClass extends ClassFile
      * @param descriptor
      * @return
      */
-    public int resolveNameAndTypeIndex(String name, String descriptor)
+    int resolveNameAndTypeIndex(String name, String descriptor)
     {
         int size = 0;
         int index = 0;
@@ -515,44 +472,23 @@ public class SubClass extends ClassFile
         return addConstantInfo(new ConstantString(nameIndex), size);
     }
 
-    public int getThisIndex()
+    public void implement(ExecutableElement method) throws IOException
     {
-        return this_class;
-    }
-
-    public int getSuperIndex()
-    {
-        return super_class;
-    }
-
-    public int getThisDescriptorIndex()
-    {
-        return resolveNameIndex(ODescriptor.getFieldDesriptor(thisClass));
-    }
-    
-    public void implement(Member method) throws IOException
-    {
-        if (!isImplemented(method))
-        {
-            Generics.implement(method, this);
-        }
-        // TODO implement concurrent queue here
+        throw new UnsupportedOperationException();
     }
     
     public void codeDefaultConstructor(FieldInitializer... fis) throws IOException
     {
-        Constructor<?>[] clist = Generics.getDeclaredConstructors(superClass);
-        for (Constructor constructor : clist)
+        for (ExecutableElement constructor : ElementFilter.constructorsIn(superClass.getEnclosedElements()))
         {
-            if ((constructor.getModifiers() & Modifier.PRIVATE) == 0)
+            if (!constructor.getModifiers().contains(Modifier.PRIVATE))
             {
-                MethodCompiler c = override(constructor.getModifiers(), constructor);
+                MethodCompiler c = overrideMethod(constructor.getModifiers(), constructor);
                 c.aload(0);
                 int index = 1;
-                for (Class<?> param : constructor.getParameterTypes())
+                for (VariableElement param : constructor.getParameters())
                 {
-                    c.nameArgument("arg"+index, index);
-                    c.tload(param, index++);
+                    c.tload(param.asType(), index++);
                 }
                 c.invokespecial(constructor);
                 for (FieldInitializer fi : fis)
@@ -578,6 +514,112 @@ public class SubClass extends ClassFile
         }
     }
 
+    /**
+     * Define a new field.
+     * @param modifier
+     * @param fieldName
+     * @param type 
+     */
+    public void defineField(int modifier, String fieldName, Class<?> type)
+    {
+        defineField(modifier, fieldName, T.getTypeFor(type));
+    }
+    /**
+     * Define a new field.
+     * @param modifier
+     * @param fieldName
+     * @param type 
+     */
+    public void defineField(int modifier, String fieldName, TypeMirror type)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.setType(type);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement());
+        addFieldInfo(fieldInfo);
+    }
+    /**
+     * Define constant field and set the constant value.
+     * @param modifier
+     * @param fieldName
+     * @param constant 
+     */
+    public void defineConstantField(int modifier, String fieldName, int constant)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.addModifier(Modifier.STATIC);
+        builder.setType(T.IntA);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
+        addFieldInfo(fieldInfo);
+    }
+    /**
+     * Define constant field and set the constant value.
+     * @param modifier
+     * @param fieldName
+     * @param constant 
+     */
+    public void defineConstantField(int modifier, String fieldName, long constant)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.addModifier(Modifier.STATIC);
+        builder.setType(T.Long);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
+        addFieldInfo(fieldInfo);
+    }
+    /**
+     * Define constant field and set the constant value.
+     * @param modifier
+     * @param fieldName
+     * @param constant 
+     */
+    public void defineConstantField(int modifier, String fieldName, float constant)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.addModifier(Modifier.STATIC);
+        builder.setType(T.Float);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
+        addFieldInfo(fieldInfo);
+    }
+    /**
+     * Define constant field and set the constant value.
+     * @param modifier
+     * @param fieldName
+     * @param constant 
+     */
+    public void defineConstantField(int modifier, String fieldName, double constant)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.addModifier(Modifier.STATIC);
+        builder.setType(T.Double);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
+        addFieldInfo(fieldInfo);
+    }
+    /**
+     * Define constant field and set the constant value.
+     * @param modifier
+     * @param fieldName
+     * @param constant 
+     */
+    public void defineConstantField(int modifier, String fieldName, String constant)
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
+        builder.addModifiers(modifier);
+        builder.addModifier(Modifier.STATIC);
+        builder.setType(T.String);
+        FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
+        addFieldInfo(fieldInfo);
+    }
+
     public MethodCompiler createStaticInitializer()
     {
         DeclaredType dt = (DeclaredType)asType();
@@ -591,225 +633,70 @@ public class SubClass extends ClassFile
         builder.addModifier(Modifier.STATIC);
         MethodInfo methodInfo = new MethodInfo(this, builder.getExecutableElement());
         addMethodInfo(methodInfo);
-        MethodCompiler mc = new MethodCompiler(this, Modifier.STATIC, code, new Type[]{}, void.class, methodName);
-        methodInfo.setMc(mc);
+        MethodCompiler mc = new MethodCompiler(this, methodInfo);
         return mc;
     }
-    /**
-     * Define a new field.
-     * @param modifier
-     * @param fieldName
-     * @param type 
-     */
-    public void defineField(int modifier, String fieldName, Type type)
-    {
-        if (OSignature.needsSignature(type))
-        {
-            int nameIndex = resolveNameIndex("Signature");
-            String signature = OSignature.getFieldSignature(type);
-            int signatureIndex = resolveNameIndex(signature);
-            SignatureAttribute sa = new SignatureAttribute(this, nameIndex, signatureIndex);
-            defineField(modifier, fieldName, ODescriptor.getFieldDesriptor(type), sa);
-        }
-        else
-        {
-            defineField(modifier, fieldName, ODescriptor.getFieldDesriptor(type));
-        }
-    }
-    /**
-     * Define constant field and set the constant value.
-     * @param modifier
-     * @param fieldName
-     * @param constant 
-     */
-    public void defineConstantField(int modifier, String fieldName, int constant)
-    {
-        if (!Modifier.isStatic(modifier))
-        {
-            throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
-        }
-        String descriptor = ODescriptor.getFieldDesriptor(int.class);
-        int attribute_name_index = resolveNameIndex("ConstantValue");
-        int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
-        defineField(modifier, fieldName, descriptor, constantValue);
-    }
-    /**
-     * Define constant field and set the constant value.
-     * @param modifier
-     * @param fieldName
-     * @param constant 
-     */
-    public void defineConstantField(int modifier, String fieldName, long constant)
-    {
-        if (!Modifier.isStatic(modifier))
-        {
-            throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
-        }
-        String descriptor = ODescriptor.getFieldDesriptor(long.class);
-        int attribute_name_index = resolveNameIndex("ConstantValue");
-        int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
-        defineField(modifier, fieldName, descriptor, constantValue);
-    }
-    /**
-     * Define constant field and set the constant value.
-     * @param modifier
-     * @param fieldName
-     * @param constant 
-     */
-    public void defineConstantField(int modifier, String fieldName, float constant)
-    {
-        if (!Modifier.isStatic(modifier))
-        {
-            throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
-        }
-        String descriptor = ODescriptor.getFieldDesriptor(float.class);
-        int attribute_name_index = resolveNameIndex("ConstantValue");
-        int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
-        defineField(modifier, fieldName, descriptor, constantValue);
-    }
-    /**
-     * Define constant field and set the constant value.
-     * @param modifier
-     * @param fieldName
-     * @param constant 
-     */
-    public void defineConstantField(int modifier, String fieldName, double constant)
-    {
-        if (!Modifier.isStatic(modifier))
-        {
-            throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
-        }
-        String descriptor = ODescriptor.getFieldDesriptor(double.class);
-        int attribute_name_index = resolveNameIndex("ConstantValue");
-        int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
-        defineField(modifier, fieldName, descriptor, constantValue);
-    }
-    /**
-     * Define constant field and set the constant value.
-     * @param modifier
-     * @param fieldName
-     * @param constant 
-     */
-    public void defineConstantField(int modifier, String fieldName, String constant)
-    {
-        if (!Modifier.isStatic(modifier))
-        {
-            throw new IllegalArgumentException("cannot define non-static field "+thisClass+"."+fieldName+" as constant");
-        }
-        String descriptor = ODescriptor.getFieldDesriptor(String.class);
-        int attribute_name_index = resolveNameIndex("ConstantValue");
-        int constantvalue_index = resolveConstantIndex(constant);
-        ConstantValue constantValue = new ConstantValue(this, attribute_name_index, constantvalue_index);
-        defineField(modifier, fieldName, descriptor, constantValue);
-    }
-    private void defineField(int modifier, String fieldName, String descriptor, AttributeInfo... attributes)
-    {
-        int nameIndex = resolveNameIndex(fieldName);
-        int descriptorIndex = resolveNameIndex(descriptor);
-        int fieldIndex = resolveFieldIndex(thisClass, fieldName, descriptor);
-        FieldInfo fieldInfo = new FieldInfo(this, modifier, nameIndex, descriptorIndex, attributes);
-        addFieldInfo(fieldInfo);
-    }
-
-    public MethodCompiler defineMethod(int modifier, String methodName, Type returnType, Type... parameters)
+    public MethodCompiler defineMethod(int modifier, String methodName, Class<?> returnType, Class<?>... parameters)
     {
         return defineMethod(modifier, methodName, returnType, null, parameters);
     }
-    public MethodCompiler defineMethod(int modifier, String methodName, Type returnType, Type[] exceptionTypes, Type... parameters)
+    public MethodCompiler defineMethod(int modifier, String methodName, Class<?> returnType, Class<?>[] exceptionTypes, Class<?>... parameters)
     {
-        MethodInfo methodInfo = null;
-        SignatureAttribute sa = null;
-        ExceptionsAttribute ea = createExceptionsAttribute(exceptionTypes);
-        MethodWrapper mw = new MethodWrapper(modifier, superClass, methodName, returnType, parameters);
-        mw.setExceptions(exceptionTypes);
-        
-        int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = ODescriptor.getMethodDesriptor(returnType, parameters);
-        int descriptorIndex = resolveNameIndex(methodDescription);
-        int methodIndex = resolveMethodIndex(thisClass, methodName, methodDescription, false);
-        if (Modifier.isAbstract(modifier))
+        DeclaredType dt = (DeclaredType)asType();
+        MethodBuilder builder = new MethodBuilder(
+                this, 
+                methodName, 
+                dt.getTypeArguments(), 
+                typeParameterMap
+                );
+        builder.addModifiers(modifier);
+        builder.setReturnType(returnType);
+        if (exceptionTypes != null)
         {
-            methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, ea);
-            addMethodInfo(methodInfo);
-            return null;
-        }
-        else
-        {
-            CodeAttribute code = new CodeAttribute(this);
-            methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
-            addMethodInfo(methodInfo);
-            MethodCompiler mc = new MethodCompiler(this, modifier, code, parameters, returnType, methodName);
-            methodInfo.setMc(mc);
-            return mc;
-        }
-    }
-
-    public MethodCompiler override(int modifier, Member method)
-    {
-        if (Generics.isConstructor(method))
-        {
-            return overrideConstructor(modifier, method);
-        }
-        else
-        {
-            return overrideMethod(modifier, method);
-        }
-    }
-    private MethodCompiler overrideConstructor(int modifier, Member constructor)
-    {
-        String methodName = "<init>";
-        int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = ODescriptor.getMethodDesriptor(constructor);
-        int descriptorIndex = resolveNameIndex(methodDescription);
-        CodeAttribute code = new CodeAttribute(this);
-        ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(constructor));
-        MethodInfo methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
-        addMethodInfo(methodInfo);
-        int methodIndex = resolveMethodIndex(constructor);
-        Type[] parameters = Generics.getParameterTypes(constructor);
-        MethodCompiler mc = new MethodCompiler(this, modifier, code, parameters, void.class, methodName);
-        methodInfo.setMc(mc);
-        if (superClassFile != null)
-        {
-            String[] args = superClassFile.getArgNames(constructor);
-            if (args != null)
+            for (Class<?> e : exceptionTypes)
             {
-                mc.nameArguments(args);
+                builder.addThrownType(e);
             }
         }
-        return mc;
-    }
-
-    private MethodCompiler overrideMethod(int modifier, Member method)
-    {
-        String methodName = Generics.getName(method);
-        int nameIndex = resolveNameIndex(methodName);
-        String methodDescription = ODescriptor.getMethodDesriptor(method);
-        int descriptorIndex = resolveNameIndex(methodDescription);
-        CodeAttribute code = new CodeAttribute(this);
-        ExceptionsAttribute ea = createExceptionsAttribute(Generics.getGenericExceptionTypes(method));
-        MethodInfo methodInfo = new MethodInfo(this, modifier, nameIndex, descriptorIndex, code, ea);
-        addMethodInfo(methodInfo);
-        int methodIndex = resolveMethodIndex(method);   //thisClass, methodName, methodDescription, false);
-        Type[] parameters = Generics.getParameterTypes(method);
-        Type returnType = Generics.getReturnType(method);
-        MethodCompiler mc = new MethodCompiler(this, modifier, code, parameters, returnType, Generics.getName(method));
-        methodInfo.setMc(mc);
-        if (superClassFile != null)
+        for (Class<?> p : parameters)
         {
-            String[] args = superClassFile.getArgNames(method);
-            if (args != null)
-            {
-                mc.nameArguments(args);
-            }
+            builder.addParameter(p);
         }
-        return mc;
+        return defineMethod(builder.getExecutableElement());
     }
 
+    public MethodCompiler overrideConstructor(int modifier, Class<?>... parameters)
+    {
+        ExecutableElement method = E.getConstructor(superClass, E.getParams(parameters));
+        Set<Modifier> mod = EnumSet.noneOf(Modifier.class);
+        MethodFlags.setModifiers(mod, modifier);
+        return overrideMethod(modifiers, method);
+    }
+
+    public MethodCompiler overrideMethod(int modifier, String methodName, Class<?>... parameters)
+    {
+        ExecutableElement method = E.getMethod(superClass, methodName, E.getParams(parameters));
+        Set<Modifier> mod = EnumSet.noneOf(Modifier.class);
+        MethodFlags.setModifiers(mod, modifier);
+        return overrideMethod(modifiers, method);
+    }
+
+    public MethodCompiler overrideMethod(Set<Modifier> modifiers, ExecutableElement method)
+    {
+        method = E.createUpdateableElement(method);
+        UpdateableElement ue = (UpdateableElement) method;
+        ue.setEnclosingElement(this);
+        ue.setModifiers(modifiers);
+        return defineMethod(method);
+    }
+
+    public MethodCompiler defineMethod(ExecutableElement method)
+    {
+        MethodInfo methodInfo = new MethodInfo(this, method);
+        addMethodInfo(methodInfo);
+        MethodCompiler mc = new MethodCompiler(this, methodInfo);
+        return mc;
+    }
     public Object newInstance() throws IOException
     {
         try
@@ -828,17 +715,15 @@ public class SubClass extends ClassFile
     }
     public Class<?> load() throws IOException
     {
-        GenClassLoader cl = new GenClassLoader(Generics.getClassLoader(superClass));
+        GenClassLoader cl = new GenClassLoader(superClass.getClass().getClassLoader());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
         write(dos);
         dos.close();
-//File f = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\LPG\\build\\classes");
-//save(f);
 
         try
         {
-            Class<?> cls = cl.load(Generics.getFullyQualifiedForm(thisClass), baos.toByteArray());
+            Class<?> cls = cl.load(getQualifiedName().toString(), baos.toByteArray());
             return cls;
         }
         catch (Error er)
@@ -850,42 +735,38 @@ public class SubClass extends ClassFile
 
     public void createSourceFile(Filer filer) throws IOException
     {
-        FileObject sourceFile = Generics.createFileForClass(thisClass, filer, ".jasm");
-        int ani;
+        FileObject sourceFile = filer.getResource(
+                StandardLocation.SOURCE_OUTPUT, 
+                E.getPackageOf(this).getQualifiedName(), 
+                getSimpleName()+".jasm"
+                );
         try (LineNumberPrintStream out = new LineNumberPrintStream(sourceFile.openOutputStream()))
         {
-            ani = resolveNameIndex("LineNumberTable");
             for (MethodInfo mi : getMethodInfos())
             {
                 CodeAttribute code = mi.getCodeAttribute();
-                LineNumberTable lnt = new LineNumberTable(this, ani);
+                LineNumberTable lnt = new LineNumberTable(this);
                 ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
                 dump.print(mi.getMc(), lnt);
                 mi.getCodeAttribute().addLineNumberTable(lnt);
             }
             //out.close();
         }
-        ani = resolveNameIndex("SourceFile");
-        int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
-        SourceFileAttribute sfa = new SourceFileAttribute(this, ani, sfi);
+        SourceFileAttribute sfa = new SourceFileAttribute(this, getSimpleName()+".jasm");
         addAttribute(sfa);
     }
     public void dump() throws IOException
     {
-        int ani;
         LineNumberPrintStream out = new LineNumberPrintStream(System.err);
-        ani = resolveNameIndex("LineNumberTable");
         for (MethodInfo mi : getMethodInfos())
         {
             CodeAttribute code = mi.getCodeAttribute();
-            LineNumberTable lnt = new LineNumberTable(this, ani);
+            LineNumberTable lnt = new LineNumberTable(this);
             ByteCodeDump dump = new ByteCodeDump(code.getCode(), this, out);
             dump.print(mi.getMc(), lnt);
             mi.getCodeAttribute().addLineNumberTable(lnt);
         }
-        ani = resolveNameIndex("SourceFile");
-        int sfi = resolveNameIndex(Generics.getSourceName(thisClass));
-        SourceFileAttribute sfa = new SourceFileAttribute(this, ani, sfi);
+        SourceFileAttribute sfa = new SourceFileAttribute(this, getSimpleName()+".jasm");
         addAttribute(sfa);
     }
     /**
@@ -895,32 +776,11 @@ public class SubClass extends ClassFile
      */
     public void save(Filer filer) throws IOException
     {
-        JavaFileObject sourceFile = Generics.createClassFile(thisClass, filer);
+        JavaFileObject sourceFile = filer.createClassFile(getQualifiedName(), this);
         BufferedOutputStream bos = new BufferedOutputStream(sourceFile.openOutputStream());
         DataOutputStream dos = new DataOutputStream(bos);
         write(dos);
         dos.close();
-    }
-
-    public Type getSuperClass()
-    {
-        return superClass;
-    }
-
-    private ExceptionsAttribute createExceptionsAttribute(Type[] exceptionTypes)
-    {
-        if (exceptionTypes == null || exceptionTypes.length == 0)
-        {
-            return null;
-        }
-        int[] indexes = new int[exceptionTypes.length];
-        int index = 0;
-        for (Type t : exceptionTypes)
-        {
-            indexes[index++] = resolveClassIndex(t);
-        }
-        int ni = resolveNameIndex("Exceptions");
-        return new ExceptionsAttribute(this, ni, indexes);
     }
 
 }

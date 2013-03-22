@@ -326,6 +326,8 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
 
     public void implement(SubClass subClass) throws IOException
     {
+        throw new UnsupportedOperationException();
+        /*
         if (implementor == null)
         {
             subClass.defineMethod(Modifier.ABSTRACT | modifiers, name, returnType, genericExceptionTypes, parameters);
@@ -336,6 +338,7 @@ public class MethodWrapper implements AnnotatedElement, GenericDeclaration, Memb
             mc.setWideIndex(wideIndex);
             implementor.implement(mc, this);
         }
+        */
     }
 
     public void setImplementor(MethodImplementor implementor)

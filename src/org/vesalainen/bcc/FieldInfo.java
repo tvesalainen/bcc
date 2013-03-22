@@ -33,6 +33,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.AccessFlags.FieldFlags;
 
 /**
  *
@@ -40,52 +41,21 @@ import org.vesalainen.annotation.dump.Signature;
  */
 public class FieldInfo implements Writable, VariableElement
 {
-    /**
-     * Declared public; may be accessed from outside its package.
-     */
-    public static final int ACC_PUBLIC = 0x0001;
-    /**
-     * Declared private; accessible only within the defining class.
-     */
-    public static final int ACC_PRIVATE = 0x0002;
-    /**
-     * Declared protected; may be accessed within subclasses.
-     */
-    public static final int ACC_PROTECTED = 0x0004;
-    /**
-     * Declared static.
-     */
-    public static final int ACC_STATIC = 0x0008;
-    /**
-     * Declared final; no subclasses allowed.
-     */
-    public static final int ACC_FINAL = 0x0010;
-    /**
-     * Declared volatile; cannot be cached.
-     */
-    public static final int ACC_VOLATILE = 0x0040;
-    /**
-     * Declared transient; not written or read by a persistent object manager.
-     */
-    public static final int ACC_TRANSIENT = 0x0080;
-    /**
-     * Declared synthetic; Not present in the source code.
-     */
-    public static final int ACC_SYNTHETIC = 0x1000;
-    /**
-     * Declared as an element of an enum.
-     */
-    public static final int ACC_ENUM = 0x4000;
-    
     private ClassFile classFile;
     private VariableElement variableElement;
     private List<AttributeInfo> attributes = new ArrayList<>();
-    private boolean synthetic;
+    private boolean synthetic = true;
 
     public FieldInfo(ClassFile classFile, VariableElement variableElement)
     {
         this.classFile = classFile;
         this.variableElement = variableElement;
+    }
+
+    public FieldInfo(ClassFile classFile, VariableElement variableElement, ConstantValue constant)
+    {
+        this(classFile, variableElement);
+        attributes.add(constant);
     }
 
     public FieldInfo(DataInput in) throws IOException
@@ -100,10 +70,13 @@ public class FieldInfo implements Writable, VariableElement
         }
     }
 
+    @Override
     public void write(DataOutput out) throws IOException
     {
         addSignatureIfNeed();
-        out.writeShort(addModifiers());
+        int modifier = FieldFlags.getModifier(getModifiers());
+        modifier |= FieldFlags.ACC_SYNTHETIC;
+        out.writeShort(modifier);
         out.writeShort(classFile.getNameIndex(getSimpleName()));
         out.writeShort(classFile.getNameIndex(Descriptor.getDesriptor(this)));
         out.writeShort(attributes.size());
@@ -122,44 +95,6 @@ public class FieldInfo implements Writable, VariableElement
         }
     }
     
-    private int addModifiers()
-    {
-        int flags = 0;
-        if (synthetic)
-        {
-            flags |= ACC_SYNTHETIC;
-        }
-        for (Modifier m : getModifiers())
-        {
-            switch (m)
-            {
-                case PUBLIC:
-                    flags |= ACC_PUBLIC;
-                    break;
-                case PRIVATE:
-                    flags |= ACC_PRIVATE;
-                    break;
-                case PROTECTED:
-                    flags |= ACC_PROTECTED;
-                    break;
-                case STATIC:
-                    flags |= ACC_STATIC;
-                    break;
-                case FINAL:
-                    flags |= ACC_FINAL;
-                    break;
-                case VOLATILE:
-                    flags |= ACC_VOLATILE;
-                    break;
-                case TRANSIENT:
-                    flags |= ACC_TRANSIENT;
-                    break;
-                default:
-                    throw new IllegalArgumentException(m+" is not valid method flag");
-            }
-        }
-        return flags;
-    }
     public Object getConstantValue()
     {
         return variableElement.getConstantValue();

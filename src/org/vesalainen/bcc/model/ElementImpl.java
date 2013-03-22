@@ -83,12 +83,12 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
     }
 
     @Override
-    public void setModifiers(Modifier... modifier)
+    public void setModifiers(Set<Modifier> modifiers)
     {
-        modifiers.clear();
-        modifiers.addAll(Arrays.asList(modifier));
+        this.modifiers = modifiers;
     }
 
+    @Override
     public void setSimpleName(Name simpleName)
     {
         this.simpleName = simpleName;

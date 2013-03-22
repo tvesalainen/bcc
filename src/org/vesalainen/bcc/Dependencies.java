@@ -66,7 +66,7 @@ public class Dependencies
         {
             String classname = deque.removeFirst();
             ClassFile cf = finder.find(classname);
-            map.put(classname, (cf.getAccess_flags() & ClassFile.ACC_SYNTHETIC) != 0);
+            map.put(classname, cf.isSynthetic());
             for (String rn : cf.getReferencedClassnames())
             {
                 if (rn.startsWith(include))

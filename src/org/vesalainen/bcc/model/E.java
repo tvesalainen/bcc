@@ -42,27 +42,48 @@ public class E
 {
     private static Elements elements = new ElementsImpl();
 
-    public static ExecutableElement findMethod(Class<?> cls, String name, Class<?>... parameters) throws IOException
+    public static <E extends Element> E createUpdateableElement(E element)
+    {
+        UpdateableElementImpl<E> uei = new UpdateableElementImpl<>();
+        return uei.getUpdateableElement(element);
+    }
+    public static VariableElement getField(Class<?> cls, String name)
     {
         TypeElement typeElement = E.getTypeElement(cls.getCanonicalName());
+        for (VariableElement field : ElementFilter.fieldsIn(E.getAllMembers(typeElement)))
+        {
+            if (name.contentEquals(field.getSimpleName()))
+            {
+                return field;
+            }
+        }
+        return null;
+    }
+    public static ExecutableElement getMethod(Class<?> cls, String name, Class<?>... parameters)
+    {
+        return getMethod(
+                E.getTypeElement(cls.getCanonicalName()), 
+                name, 
+                getParams(parameters)
+                );
+    }
+    public static ExecutableElement getConstructor(Class<?> cls, Class<?>... parameters)
+    {
+        return getConstructor(
+                E.getTypeElement(cls.getCanonicalName()), 
+                getParams(parameters)
+                );
+    }
+    public static TypeMirror[] getParams(Class<?>... parameters)
+    {
         TypeMirror[] params = new TypeMirror[parameters.length];
         for (int ii=0;ii<params.length;ii++)
         {
             params[ii] = T.getTypeFor(parameters[ii]);
         }
-        return findMethod(typeElement, name, params);
+        return params;
     }
-    public static ExecutableElement findConstructor(Class<?> cls, Class<?>... parameters) throws IOException
-    {
-        TypeElement typeElement = E.getTypeElement(cls.getCanonicalName());
-        TypeMirror[] params = new TypeMirror[parameters.length];
-        for (int ii=0;ii<params.length;ii++)
-        {
-            params[ii] = T.getTypeFor(parameters[ii]);
-        }
-        return findConstructor(typeElement, params);
-    }
-    public static ExecutableElement findMethod(TypeElement typeElement, String name, TypeMirror... parameters)
+    public static ExecutableElement getMethod(TypeElement typeElement, String name, TypeMirror... parameters)
     {
         for (ExecutableElement method : ElementFilter.methodsIn(E.getAllMembers(typeElement)))
         {
@@ -74,7 +95,7 @@ public class E
                     List<? extends VariableElement> calleeParams = method.getParameters();
                     for (int ii=0;ii<parameters.length;ii++)
                     {
-                        if (!T.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                        if (!T.isSameType(parameters[ii], calleeParams.get(ii).asType()))
                         {
                             ok = false;
                             continue;
@@ -90,7 +111,7 @@ public class E
         return null;
     }
 
-    public static ExecutableElement findConstructor(TypeElement typeElement, TypeMirror... parameters)
+    public static ExecutableElement getConstructor(TypeElement typeElement, TypeMirror... parameters)
     {
         for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements()))
         {
@@ -100,7 +121,7 @@ public class E
                 List<? extends VariableElement> calleeParams = method.getParameters();
                 for (int ii=0;ii<parameters.length;ii++)
                 {
-                    if (!T.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                    if (!T.isSameType(parameters[ii], calleeParams.get(ii).asType()))
                     {
                         ok = false;
                         continue;

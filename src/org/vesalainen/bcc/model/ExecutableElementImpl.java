@@ -39,6 +39,8 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.AccessFlags;
+import org.vesalainen.bcc.AccessFlags.MethodFlags;
 import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
 /**
@@ -55,9 +57,9 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
     
     public static class MethodBuilder extends ConstructorBuilder
     {
-        MethodBuilder(TypeElement enclosingElement, String name, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+        public MethodBuilder(TypeElement enclosingElement, String name, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
-            super(enclosingElement, ElementKind.METHOD, name, typeArguments, typeParameterMap);
+            super(enclosingElement, ElementKind.METHOD, name, classTypeArguments, classTypeParameterMap);
         }
         public MethodBuilder setReturnType(Class<?> returnType, String... typeArgs)
         {
@@ -96,14 +98,14 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         protected ExecutableElementImpl exe;
         private TypeParameterBuilder<ConstructorBuilder> typeParamBuilder;
 
-        public ConstructorBuilder(TypeElement enclosingElement, List<TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+        public ConstructorBuilder(TypeElement enclosingElement, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
-            this(enclosingElement, ElementKind.CONSTRUCTOR, "<init>", typeArguments, typeParameterMap);
+            this(enclosingElement, ElementKind.CONSTRUCTOR, "<init>", classTypeArguments, classTypeParameterMap);
         }
-        public ConstructorBuilder(TypeElement enclosingElement, ElementKind kind, String name, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+        public ConstructorBuilder(TypeElement enclosingElement, ElementKind kind, String name, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
             exe = new ExecutableElementImpl(enclosingElement, kind, name);
-            typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, exe.typeParameters, typeArguments, typeParameterMap);
+            typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, exe.typeParameters, classTypeArguments, classTypeParameterMap);
         }
 
         public ExecutableElement getExecutableElement()
@@ -115,6 +117,15 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         {
             exe.modifiers.add(modifier);
             return this;
+        }
+        public ConstructorBuilder addModifiers(int modifier)
+        {
+            MethodFlags.setModifiers(exe.modifiers, modifier);
+            return this;
+        }
+        public VariableBuilder addParameter(Class<?> name)
+        {
+            return addParameter(name.getCanonicalName());
         }
         public VariableBuilder addParameter(String name)
         {

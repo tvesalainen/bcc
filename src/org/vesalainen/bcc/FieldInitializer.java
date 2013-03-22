@@ -17,10 +17,8 @@
 package org.vesalainen.bcc;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import org.vesalainen.bcc.model.E;
@@ -35,10 +33,6 @@ public abstract class FieldInitializer
 
     protected VariableElement field;
 
-    protected FieldInitializer(Field field)
-    {
-        this(ElementFactory.get(field));
-    }
     protected FieldInitializer(VariableElement field)
     {
         this.field = field;
@@ -46,50 +40,50 @@ public abstract class FieldInitializer
 
     public abstract void init(MethodCompiler c) throws IOException;
 
-    public static FieldInitializer getInstance(Field field, boolean value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, boolean value)
     {
-        return new IntInit(field, value);
+        return new IntInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, byte value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, byte value)
     {
-        return new IntInit(field, value);
+        return new IntInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, char value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, char value)
     {
-        return new IntInit(field, value);
+        return new IntInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, short value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, short value)
     {
-        return new IntInit(field, value);
+        return new IntInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, int value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, int value)
     {
-        return new IntInit(field, value);
+        return new IntInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, long value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, long value)
     {
-        return new LongInit(field, value);
+        return new LongInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, float value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, float value)
     {
-        return new FloatInit(field, value);
+        return new FloatInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, double value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, double value)
     {
-        return new DoubleInit(field, value);
+        return new DoubleInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getInstance(Field field, String value)
+    public static FieldInitializer getInstance(Class<?> cls, String name, String value)
     {
-        return new StringInit(field, value);
+        return new StringInit(E.getField(cls, name), value);
     }
-    public static FieldInitializer getObjectInstance(Field field, Class<?> cls)
+    public static FieldInitializer getObjectInstance(Class<?> cls, String name, Class<?> ocls)
     {
-        return new ObjectInit(field, cls);
+        return new ObjectInit(E.getField(cls, name), ocls);
     }
     public static class IntInit extends FieldInitializer
     {
         int value;
-        public IntInit(Field field, boolean value)
+        private IntInit(VariableElement field, boolean value)
         {
             super(field);
             if (value)
@@ -98,25 +92,25 @@ public abstract class FieldInitializer
             }
         }
 
-        public IntInit(Field field, byte value)
+        private IntInit(VariableElement field, byte value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Field field, char value)
+        private IntInit(VariableElement field, char value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Field field, short value)
+        private IntInit(VariableElement field, short value)
         {
             super(field);
             this.value = value;
         }
 
-        public IntInit(Field field, int value)
+        private IntInit(VariableElement field, int value)
         {
             super(field);
             this.value = value;
@@ -128,20 +122,20 @@ public abstract class FieldInitializer
             if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.iconst(value);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
                 c.aload(0);
                 c.iconst(value);
-                c.putfield(field);
+                c.putField(field);
             }
         }
     }
     public static class FloatInit extends FieldInitializer
     {
         private float value;
-        public FloatInit(Field field, float value)
+        public FloatInit(VariableElement field, float value)
         {
             super(field);
             this.value = value;
@@ -153,13 +147,13 @@ public abstract class FieldInitializer
             if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.fconst(value);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
                 c.aload(0);
                 c.fconst(value);
-                c.putfield(field);
+                c.putField(field);
             }
         }
 
@@ -167,7 +161,7 @@ public abstract class FieldInitializer
     public static class DoubleInit extends FieldInitializer
     {
         private double value;
-        public DoubleInit(Field field, double value)
+        public DoubleInit(VariableElement field, double value)
         {
             super(field);
             this.value = value;
@@ -179,13 +173,13 @@ public abstract class FieldInitializer
             if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.dconst(value);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
                 c.aload(0);
                 c.dconst(value);
-                c.putfield(field);
+                c.putField(field);
             }
         }
 
@@ -193,7 +187,7 @@ public abstract class FieldInitializer
     public static class LongInit extends FieldInitializer
     {
         private long value;
-        public LongInit(Field field, long value)
+        public LongInit(VariableElement field, long value)
         {
             super(field);
             this.value = value;
@@ -205,13 +199,13 @@ public abstract class FieldInitializer
             if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.lconst(value);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
                 c.aload(0);
                 c.lconst(value);
-                c.putfield(field);
+                c.putField(field);
             }
         }
 
@@ -219,7 +213,7 @@ public abstract class FieldInitializer
     public static class StringInit extends FieldInitializer
     {
         private String value;
-        public StringInit(Field field, String value)
+        public StringInit(VariableElement field, String value)
         {
             super(field);
             this.value = value;
@@ -231,13 +225,13 @@ public abstract class FieldInitializer
             if (field.getModifiers().contains(Modifier.STATIC))
             {
                 c.ldc(value);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
                 c.aload(0);
                 c.ldc(value);
-                c.putfield(field);
+                c.putField(field);
             }
         }
 
@@ -247,15 +241,15 @@ public abstract class FieldInitializer
     {
         private TypeElement cls;
         private ExecutableElement constructor;
-        public ObjectInit(Field field, Class<?> cls)
+        public ObjectInit(VariableElement field, Class<?> cls)
         {
-            this(ElementFactory.get(field), ElementFactory.get(cls));
+            this(field, ElementFactory.get(cls));
         }
         public ObjectInit(VariableElement field, TypeElement cls)
         {
             super(field);
             this.cls = cls;
-            constructor = E.findConstructor(cls);
+            constructor = E.getConstructor(cls);
         }
 
         @Override
@@ -266,7 +260,7 @@ public abstract class FieldInitializer
                 c.anew(cls);
                 c.dup();
                 c.invokespecial(constructor);
-                c.putstatic(field);
+                c.putStaticField(field);
             }
             else
             {
@@ -274,7 +268,7 @@ public abstract class FieldInitializer
                 c.anew(cls);
                 c.dup();
                 c.invokespecial(constructor);
-                c.putfield(field);
+                c.putField(field);
             }
         }
     }

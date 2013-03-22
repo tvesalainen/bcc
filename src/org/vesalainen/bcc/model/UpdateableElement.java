@@ -16,6 +16,7 @@
  */
 package org.vesalainen.bcc.model;
 
+import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
@@ -27,6 +28,6 @@ import javax.lang.model.element.Name;
 public interface UpdateableElement
 {
     void setEnclosingElement(Element enclosingElement);
-    void setModifiers(Modifier... modifier);
+    void setModifiers(Set<Modifier> modifiers);
     void setSimpleName(Name name);
 }

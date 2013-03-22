@@ -33,7 +33,7 @@ public class TypeParameterBuilder<R>
 {
     private R ret;
     private TypeElement element;
-    private List<TypeParameterElement> typeParameters;
+    private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private List<TypeMirror> typeArguments = new ArrayList<>();
     private Map<String,TypeParameterElement> typeParameterMap = new HashMap<>();
 
@@ -44,11 +44,11 @@ public class TypeParameterBuilder<R>
         this.typeParameters = typeParameters;
     }
 
-    public TypeParameterBuilder(R ret, TypeElement element, List<TypeParameterElement> typeParameters, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+    public TypeParameterBuilder(R ret, TypeElement element, List<? extends TypeParameterElement> typeParameters, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
     {
         this.ret = ret;
         this.element = element;
-        this.typeParameters = typeParameters;
+        this.typeParameters.addAll(typeParameters);
         this.typeArguments.addAll(typeArguments);
         this.typeParameterMap.putAll(typeParameterMap);
     }

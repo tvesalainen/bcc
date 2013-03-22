@@ -24,15 +24,19 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.AccessFlags;
+import org.vesalainen.bcc.AccessFlags.FieldFlags;
 import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
 
 /**
@@ -47,10 +51,16 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
         private VariableElementImpl var;
         private TypeParameterBuilder<?> typeParamBuilder;
 
-        VariableBuilder(Element enclosingElement, String name, TypeParameterBuilder<?> typeParamBuilder)
+        public VariableBuilder(Element enclosingElement, String name, TypeParameterBuilder<?> typeParamBuilder)
         {
             var = new VariableElementImpl(enclosingElement, name);
             this.typeParamBuilder = typeParamBuilder;
+        }
+
+        public VariableBuilder(TypeElement enclosingElement, String name, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
+        {
+            var = new VariableElementImpl(enclosingElement, name);
+            this.typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, enclosingElement.getTypeParameters(), classTypeArguments, classTypeParameterMap);
         }
 
         public DeclaredTypeBuilder setComplexType(Class<?> cls)
@@ -98,6 +108,11 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
         public VariableBuilder addModifier(javax.lang.model.element.Modifier modifier)
         {
             var.modifiers.add(modifier);
+            return this;
+        }
+        public VariableBuilder addModifiers(int modifier)
+        {
+            FieldFlags.setModifiers(var.modifiers, modifier);
             return this;
         }
         public VariableElement getVariableElement()
