@@ -82,7 +82,7 @@ public class TypeVariableImpl implements TypeVariable
     @Override
     public TypeMirror getLowerBound()
     {
-        return T.getNullType();
+        return Typ.getNullType();
     }
 
     @Override

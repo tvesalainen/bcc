@@ -17,13 +17,13 @@
 package org.vesalainen.bcc;
 
 import java.io.IOException;
-import java.lang.reflect.Member;
+import javax.lang.model.element.ExecutableElement;
 
 /**
- *
+ * @deprecated 
  * @author tkv
  */
 public interface MethodImplementor
 {
-    void implement(MethodCompiler c, Member method) throws IOException;
+    void implement(MethodCompiler c, ExecutableElement method) throws IOException;
 }

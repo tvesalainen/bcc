@@ -46,21 +46,21 @@ public class TypeMirrorFactory
         switch (type)
         {
             case "byte":
-                return T.Byte;
+                return Typ.Byte;
             case "boolean":
-                return T.Boolean;
+                return Typ.Boolean;
             case "char":
-                return T.Char;
+                return Typ.Char;
             case "short":
-                return T.Short;
+                return Typ.Short;
             case "int":
-                return T.Int;
+                return Typ.Int;
             case "long":
-                return T.Long;
+                return Typ.Long;
             case "float":
-                return T.Float;
+                return Typ.Float;
             case "double":
-                return T.Double;
+                return Typ.Double;
             default:
                 return null;
         }

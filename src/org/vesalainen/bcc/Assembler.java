@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.bcc.type.Generics;
 
 /**
  *

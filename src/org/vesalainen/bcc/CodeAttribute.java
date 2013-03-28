@@ -24,7 +24,7 @@ import java.util.List;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import org.vesalainen.annotation.dump.Signature;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  *
@@ -87,7 +87,7 @@ public class CodeAttribute extends AttributeInfo
                 }
                 lvtt.addLocalTypeVariable(lv, signature, index);
             }
-            if (T.isCategory2(lv.asType()))
+            if (Typ.isCategory2(lv.asType()))
             {
                 index += 2;
             }

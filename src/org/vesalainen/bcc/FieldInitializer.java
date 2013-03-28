@@ -21,7 +21,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 import org.vesalainen.bcc.model.ElementFactory;
 
 /**
@@ -40,45 +40,49 @@ public abstract class FieldInitializer
 
     public abstract void init(MethodCompiler c) throws IOException;
 
-    public static FieldInitializer getInstance(Class<?> cls, String name, boolean value)
+    public static FieldInitializer getInstance(VariableElement field, boolean value)
     {
-        return new IntInit(E.getField(cls, name), value);
+        return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, byte value)
+    public static FieldInitializer getInstance(VariableElement field, byte value)
     {
-        return new IntInit(E.getField(cls, name), value);
+        return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, char value)
+    public static FieldInitializer getInstance(VariableElement field, char value)
     {
-        return new IntInit(E.getField(cls, name), value);
+        return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, short value)
+    public static FieldInitializer getInstance(VariableElement field, short value)
     {
-        return new IntInit(E.getField(cls, name), value);
+        return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, int value)
+    public static FieldInitializer getInstance(VariableElement field, int value)
     {
-        return new IntInit(E.getField(cls, name), value);
+        return new IntInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, long value)
+    public static FieldInitializer getInstance(VariableElement field, long value)
     {
-        return new LongInit(E.getField(cls, name), value);
+        return new LongInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, float value)
+    public static FieldInitializer getInstance(VariableElement field, float value)
     {
-        return new FloatInit(E.getField(cls, name), value);
+        return new FloatInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, double value)
+    public static FieldInitializer getInstance(VariableElement field, double value)
     {
-        return new DoubleInit(E.getField(cls, name), value);
+        return new DoubleInit(field, value);
     }
-    public static FieldInitializer getInstance(Class<?> cls, String name, String value)
+    public static FieldInitializer getInstance(VariableElement field, String value)
     {
-        return new StringInit(E.getField(cls, name), value);
+        return new StringInit(field, value);
     }
-    public static FieldInitializer getObjectInstance(Class<?> cls, String name, Class<?> ocls)
+    public static FieldInitializer getObjectInstance(VariableElement field, Class<?> ocls)
     {
-        return new ObjectInit(E.getField(cls, name), ocls);
+        return new ObjectInit(field, ocls);
+    }
+    public static FieldInitializer getObjectInstance(VariableElement field, String ocls)
+    {
+        return new ObjectInit(field, ocls);
     }
     public static class IntInit extends FieldInitializer
     {
@@ -243,13 +247,17 @@ public abstract class FieldInitializer
         private ExecutableElement constructor;
         public ObjectInit(VariableElement field, Class<?> cls)
         {
-            this(field, ElementFactory.get(cls));
+            this(field, cls.getCanonicalName());
+        }
+        public ObjectInit(VariableElement field, String cls)
+        {
+            this(field, El.getTypeElement(cls));
         }
         public ObjectInit(VariableElement field, TypeElement cls)
         {
             super(field);
             this.cls = cls;
-            constructor = E.getConstructor(cls);
+            constructor = El.getConstructor(cls);
         }
 
         @Override

@@ -20,6 +20,7 @@ package org.vesalainen.bcc.model;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -38,7 +39,7 @@ import org.vesalainen.annotation.dump.Descriptor;
 /**
  * @author Timo Vesalainen
  */
-public class E 
+public class El 
 {
     private static Elements elements = new ElementsImpl();
 
@@ -49,8 +50,11 @@ public class E
     }
     public static VariableElement getField(Class<?> cls, String name)
     {
-        TypeElement typeElement = E.getTypeElement(cls.getCanonicalName());
-        for (VariableElement field : ElementFilter.fieldsIn(E.getAllMembers(typeElement)))
+        return getField(El.getTypeElement(cls.getCanonicalName()), name);
+    }
+    public static VariableElement getField(TypeElement typeElement, String name)
+    {
+        for (VariableElement field : ElementFilter.fieldsIn(El.getAllMembers(typeElement)))
         {
             if (name.contentEquals(field.getSimpleName()))
             {
@@ -62,7 +66,7 @@ public class E
     public static ExecutableElement getMethod(Class<?> cls, String name, Class<?>... parameters)
     {
         return getMethod(
-                E.getTypeElement(cls.getCanonicalName()), 
+                El.getTypeElement(cls.getCanonicalName()), 
                 name, 
                 getParams(parameters)
                 );
@@ -70,7 +74,7 @@ public class E
     public static ExecutableElement getConstructor(Class<?> cls, Class<?>... parameters)
     {
         return getConstructor(
-                E.getTypeElement(cls.getCanonicalName()), 
+                El.getTypeElement(cls.getCanonicalName()), 
                 getParams(parameters)
                 );
     }
@@ -79,13 +83,13 @@ public class E
         TypeMirror[] params = new TypeMirror[parameters.length];
         for (int ii=0;ii<params.length;ii++)
         {
-            params[ii] = T.getTypeFor(parameters[ii]);
+            params[ii] = Typ.getTypeFor(parameters[ii]);
         }
         return params;
     }
     public static ExecutableElement getMethod(TypeElement typeElement, String name, TypeMirror... parameters)
     {
-        for (ExecutableElement method : ElementFilter.methodsIn(E.getAllMembers(typeElement)))
+        for (ExecutableElement method : ElementFilter.methodsIn(El.getAllMembers(typeElement)))
         {
             if (name.contentEquals(method.getSimpleName()))
             {
@@ -95,7 +99,7 @@ public class E
                     List<? extends VariableElement> calleeParams = method.getParameters();
                     for (int ii=0;ii<parameters.length;ii++)
                     {
-                        if (!T.isSameType(parameters[ii], calleeParams.get(ii).asType()))
+                        if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
                         {
                             ok = false;
                             continue;
@@ -121,7 +125,7 @@ public class E
                 List<? extends VariableElement> calleeParams = method.getParameters();
                 for (int ii=0;ii<parameters.length;ii++)
                 {
-                    if (!T.isSameType(parameters[ii], calleeParams.get(ii).asType()))
+                    if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
                     {
                         ok = false;
                         continue;
@@ -142,7 +146,7 @@ public class E
     }
     public static void setElements(Elements elements)
     {
-        E.elements = elements;
+        El.elements = elements;
     }
 
     public static PackageElement getPackageElement(CharSequence name)
@@ -207,7 +211,7 @@ public class E
 
     public static void printElements(Writer w, Element... elements)
     {
-        E.elements.printElements(w, elements);
+        El.elements.printElements(w, elements);
     }
 
     public static Name getName(CharSequence cs)
@@ -219,5 +223,38 @@ public class E
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
-    
+
+    /**
+     * Return effective methods for a class. All methods accessible at class 
+     * are returned. That includes superclass methods which are not override.
+     * @param cls
+     * @return 
+     */
+    public static Iterable<ExecutableElement> getEffectiveMethods(TypeElement cls)
+    {
+        List<ExecutableElement> list = new ArrayList<>();
+        while (cls != null)
+        {
+            for (ExecutableElement method : ElementFilter.methodsIn(cls.getEnclosedElements()))
+            {
+                if (!overrides(list, method))
+                {
+                    list.add(method);
+                }
+            }
+            cls = (TypeElement) Typ.asElement(cls.getSuperclass());
+        }
+        return list;
+    }
+    private static boolean overrides(Collection<ExecutableElement> methods, ExecutableElement method)
+    {
+        for (ExecutableElement m : methods)
+        {
+            if (El.overrides(m, method, (TypeElement)m.getEnclosingElement()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }

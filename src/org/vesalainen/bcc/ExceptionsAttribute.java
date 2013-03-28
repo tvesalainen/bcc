@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 
 /**
  * @author Timo Vesalainen

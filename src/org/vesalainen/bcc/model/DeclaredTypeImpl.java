@@ -36,7 +36,7 @@ import javax.lang.model.type.TypeVisitor;
 public class DeclaredTypeImpl implements DeclaredType
 {
     private TypeElement element;
-    private TypeMirror enclosingType = T.getNoType(TypeKind.NONE);
+    private TypeMirror enclosingType = Typ.getNoType(TypeKind.NONE);
     private List<TypeMirror> typeArguments;
     DeclaredTypeImpl()
     {
@@ -51,11 +51,11 @@ public class DeclaredTypeImpl implements DeclaredType
 
     DeclaredTypeImpl(Class<?> element, Class<?>... typeArguments)
     {
-        this.element = E.getTypeElement(element.getCanonicalName());
+        this.element = El.getTypeElement(element.getCanonicalName());
         this.typeArguments = new ArrayList<>();
         for (Class<?> a : typeArguments)
         {
-            this.typeArguments.add(T.getTypeFor(a));
+            this.typeArguments.add(Typ.getTypeFor(a));
         }
     }
 
@@ -70,7 +70,7 @@ public class DeclaredTypeImpl implements DeclaredType
         Class<?> enclosingClass = cls.getEnclosingClass();
         if (enclosingClass == null)
         {
-            enclosingType = T.getNoType(TypeKind.NONE);
+            enclosingType = Typ.getNoType(TypeKind.NONE);
         }
         else
         {
@@ -85,7 +85,7 @@ public class DeclaredTypeImpl implements DeclaredType
     void init(Annotation annotation)
     {
         this.element = ElementFactory.get(annotation);
-        enclosingType = T.getNoType(TypeKind.NONE);
+        enclosingType = Typ.getNoType(TypeKind.NONE);
     }
 
     void init(java.lang.reflect.ParameterizedType parameterizedType)

@@ -62,7 +62,7 @@ public class TypeParameterElementImpl extends ElementImpl<TypeVariable> implemen
     void init(java.lang.reflect.TypeVariable<?> typeVariable)
     {
         type = TypeMirrorFactory.getTypeVariable(typeVariable);
-        simpleName = E.getName(typeVariable.getName());
+        simpleName = El.getName(typeVariable.getName());
         genericElement = (Parameterizable) ElementFactory.get(typeVariable.getGenericDeclaration());
         for (Type b : typeVariable.getBounds())
         {

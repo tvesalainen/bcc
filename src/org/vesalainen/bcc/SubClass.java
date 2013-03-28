@@ -39,6 +39,7 @@ import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.bcc.AccessFlags.ClassFlags;
 import org.vesalainen.bcc.AccessFlags.MethodFlags;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
 import org.vesalainen.bcc.ConstantInfo.ConstantDouble;
@@ -51,10 +52,10 @@ import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.ConstantInfo.Methodref;
 import org.vesalainen.bcc.ConstantInfo.NameAndType;
 import org.vesalainen.bcc.ConstantInfo.Utf8;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
 import org.vesalainen.bcc.model.ExecutableElementImpl.MethodBuilder;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 import org.vesalainen.bcc.model.UpdateableElement;
 import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
@@ -72,6 +73,10 @@ public class SubClass extends ClassFile
     private ReadLock constantReadLock = constantLock.readLock();
     private WriteLock constantWriteLock = constantLock.writeLock();
 
+    public SubClass(Class<?> superClass, String qualifiedName, Modifier... modifiers) throws IOException
+    {
+        this(El.getTypeElement(superClass.getCanonicalName()), qualifiedName, modifiers);
+    }
     public SubClass(TypeElement superClass, String qualifiedName, Modifier... modifiers) throws IOException
     {
         super(superClass, qualifiedName, modifiers);
@@ -309,7 +314,7 @@ public class SubClass extends ClassFile
      */
     public final int resolveClassIndex(Class<?> type)
     {
-        return resolveClassIndex(E.getTypeElement(type.getCanonicalName()));
+        return resolveClassIndex(El.getTypeElement(type.getCanonicalName()));
     }
     /**
      * Returns the constant map index to class
@@ -333,7 +338,7 @@ public class SubClass extends ClassFile
         }
         if (index == -1)
         {
-            String name = E.getInternalForm(type);
+            String name = El.getInternalForm(type);
             int nameIndex = resolveNameIndex(name);
             index = addConstantInfo(new Clazz(nameIndex), size);
         }
@@ -472,45 +477,59 @@ public class SubClass extends ClassFile
         return addConstantInfo(new ConstantString(nameIndex), size);
     }
 
-    public void implement(ExecutableElement method) throws IOException
+    private void implement(MethodCompiler mc) throws IOException
     {
-        throw new UnsupportedOperationException();
+        mc.implement(); // TO DO concurrent
     }
     
-    public void codeDefaultConstructor(FieldInitializer... fis) throws IOException
+    public void codeDefaultConstructor(final FieldInitializer... fis) throws IOException
     {
-        for (ExecutableElement constructor : ElementFilter.constructorsIn(superClass.getEnclosedElements()))
+        for (final ExecutableElement constructor : ElementFilter.constructorsIn(superClass.getEnclosedElements()))
         {
             if (!constructor.getModifiers().contains(Modifier.PRIVATE))
             {
-                MethodCompiler c = overrideMethod(constructor.getModifiers(), constructor);
-                c.aload(0);
-                int index = 1;
-                for (VariableElement param : constructor.getParameters())
+                MethodCompiler c = new MethodCompiler()
                 {
-                    c.tload(param.asType(), index++);
-                }
-                c.invokespecial(constructor);
-                for (FieldInitializer fi : fis)
-                {
-                    fi.init(c);
-                }
-                c.treturn();
-                c.end();
+                    @Override
+                    protected void implement() throws IOException
+                    {
+                        aload(0);
+                        int index = 1;
+                        for (VariableElement param : constructor.getParameters())
+                        {
+                            tload(param.asType(), index++);
+                        }
+                        invokespecial(constructor);
+                        for (FieldInitializer fi : fis)
+                        {
+                            fi.init(this);
+                        }
+                        treturn();
+                        end();
+                    }
+                };
+                overrideMethod(c, constructor, constructor.getModifiers());
             }
         }
     }
-    public void codeStaticInitializer(FieldInitializer... fis) throws IOException
+    public void codeStaticInitializer(final FieldInitializer... fis) throws IOException
     {
         if (fis.length != 0)
         {
-            MethodCompiler c = createStaticInitializer();
-            for (FieldInitializer fi : fis)
+            MethodCompiler c = new MethodCompiler()
             {
-                fi.init(c);
-            }
-            c.treturn();
-            c.end();
+                @Override
+                protected void implement() throws IOException
+                {
+                    for (FieldInitializer fi : fis)
+                    {
+                        fi.init(this);
+                    }
+                    treturn();
+                    end();
+                }
+            };
+            createStaticInitializer(c);
         }
     }
 
@@ -522,7 +541,7 @@ public class SubClass extends ClassFile
      */
     public void defineField(int modifier, String fieldName, Class<?> type)
     {
-        defineField(modifier, fieldName, T.getTypeFor(type));
+        defineField(modifier, fieldName, Typ.getTypeFor(type));
     }
     /**
      * Define a new field.
@@ -551,7 +570,7 @@ public class SubClass extends ClassFile
         VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
         builder.addModifiers(modifier);
         builder.addModifier(Modifier.STATIC);
-        builder.setType(T.IntA);
+        builder.setType(Typ.IntA);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
     }
@@ -567,7 +586,7 @@ public class SubClass extends ClassFile
         VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
         builder.addModifiers(modifier);
         builder.addModifier(Modifier.STATIC);
-        builder.setType(T.Long);
+        builder.setType(Typ.Long);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
     }
@@ -583,7 +602,7 @@ public class SubClass extends ClassFile
         VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
         builder.addModifiers(modifier);
         builder.addModifier(Modifier.STATIC);
-        builder.setType(T.Float);
+        builder.setType(Typ.Float);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
     }
@@ -599,7 +618,7 @@ public class SubClass extends ClassFile
         VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
         builder.addModifiers(modifier);
         builder.addModifier(Modifier.STATIC);
-        builder.setType(T.Double);
+        builder.setType(Typ.Double);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
     }
@@ -615,12 +634,12 @@ public class SubClass extends ClassFile
         VariableBuilder builder = new VariableBuilder(this, fieldName, dt.getTypeArguments(), typeParameterMap);
         builder.addModifiers(modifier);
         builder.addModifier(Modifier.STATIC);
-        builder.setType(T.String);
+        builder.setType(Typ.String);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
     }
 
-    public MethodCompiler createStaticInitializer()
+    public void createStaticInitializer(MethodCompiler mc) throws IOException
     {
         DeclaredType dt = (DeclaredType)asType();
         ConstructorBuilder builder = new ConstructorBuilder(
@@ -633,22 +652,27 @@ public class SubClass extends ClassFile
         builder.addModifier(Modifier.STATIC);
         MethodInfo methodInfo = new MethodInfo(this, builder.getExecutableElement());
         addMethodInfo(methodInfo);
-        MethodCompiler mc = new MethodCompiler(this, methodInfo);
-        return mc;
+        mc.startImplement(this, methodInfo);
+        implement(mc);
     }
-    public MethodCompiler defineMethod(int modifier, String methodName, Class<?> returnType, Class<?>... parameters)
-    {
-        return defineMethod(modifier, methodName, returnType, null, parameters);
-    }
-    public MethodCompiler defineMethod(int modifier, String methodName, Class<?> returnType, Class<?>[] exceptionTypes, Class<?>... parameters)
+    public MethodBuilder buildMethod(String methodName)
     {
         DeclaredType dt = (DeclaredType)asType();
-        MethodBuilder builder = new MethodBuilder(
+        return new MethodBuilder(
                 this, 
                 methodName, 
                 dt.getTypeArguments(), 
                 typeParameterMap
                 );
+    }
+    public void defineMethod(MethodCompiler mc, int modifier, String methodName, Class<?> returnType, Class<?>... parameters) throws IOException
+    {
+        defineMethod(mc, modifier, methodName, returnType, null, parameters);
+    }
+    public void defineMethod(MethodCompiler mc, int modifier, String methodName, Class<?> returnType, Class<?>[] exceptionTypes, Class<?>... parameters) throws IOException
+    {
+        DeclaredType dt = (DeclaredType)asType();
+        MethodBuilder builder = buildMethod(methodName);
         builder.addModifiers(modifier);
         builder.setReturnType(returnType);
         if (exceptionTypes != null)
@@ -660,42 +684,46 @@ public class SubClass extends ClassFile
         }
         for (Class<?> p : parameters)
         {
-            builder.addParameter(p);
+            builder.addParameter("").setType(p);
         }
-        return defineMethod(builder.getExecutableElement());
+        defineMethod(mc, builder.getExecutableElement());
     }
 
-    public MethodCompiler overrideConstructor(int modifier, Class<?>... parameters)
+    public void overrideConstructor(MethodCompiler mc, int modifier, Class<?>... parameters) throws IOException
     {
-        ExecutableElement method = E.getConstructor(superClass, E.getParams(parameters));
+        ExecutableElement method = El.getConstructor(superClass, El.getParams(parameters));
         Set<Modifier> mod = EnumSet.noneOf(Modifier.class);
         MethodFlags.setModifiers(mod, modifier);
-        return overrideMethod(modifiers, method);
+        overrideMethod(mc, method, modifiers);
     }
 
-    public MethodCompiler overrideMethod(int modifier, String methodName, Class<?>... parameters)
+    public void overrideMethod(MethodCompiler mc, int modifier, String methodName, Class<?>... parameters) throws IOException
     {
-        ExecutableElement method = E.getMethod(superClass, methodName, E.getParams(parameters));
+        ExecutableElement method = El.getMethod(superClass, methodName, El.getParams(parameters));
         Set<Modifier> mod = EnumSet.noneOf(Modifier.class);
         MethodFlags.setModifiers(mod, modifier);
-        return overrideMethod(modifiers, method);
+        overrideMethod(mc, method, modifiers);
     }
 
-    public MethodCompiler overrideMethod(Set<Modifier> modifiers, ExecutableElement method)
+    public void overrideMethod(MethodCompiler mc, ExecutableElement method, Modifier... modifiers) throws IOException
     {
-        method = E.createUpdateableElement(method);
+        overrideMethod(mc, method, MethodFlags.getModifiers(modifiers));
+    }
+    public void overrideMethod(MethodCompiler mc, ExecutableElement method, Set<Modifier> modifiers) throws IOException
+    {
+        method = El.createUpdateableElement(method);
         UpdateableElement ue = (UpdateableElement) method;
         ue.setEnclosingElement(this);
         ue.setModifiers(modifiers);
-        return defineMethod(method);
+        defineMethod(mc, method);
     }
 
-    public MethodCompiler defineMethod(ExecutableElement method)
+    public void defineMethod(MethodCompiler mc, ExecutableElement method) throws IOException
     {
         MethodInfo methodInfo = new MethodInfo(this, method);
         addMethodInfo(methodInfo);
-        MethodCompiler mc = new MethodCompiler(this, methodInfo);
-        return mc;
+        mc.startImplement(this, methodInfo);
+        implement(mc);
     }
     public Object newInstance() throws IOException
     {
@@ -737,7 +765,7 @@ public class SubClass extends ClassFile
     {
         FileObject sourceFile = filer.getResource(
                 StandardLocation.SOURCE_OUTPUT, 
-                E.getPackageOf(this).getQualifiedName(), 
+                El.getPackageOf(this).getQualifiedName(), 
                 getSimpleName()+".jasm"
                 );
         try (LineNumberPrintStream out = new LineNumberPrintStream(sourceFile.openOutputStream()))

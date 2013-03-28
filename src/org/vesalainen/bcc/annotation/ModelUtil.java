@@ -27,8 +27,8 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.AttributeInfo;
-import org.vesalainen.bcc.model.E;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.El;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  * @author Timo Vesalainen
@@ -101,11 +101,11 @@ public class ModelUtil
 
     public static <A extends Annotation> A getAnnotation(Collection<AttributeInfo> attributes, Class<A> annotationType)
     {
-        TypeElement typeElement = E.getTypeElement(annotationType.getCanonicalName());
+        TypeElement typeElement = El.getTypeElement(annotationType.getCanonicalName());
         TypeMirror type = typeElement.asType();
         for (AnnotationMirror am : getAnnotationMirrors(attributes))
         {
-            if (T.isSameType(type, am.getAnnotationType()))
+            if (Typ.isSameType(type, am.getAnnotationType()))
             {
                 AnnotationWrapper aw = (AnnotationWrapper) am;
                 return aw.getAnnotation(annotationType);

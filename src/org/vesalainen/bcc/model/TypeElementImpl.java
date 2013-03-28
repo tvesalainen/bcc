@@ -49,7 +49,7 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     private List<TypeMirror> interfaces = new ArrayList<>();
     private NestingKind nestingKind = NestingKind.TOP_LEVEL;
     private Name qualifiedName;
-    private TypeMirror superclass = T.getNoType(TypeKind.NONE);
+    private TypeMirror superclass = Typ.getNoType(TypeKind.NONE);
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
 
     public static class ClassBuilder
@@ -148,7 +148,7 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             {
                 ta.add(typeParamBuilder.resolvType(a));
             }
-            return addInterface(TypeMirrorFactory.getDeclaredType(E.getTypeElement(element.getCanonicalName()), ta));
+            return addInterface(TypeMirrorFactory.getDeclaredType(El.getTypeElement(element.getCanonicalName()), ta));
         }
         public ClassBuilder addInterface(Class<?> element, Class<?>... typeArguments)
         {
@@ -160,11 +160,11 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             {
                 throw new IllegalArgumentException(intf+" is not interface");
             }
-            return addInterface(E.getTypeElement(intf.getCanonicalName()));
+            return addInterface(El.getTypeElement(intf.getCanonicalName()));
         }
         public ClassBuilder addInterface(CharSequence intf)
         {
-            return addInterface(E.getTypeElement(intf));
+            return addInterface(El.getTypeElement(intf));
         }
         public ClassBuilder addInterface(TypeElement intf)
         {
@@ -183,12 +183,12 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
 
         public ClassBuilder setSuperclass(Class<?> superclass)
         {
-            return setSuperclass(E.getTypeElement(superclass.getName()));
+            return setSuperclass(El.getTypeElement(superclass.getName()));
         }
 
         public ClassBuilder setSuperclass(CharSequence superclass)
         {
-            return setSuperclass(E.getTypeElement(superclass));
+            return setSuperclass(El.getTypeElement(superclass));
         }
 
         public ClassBuilder setSuperclass(TypeElement superclass)
@@ -210,11 +210,11 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
 
         public ClassBuilder setQualifiedName(String name)
         {
-            element.qualifiedName = E.getName(name);
+            element.qualifiedName = El.getName(name);
             int idx = name.lastIndexOf('.');
             if (idx != -1)
             {
-                element.simpleName = E.getName(name.substring(idx+1));
+                element.simpleName = El.getName(name.substring(idx+1));
                 element.enclosingElement = new PackageElementImpl(name.substring(0, idx));
             }
             else
@@ -263,14 +263,14 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     void init(Class<?> cls)
     {
         type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
-        qualifiedName = E.getName(cls.getName());
+        qualifiedName = El.getName(cls.getName());
         if (cls.getSuperclass() != null)
         {
             superclass = TypeMirrorFactory.get(cls.getGenericSuperclass());
         }
         else
         {
-            superclass = T.getNoType(TypeKind.NONE);
+            superclass = Typ.getNoType(TypeKind.NONE);
         }
         for (TypeVariable param : cls.getTypeParameters())
         {

@@ -24,7 +24,7 @@ import java.util.List;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.annotation.dump.Descriptor;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  *
@@ -133,7 +133,7 @@ public class LocalVariableTable extends AttributeInfo
 
         public TypeMirror getType()
         {
-            return T.typeFromDescriptor(classFile.getString(descriptorIndex));
+            return Typ.typeFromDescriptor(classFile.getString(descriptorIndex));
         }
 
         public int getIndex()

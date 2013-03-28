@@ -68,7 +68,7 @@ import org.vesalainen.bcc.ClassFile.ClassType;
 import org.vesalainen.bcc.ConstantInfo.Filler;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.annotation.ModelUtil;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 
 /**
  * ClassFile wraps java classfile
@@ -105,18 +105,18 @@ public class ClassFile implements Writable, TypeElement
     protected ClassFile(TypeElement superClass, String qualifiedName, Modifier... modifiers)
     {
         this.superClass = superClass;
-        this.qualifiedName = E.getName(qualifiedName);
+        this.qualifiedName = El.getName(qualifiedName);
         this.modifiers.addAll(Arrays.asList(modifiers));
         int idx = qualifiedName.lastIndexOf('.');
         if (idx != -1)
         {
-            packageElement = E.getPackageElement(qualifiedName.substring(0, idx));
-            simpleName = E.getName(qualifiedName.substring(idx+1));
+            packageElement = El.getPackageElement(qualifiedName.substring(0, idx));
+            simpleName = El.getName(qualifiedName.substring(idx+1));
         }
         else
         {
-            packageElement = E.getPackageElement("");
-            simpleName = E.getName(qualifiedName);
+            packageElement = El.getPackageElement("");
+            simpleName = El.getName(qualifiedName);
         }
     }
     public ClassFile(Class<?> cls) throws IOException
@@ -188,9 +188,9 @@ public class ClassFile implements Writable, TypeElement
             attributes.add(AttributeInfo.getInstance(this, oin));
         }
         Clazz superClazz = (Clazz) getConstantInfo(super_class);
-        superClass = E.fromDescriptor(getString(superClazz.getName_index()));
+        superClass = El.fromDescriptor(getString(superClazz.getName_index()));
         Clazz clazz = (Clazz) getConstantInfo(this_class);
-        qualifiedName = E.getName(Descriptor.getFullyQualifiedForm(getString(clazz.getName_index())));
+        qualifiedName = El.getName(Descriptor.getFullyQualifiedForm(getString(clazz.getName_index())));
     }
 
     int getConstantPoolSize()
@@ -597,7 +597,7 @@ public class ClassFile implements Writable, TypeElement
     protected final int getClassIndex(TypeElement type)
     {
         int index = -1;
-        String name = E.getInternalForm(type);
+        String name = El.getInternalForm(type);
         for (ConstantInfo ci : listConstantInfo(Clazz.class))
         {
             Clazz cls = (Clazz) ci;

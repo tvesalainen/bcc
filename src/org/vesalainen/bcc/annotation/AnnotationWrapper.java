@@ -36,7 +36,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.util.ElementFilter;
 import org.vesalainen.bcc.ClassFile;
 import org.vesalainen.bcc.Writable;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 
 /**
  * @author Timo Vesalainen
@@ -55,7 +55,7 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
     {
         this.classFile = classFile;
         typeIndex = in.readUnsignedShort();
-        typeElement = E.fromDescriptor(getDescriptor());
+        typeElement = El.fromDescriptor(getDescriptor());
         annotationType = (DeclaredType) typeElement.asType();
         int numElementValuePairs = in.readUnsignedShort();
         for (int ii = 0; ii < numElementValuePairs; ii++)
@@ -94,7 +94,7 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
     {
         if (elementValuesWithDefaults == null)
         {
-            elementValuesWithDefaults = E.getElementValuesWithDefaults(this);
+            elementValuesWithDefaults = El.getElementValuesWithDefaults(this);
         }
         return (A) Proxy.newProxyInstance(
                 annotationType.getClassLoader(), 

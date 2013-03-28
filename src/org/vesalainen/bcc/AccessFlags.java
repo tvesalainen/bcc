@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import javax.lang.model.element.Modifier;
@@ -113,6 +114,18 @@ public class AccessFlags
             default:
                 throw new IllegalArgumentException(modifier+" is not valid method flag");
         }
+    }
+    public static Set<Modifier> getModifiers(int accessFlags)
+    {
+        Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        setModifiers(modifiers, accessFlags);
+        return modifiers;
+    }
+    public static Set<Modifier> getModifiers(Modifier... mod)
+    {
+        Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+        modifiers.addAll(Arrays.asList(mod));
+        return modifiers;
     }
     public static void setModifiers(Set<Modifier> modifiers, int accessFlags)
     {

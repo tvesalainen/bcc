@@ -30,16 +30,16 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 import org.vesalainen.bcc.model.ElementFactory;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 import org.vesalainen.bcc.model.UpdateableElement;
 
 /**
  *
  * @author tkv
  */
-public class MethodCompiler extends Assembler
+public abstract class MethodCompiler extends Assembler
 {
     public static final String SUBROUTINERETURNADDRESSNAME = "$subroutineReturnAddressName";
     private SubClass subClass;
@@ -55,7 +55,11 @@ public class MethodCompiler extends Assembler
     private ExecutableElement executableElement;
     private ExecutableType executableType;
 
-    MethodCompiler(SubClass subClass, MethodInfo methodInfo)
+    protected MethodCompiler()
+    {
+    }
+
+    void startImplement(SubClass subClass, MethodInfo methodInfo) throws IOException
     {
         this.subClass = subClass;
         this.methodInfo = methodInfo;
@@ -71,12 +75,41 @@ public class MethodCompiler extends Assembler
             }
             else
             {
-                localVariables.add(E.createUpdateableElement(ve));
+                localVariables.add(El.createUpdateableElement(ve));
             }
         }
         methodInfo.setMc(this);
+        implement();
+        assert !compiled;
+        compiled =true;
+        byte[] bb = getCode();
+        if (bb.length > 0xfffe)
+        {
+            throw new IllegalArgumentException("code size "+bb.length+" > 65534");
+        }
+        try
+        {
+            fixLabels(bb);
+        }
+        catch (BranchException ex)
+        {
+            ByteCodeDump bcd = new ByteCodeDump(bb, subClass);
+            bcd.print(this);
+            throw ex;
+        }
+        if (dump)
+        {
+            ByteCodeDump bcd = new ByteCodeDump(bb, subClass);
+            bcd.print(this);
+        }
+        ExceptionTable[] exceptionTable = exceptionTableList.toArray(new ExceptionTable[exceptionTableList.size()]);
+        ByteCodeVerifier ver = new ByteCodeVerifier(bb, exceptionTable, subClass, this);
+        ver.verify();
+        code.setCode(bb, exceptionTable);
+        code.setMax_locals(localVariables.size()+1);
+        code.setMax_stack(ver.getMaxStack());
+        code.addLocalVariables(localVariables);
     }
-
     public ExecutableElement getExecutableElement()
     {
         return executableElement;
@@ -103,7 +136,7 @@ public class MethodCompiler extends Assembler
     public String getMethodDescription()
     {
         StringWriter sw = new StringWriter();
-        E.printElements(sw, executableElement);
+        El.printElements(sw, executableElement);
         return sw.toString();
     }
 
@@ -128,7 +161,7 @@ public class MethodCompiler extends Assembler
         for (int ii=offset;ii<length;ii++)
         {
             TypeMirror type = localVariables.get(ii).asType();
-            if (T.isCategory2(type))
+            if (Typ.isCategory2(type))
             {
                 size += 2;
             }
@@ -150,7 +183,7 @@ public class MethodCompiler extends Assembler
         if (lv instanceof UpdateableElement)
         {
             UpdateableElement ue = (UpdateableElement) lv;
-            ue.setSimpleName(E.getName(name));
+            ue.setSimpleName(El.getName(name));
             return;
         }
         else
@@ -172,7 +205,7 @@ public class MethodCompiler extends Assembler
             {
                 return lv;
             }
-            if (T.isCategory2(lv.asType()))
+            if (Typ.isCategory2(lv.asType()))
             {
                 idx += 2;
             }
@@ -203,7 +236,7 @@ public class MethodCompiler extends Assembler
             {
                 return idx;
             }
-            if (T.isCategory2(lv.asType()))
+            if (Typ.isCategory2(lv.asType()))
             {
                 idx += 2;
             }
@@ -277,7 +310,7 @@ public class MethodCompiler extends Assembler
     public String getLocalDescription(int index)
     {
         StringWriter sw = new StringWriter();
-        E.printElements(sw, getLocalVariable(index));
+        El.printElements(sw, getLocalVariable(index));
         return sw.toString();
     }
     /**
@@ -287,7 +320,7 @@ public class MethodCompiler extends Assembler
      */
     public void addVariable(String name, Class<?> type)
     {
-        addVariable(name, T.getTypeFor(type));
+        addVariable(name, Typ.getTypeFor(type));
     }
     /**
      * Add new local variable
@@ -306,7 +339,7 @@ public class MethodCompiler extends Assembler
     public void assignDefault(String name) throws IOException
     {
         TypeMirror t = getLocalType(name);
-        if (T.isPrimitive(t))
+        if (Typ.isPrimitive(t))
         {
             tconst(t, 0);
         }
@@ -323,7 +356,7 @@ public class MethodCompiler extends Assembler
      */
     public void loadDefault(Class<?> type) throws IOException
     {
-        loadDefault(T.getTypeFor(type));
+        loadDefault(Typ.getTypeFor(type));
     }
     /**
      * Load default value to stack depending on type
@@ -334,7 +367,7 @@ public class MethodCompiler extends Assembler
     {
         if (type.getKind() != TypeKind.VOID)
         {
-            if (T.isPrimitive(type))
+            if (Typ.isPrimitive(type))
             {
                 tconst(type, 0);
             }
@@ -358,7 +391,7 @@ public class MethodCompiler extends Assembler
         subroutine = target;
         if (!hasLocalVariable(SUBROUTINERETURNADDRESSNAME))
         {
-            addVariable(SUBROUTINERETURNADDRESSNAME, T.ReturnAddress);
+            addVariable(SUBROUTINERETURNADDRESSNAME, Typ.ReturnAddress);
         }
         fixAddress(target);
         tstore(SUBROUTINERETURNADDRESSNAME);
@@ -391,7 +424,7 @@ public class MethodCompiler extends Assembler
      */
     public void newarray(Class<?> type, int count) throws IOException
     {
-        newarray(T.getTypeFor(type), count);
+        newarray(Typ.getTypeFor(type), count);
     }
     /**
      * Create new array
@@ -455,17 +488,17 @@ public class MethodCompiler extends Assembler
     {
         if (count <= Byte.MAX_VALUE)
         {
-            return T.Byte;
+            return Typ.Byte;
         }
         if (count <= Short.MAX_VALUE)
         {
-            return T.Short;
+            return Typ.Short;
         }
         if (count <= Integer.MAX_VALUE)
         {
-            return T.Int;
+            return Typ.Int;
         }
-        return T.Long;
+        return Typ.Long;
     }
     /**
      * Load from local variable
@@ -479,7 +512,7 @@ public class MethodCompiler extends Assembler
     {
         TypeMirror cn = getLocalType(name);
         int index = getLocalVariableIndex(name);
-        if (T.isPrimitive(cn))
+        if (Typ.isPrimitive(cn))
         {
             super.tload(cn, index);
         }
@@ -500,7 +533,7 @@ public class MethodCompiler extends Assembler
     {
         TypeMirror cn = getLocalType(name);
         int index = getLocalVariableIndex(name);
-        if (T.isPrimitive(cn))
+        if (Typ.isPrimitive(cn))
         {
             tstore(cn, index);
         }
@@ -566,7 +599,7 @@ public class MethodCompiler extends Assembler
      */
     public void anew(Class<?> clazz) throws IOException
     {
-        anew(E.getTypeElement(clazz.getCanonicalName()));
+        anew(El.getTypeElement(clazz.getCanonicalName()));
     }
     /**
      * Create new object
@@ -772,7 +805,7 @@ public class MethodCompiler extends Assembler
      */
     public void getField(Class<?> cls, String name) throws IOException
     {
-        getField(E.getField(cls, name));
+        getField(El.getField(cls, name));
     }
     /**
      * Get field from class
@@ -782,7 +815,7 @@ public class MethodCompiler extends Assembler
      */
     public void getStaticField(Class<?> cls, String name) throws IOException
     {
-        getStaticField(E.getField(cls, name));
+        getStaticField(El.getField(cls, name));
     }
     /**
      * Set field in object
@@ -818,7 +851,7 @@ public class MethodCompiler extends Assembler
      */
     public void putField(Class<?> cls, String name) throws IOException
     {
-        putField(E.getField(cls, name));
+        putField(El.getField(cls, name));
     }
     /**
      * Set field in class
@@ -828,7 +861,7 @@ public class MethodCompiler extends Assembler
      */
     public void putStaticField(Class<?> cls, String name) throws IOException
     {
-        putStaticField(E.getField(cls, name));
+        putStaticField(El.getField(cls, name));
     }
     /**
      * @param constructor
@@ -836,7 +869,7 @@ public class MethodCompiler extends Assembler
      */
     public void invokeConstructor(Class<?> cls, Class<?>... parameters) throws IOException
     {
-        invoke(E.getConstructor(cls, parameters));
+        invoke(El.getConstructor(cls, parameters));
     }
     /**
      * @param method
@@ -844,7 +877,7 @@ public class MethodCompiler extends Assembler
      */
     public void invokeMethod(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invoke(E.getMethod(cls, name, parameters));
+        invoke(El.getMethod(cls, name, parameters));
     }
     /**
      * @param method
@@ -888,7 +921,7 @@ public class MethodCompiler extends Assembler
      */
     public void invokespecial(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokespecial(E.getMethod(cls, name, parameters));
+        invokespecial(El.getMethod(cls, name, parameters));
     }
 
     /**
@@ -920,7 +953,7 @@ public class MethodCompiler extends Assembler
      */
     public void invokevirtual(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokevirtual(E.getMethod(cls, name, parameters));
+        invokevirtual(El.getMethod(cls, name, parameters));
     }
     /**
      * Invoke instance method; dispatch based on classIf method is interface
@@ -953,7 +986,7 @@ public class MethodCompiler extends Assembler
      */
     public void invokestatic(Class<?> cls, String name, Class<?>... parameters) throws IOException
     {
-        invokestatic(E.getMethod(cls, name, parameters));
+        invokestatic(El.getMethod(cls, name, parameters));
     }
 
     /**
@@ -973,7 +1006,7 @@ public class MethodCompiler extends Assembler
         int result = 0;
         for (VariableElement parameter : parameters)
         {
-            if (T.isCategory2(parameter.asType()))
+            if (Typ.isCategory2(parameter.asType()))
             {
                 result += 2;
             }
@@ -985,40 +1018,11 @@ public class MethodCompiler extends Assembler
         return result;
     }
     /**
-     * Ends the compilation. This must be the last compile method for a MethodCompiler.
+     * @deprecated Current implementation does nothing
      * @throws IOException
      */
     public void end() throws IOException
     {
-        assert !compiled;
-        compiled =true;
-        byte[] bb = getCode();
-        if (bb.length > 0xfffe)
-        {
-            throw new IllegalArgumentException("code size "+bb.length+" > 65534");
-        }
-        try
-        {
-            fixLabels(bb);
-        }
-        catch (BranchException ex)
-        {
-            ByteCodeDump bcd = new ByteCodeDump(bb, subClass);
-            bcd.print(this);
-            throw ex;
-        }
-        if (dump)
-        {
-            ByteCodeDump bcd = new ByteCodeDump(bb, subClass);
-            bcd.print(this);
-        }
-        ExceptionTable[] exceptionTable = exceptionTableList.toArray(new ExceptionTable[exceptionTableList.size()]);
-        ByteCodeVerifier ver = new ByteCodeVerifier(bb, exceptionTable, subClass, this);
-        ver.verify();
-        code.setCode(bb, exceptionTable);
-        code.setMax_locals(localVariables.size()+1);
-        code.setMax_stack(ver.getMaxStack());
-        code.addLocalVariables(localVariables);
     }
     @Override
     public String toString()
@@ -1146,7 +1150,7 @@ public class MethodCompiler extends Assembler
      * @throws IOException
      * @throws NoSuchMethodException
      */
-    public void optimizedSwitch(String def, LookupList list) throws IOException, NoSuchMethodException
+    public void optimizedSwitch(String def, LookupList list) throws IOException
     {
         if (list.isEmpty())
         {
@@ -1204,7 +1208,7 @@ public class MethodCompiler extends Assembler
      * @throws IOException
      * @throws NoSuchMethodException
      */
-    public void lookupswitch(LookupList list) throws IOException, NoSuchMethodException
+    public void lookupswitch(LookupList list) throws IOException
     {
         String def = createBranch();
         lookupswitch(def, list);
@@ -1223,7 +1227,7 @@ public class MethodCompiler extends Assembler
      * @throws IOException
      * @throws NoSuchMethodException
      */
-    public void tableswitch(int low, int high, List<String> symbols) throws IOException, NoSuchMethodException
+    public void tableswitch(int low, int high, List<String> symbols) throws IOException
     {
         tableswitch(low, high, symbols.toArray(new String[symbols.size()]));
     }
@@ -1236,7 +1240,7 @@ public class MethodCompiler extends Assembler
      * @throws IOException
      * @throws NoSuchMethodException
      */
-    public void tableswitch(int low, int high, String... symbols) throws IOException, NoSuchMethodException
+    public void tableswitch(int low, int high, String... symbols) throws IOException
     {
         String def = createBranch();
         tableswitch(def, low, high, symbols);
@@ -1256,7 +1260,7 @@ public class MethodCompiler extends Assembler
      */
     public void addNewArray(String name, Class<?> aClass, int size) throws IOException
     {
-        addNewArray(name, T.getTypeFor(aClass), size);
+        addNewArray(name, Typ.getTypeFor(aClass), size);
     }
     /**
      * Create new array
@@ -1275,7 +1279,7 @@ public class MethodCompiler extends Assembler
         ArrayType at = (ArrayType) type;
         addVariable(name, at);
         newarray(type, size);
-        if (!T.isPrimitive(at.getComponentType()))
+        if (!Typ.isPrimitive(at.getComponentType()))
         {
             checkcast(type);
         }
@@ -1289,7 +1293,7 @@ public class MethodCompiler extends Assembler
      */
     public void checkcast(Class<?> objectref) throws IOException
     {
-        checkcast(T.getTypeFor(objectref));
+        checkcast(Typ.getTypeFor(objectref));
     }
     /**
      * Check whether object is of given type
@@ -1309,7 +1313,6 @@ public class MethodCompiler extends Assembler
     }
 
     /**
-     * @deprecated This is not tested!
      * Convert a local variable to given type. (if it is possible)
      * <p>Stack: ..., =&gt; ..., objectref
      * @param fromVariable
@@ -1319,10 +1322,10 @@ public class MethodCompiler extends Assembler
      * @throws NoSuchFieldException
      * @throws ClassNotFoundException
      */
-    public void convert(String fromVariable, TypeMirror to) throws IOException, NoSuchMethodException, NoSuchFieldException, ClassNotFoundException, IllegalConversionException
+    public void convert(String fromVariable, TypeMirror to) throws IOException, IllegalConversionException
     {
         TypeMirror from = getLocalType(fromVariable);
-        if (T.isSameType(from, to))
+        if (Typ.isSameType(from, to))
         {
             tload(fromVariable);
             return;
@@ -1331,7 +1334,7 @@ public class MethodCompiler extends Assembler
         {
             DeclaredType dt = (DeclaredType) to;
             TypeElement te = (TypeElement) dt.asElement();
-            ExecutableElement c = E.getConstructor(te, from);
+            ExecutableElement c = El.getConstructor(te, from);
             if (c != null)
             {
                 anew(te);
@@ -1340,30 +1343,30 @@ public class MethodCompiler extends Assembler
                 invokespecial(c);
                 return;
             }
-            ExecutableElement m = E.getMethod(te, "valueOf", from);
-            if (m != null && m.getModifiers().contains(Modifier.STATIC) && T.isAssignable(m.getReturnType(), to))
+            ExecutableElement m = El.getMethod(te, "valueOf", from);
+            if (m != null && m.getModifiers().contains(Modifier.STATIC) && Typ.isAssignable(m.getReturnType(), to))
             {
                 tload(fromVariable);
                 invokestatic(m);
                 return;
             }
         }
-        if (from.getKind() == TypeKind.DECLARED && T.isPrimitive(to))
+        if (from.getKind() == TypeKind.DECLARED && Typ.isPrimitive(to))
         {
             DeclaredType dt = (DeclaredType) from;
             TypeElement te = (TypeElement) dt.asElement();
             String str = to.getKind().name().toLowerCase() + "Value";
-            ExecutableElement m = E.getMethod(te, str);
+            ExecutableElement m = El.getMethod(te, str);
             // xxxValue()
             // xxxValue()
-            if (m != null && T.isAssignable(m.getReturnType(), to))
+            if (m != null && Typ.isAssignable(m.getReturnType(), to))
             {
                 tload(fromVariable);
                 invokevirtual(m);
                 return;
             }
         }
-        if (T.isPrimitive(from))
+        if (Typ.isPrimitive(from))
         {
             switch (from.getKind())
             {
@@ -1470,4 +1473,6 @@ public class MethodCompiler extends Assembler
             exceptionTableList.add(new ExceptionTable(block, getLabel(handler), 0));
         }
     }
+
+    protected abstract void implement() throws IOException;
 }

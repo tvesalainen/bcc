@@ -49,7 +49,7 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 public class ExecutableElementImpl extends ElementImpl<ExecutableType> implements ExecutableElement 
 {
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
-    private TypeMirror returnType = T.getNoType(TypeKind.VOID);
+    private TypeMirror returnType = Typ.getNoType(TypeKind.VOID);
     private List<VariableElement> parameters = new ArrayList<>();
     private boolean varArgs;
     private List<TypeMirror> thrownTypes = new ArrayList<>();
@@ -122,10 +122,6 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         {
             MethodFlags.setModifiers(exe.modifiers, modifier);
             return this;
-        }
-        public VariableBuilder addParameter(Class<?> name)
-        {
-            return addParameter(name.getCanonicalName());
         }
         public VariableBuilder addParameter(String name)
         {
@@ -212,7 +208,7 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         }
         type = TypeMirrorFactory.get(constructor);
         enclosingElement = ElementFactory.get(constructor.getDeclaringClass());
-        returnType = T.getNoType(TypeKind.VOID);
+        returnType = Typ.getNoType(TypeKind.VOID);
         Type[] genericParameterTypes = constructor.getGenericParameterTypes();
         Annotation[][] parameterAnnotations = constructor.getParameterAnnotations();
         int index = 0;

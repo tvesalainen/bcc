@@ -40,7 +40,7 @@ import org.vesalainen.bcc.ReturnAddress;
 /**
  * @author Timo Vesalainen
  */
-public class T 
+public class Typ 
 {
     public static NullType Null;
     public static NoType Void;
@@ -78,7 +78,7 @@ public class T
     
     public static void setTypes(Types types)
     {
-        T.types = types;
+        Typ.types = types;
         Null = types.getNullType();
         Void = types.getNoType(TypeKind.VOID);
         Package = types.getNoType(TypeKind.PACKAGE);
@@ -122,14 +122,50 @@ public class T
     }
     public static TypeMirror getTypeFor(Class<?> cls)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (cls.isPrimitive())
+        {
+            switch (cls.getSimpleName())
+            {
+                case "boolean":
+                    return Boolean;
+                case "char":
+                    return Char;
+                case "byte":
+                    return Byte;
+                case "short":
+                    return Short;
+                case "int":
+                    return Int;
+                case "long":
+                    return Long;
+                case "float":
+                    return Float;
+                case "double":
+                    return Double;
+                case "void":
+                    return Void;
+                default:
+                    throw new IllegalArgumentException(cls+" of unknown primitive");
+            }
+        }
+        else
+        {
+            if (cls.isArray())
+            {
+                return types.getArrayType(getTypeFor(cls.getComponentType()));
+            }
+            else
+            {
+                return El.getTypeElement(cls.getCanonicalName()).asType();
+            }
+        }
     }
     public static int getMaxIndexOf(List<? extends VariableElement> params)
     {
         int index = 0;
         for (VariableElement lv : params)
         {
-            if (T.isCategory2(lv.asType()))
+            if (Typ.isCategory2(lv.asType()))
             {
                 index += 2;
             }
@@ -146,7 +182,7 @@ public class T
         for (int ii=0;ii<ind;ii++)
         {
             VariableElement lv = params.get(ii);
-            if (T.isCategory2(lv.asType()))
+            if (Typ.isCategory2(lv.asType()))
             {
                 index += 2;
             }
@@ -185,25 +221,25 @@ public class T
         switch (cc)
         {
             case 'Z':
-                return T.Boolean;
+                return Typ.Boolean;
             case 'B':
-                return T.Byte;
+                return Typ.Byte;
             case 'C':
-                return T.Char;
+                return Typ.Char;
             case 'S':
-                return T.Short;
+                return Typ.Short;
             case 'I':
-                return T.Int;
+                return Typ.Int;
             case 'J':
-                return T.Long;
+                return Typ.Long;
             case 'F':
-                return T.Float;
+                return Typ.Float;
             case 'D':
-                return T.Double;
+                return Typ.Double;
             case 'L':
-                return E.fromDescriptor("L" + parseObject(si) + ";").asType();
+                return El.fromDescriptor("L" + parseObject(si) + ";").asType();
             case '[':
-                return T.getArrayType(parseNext(si));
+                return Typ.getArrayType(parseNext(si));
             case '(':
                 return parseNext(si);
             case ')':
@@ -328,9 +364,36 @@ public class T
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    public static boolean isInteger(TypeMirror param)
+    public static boolean isInteger(TypeMirror type)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        switch (type.getKind())
+        {
+            case INT:
+            case SHORT:
+            case BYTE:
+            case BOOLEAN:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean isJavaConstantClass(TypeMirror type)
+    {
+        switch (type.getKind())
+        {
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return true;
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) type;
+                TypeElement te = (TypeElement) dt.asElement();
+                return "java.lang.String".contentEquals(te.getQualifiedName());
+            default:
+                return false;
+        }
     }
     
     private static class StringIterator implements Iterator<Character>

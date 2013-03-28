@@ -46,8 +46,8 @@ public class PackageElementImpl extends ElementImpl<NoType> implements PackageEl
     PackageElementImpl(Package pkg)
     {
         super(ElementKind.PACKAGE, pkg, 0, pkg.getName());
-        type = T.getNoType(TypeKind.PACKAGE);
-        qualifiedName = E.getName(pkg.getName());
+        type = Typ.getNoType(TypeKind.PACKAGE);
+        qualifiedName = El.getName(pkg.getName());
     }
 
     @Override

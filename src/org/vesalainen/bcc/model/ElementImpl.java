@@ -49,19 +49,19 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
     ElementImpl(ElementKind kind, String name)
     {
         this.kind = kind;
-        this.simpleName = E.getName(name);
+        this.simpleName = El.getName(name);
         annotations = new Annotation[] {};
     }
     ElementImpl(ElementKind kind, Annotation[] annotations, String name)
     {
         this.kind = kind;
-        this.simpleName = E.getName(name);
+        this.simpleName = El.getName(name);
         this.annotations = annotations;
     }
     ElementImpl(ElementKind kind, AnnotatedElement element, int modifier, String name)
     {
         this.kind = kind;
-        this.simpleName = E.getName(name);
+        this.simpleName = El.getName(name);
         annotations = element.getAnnotations();
         for (Annotation annotation : element.getDeclaredAnnotations())
         {

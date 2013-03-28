@@ -25,7 +25,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.annotation.dump.Signature;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  * @author Timo Vesalainen
@@ -136,7 +136,7 @@ public class LocalVariableTypeTable extends AttributeInfo
         
         public TypeMirror getType()
         {
-            return T.typeFromSignature(classFile.getString(signatureIndex));
+            return Typ.typeFromSignature(classFile.getString(signatureIndex));
         }
 
         public int getIndex()

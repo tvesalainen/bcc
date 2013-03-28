@@ -65,11 +65,11 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
 
         public DeclaredTypeBuilder setComplexType(Class<?> cls)
         {
-            return setComplexType(E.getTypeElement(cls.getCanonicalName()));
+            return setComplexType(El.getTypeElement(cls.getCanonicalName()));
         }
         public DeclaredTypeBuilder setComplexType(CharSequence element)
         {
-            return setComplexType(E.getTypeElement(element));
+            return setComplexType(El.getTypeElement(element));
         }
         public DeclaredTypeBuilder setComplexType(TypeElement element)
         {

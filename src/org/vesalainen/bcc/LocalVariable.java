@@ -32,7 +32,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.bcc.model.E;
+import org.vesalainen.bcc.model.El;
 
 /**
  * @author Timo Vesalainen
@@ -60,12 +60,12 @@ public class LocalVariable implements VariableElement
         this.enclosingElement = enclosingElement;
         this.type = type;
         this.kind = kind;
-        this.simpleName = E.getName(simpleName);
+        this.simpleName = El.getName(simpleName);
     }
 
     public void setSimpleName(CharSequence simpleName)
     {
-        this.simpleName = E.getName(simpleName);
+        this.simpleName = El.getName(simpleName);
     }
 
     @Override

@@ -39,7 +39,7 @@ import javax.lang.model.type.TypeMirror;
 import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.AccessFlags.MethodFlags;
-import org.vesalainen.bcc.model.T;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  *
@@ -131,7 +131,7 @@ public class MethodInfo implements Writable, ExecutableElement
                 ea = new ExceptionsAttribute(enclosingElement);
                 attributes.add(ea);
             }
-            ea.addThrowable((TypeElement)T.asElement(tt));
+            ea.addThrowable((TypeElement)Typ.asElement(tt));
         }
     }
     

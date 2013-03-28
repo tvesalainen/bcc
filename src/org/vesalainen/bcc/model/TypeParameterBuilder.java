@@ -71,7 +71,7 @@ public class TypeParameterBuilder<R>
         }
         if (type.charAt(0) == '[')
         {
-            return T.getArrayType(resolvType(type.substring(1)));
+            return Typ.getArrayType(resolvType(type.substring(1)));
         }
         else
         {
@@ -87,7 +87,7 @@ public class TypeParameterBuilder<R>
         }
         else
         {
-            TypeElement te = E.getTypeElement(type);
+            TypeElement te = El.getTypeElement(type);
             if (te == null)
             {
                 throw new IllegalArgumentException(type+" is not type parameter name or resolvable type name");
@@ -100,7 +100,7 @@ public class TypeParameterBuilder<R>
         TypeElement[] types = new TypeElement[bounds.length];
         for (int ii=0;ii<types.length;ii++)
         {
-            types[ii] = E.getTypeElement(bounds[ii].getName());
+            types[ii] = El.getTypeElement(bounds[ii].getName());
         }
         return addTypeParameter(name, types);
     }
@@ -109,7 +109,7 @@ public class TypeParameterBuilder<R>
         TypeElement[] types = new TypeElement[bounds.length];
         for (int ii=0;ii<types.length;ii++)
         {
-            types[ii] = E.getTypeElement(bounds[ii]);
+            types[ii] = El.getTypeElement(bounds[ii]);
         }
         return addTypeParameter(name, types);
     }
