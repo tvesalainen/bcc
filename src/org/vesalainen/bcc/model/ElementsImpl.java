@@ -18,6 +18,7 @@
 package org.vesalainen.bcc.model;
 
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -28,6 +29,7 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
 
@@ -117,7 +119,13 @@ public class ElementsImpl implements Elements
     @Override
     public List<? extends Element> getAllMembers(TypeElement type)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        List<Element> list = new ArrayList<>();
+        while (type != null)
+        {
+            list.addAll(type.getEnclosedElements());
+            type = (TypeElement) Typ.asElement(type.getSuperclass());
+        }
+        return list;
     }
 
     @Override
@@ -135,7 +143,26 @@ public class ElementsImpl implements Elements
     @Override
     public boolean overrides(ExecutableElement overrider, ExecutableElement overridden, TypeElement type)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (overrider.getSimpleName().contentEquals(overridden.getSimpleName()))
+        {
+            if (Typ.isAssignable(overrider.getReturnType(), overridden.getReturnType()))
+            {
+                List<? extends VariableElement> overriderParameters = overrider.getParameters();
+                List<? extends VariableElement> overriddenParameters = overridden.getParameters();
+                if (overriderParameters.size() == overriddenParameters.size())
+                {
+                    for (int ii=0;ii<overriderParameters.size();ii++)
+                    {
+                        if (!Typ.isAssignable(overriderParameters.get(ii).asType(), overriddenParameters.get(ii).asType()))
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

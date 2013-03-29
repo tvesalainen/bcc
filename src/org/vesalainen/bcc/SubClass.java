@@ -18,6 +18,7 @@ package org.vesalainen.bcc;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.EnumSet;
@@ -38,7 +39,6 @@ import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-import org.vesalainen.annotation.dump.Descriptor;
 import org.vesalainen.bcc.AccessFlags.ClassFlags;
 import org.vesalainen.bcc.AccessFlags.MethodFlags;
 import org.vesalainen.bcc.ConstantInfo.Clazz;
@@ -251,7 +251,7 @@ public class SubClass extends ClassFile
      * @param name
      * @return
      */
-    final int resolveNameIndex(String name)
+    final int resolveNameIndex(CharSequence name)
     {
         int size = 0;
         int index = 0;
@@ -809,6 +809,60 @@ public class SubClass extends ClassFile
         DataOutputStream dos = new DataOutputStream(bos);
         write(dos);
         dos.close();
+    }
+
+    /**
+     * Writes the class
+     * @param out
+     * @throws IOException
+     */
+    @Override
+    public void write(DataOutput out) throws IOException
+    {
+        out.writeInt(magic);
+        out.writeShort(minor_version);
+        out.writeShort(major_version);
+        out.writeShort(constant_pool.size()+1);
+        for (ConstantInfo ci : constant_pool)
+        {
+            ci.write(out);
+        }
+        int modifier = ClassFlags.getModifier(getModifiers());
+        modifier |= ClassFlags.ACC_SYNTHETIC | ClassFlags.ACC_PUBLIC | ClassFlags.ACC_SUPER;
+        out.writeShort(modifier);
+        out.writeShort(this_class);
+        out.writeShort(super_class);
+        out.writeShort(interfaces.size());
+        for (int ii : interfaces)
+        {
+            out.writeShort(ii);
+        }
+        out.writeShort(fields.size());
+        for (FieldInfo fi : fields)
+        {
+            fi.write(out);
+        }
+        out.writeShort(methods.size());
+        for (MethodInfo mi : methods)
+        {
+            mi.write(out);
+        }
+        addSignatureIfNeed();
+        out.writeShort(attributes.size());
+        for (AttributeInfo ai : attributes)
+        {
+            ai.write(out);
+        }
+
+    }
+
+    private void addSignatureIfNeed()
+    {
+        String signature = Signature.getSignature(this);
+        if (!signature.isEmpty())
+        {
+            attributes.add(new SignatureAttribute(this, signature));
+        }
     }
 
 }

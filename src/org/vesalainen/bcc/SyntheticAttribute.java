@@ -25,9 +25,9 @@ import java.io.IOException;
  */
 public class SyntheticAttribute extends AttributeInfo
 {
-    public SyntheticAttribute(ClassFile classFile)
+    public SyntheticAttribute(SubClass subClass)
     {
-        super(classFile, "Synthetic");
+        super(subClass, "Synthetic");
     }
 
     public void write(DataOutput out) throws IOException

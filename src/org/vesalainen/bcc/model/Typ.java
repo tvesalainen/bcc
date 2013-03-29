@@ -33,7 +33,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
-import org.vesalainen.annotation.dump.Signature;
+import org.vesalainen.bcc.Signature;
 import org.vesalainen.bcc.LocalVariableTypeTable;
 import org.vesalainen.bcc.ReturnAddress;
 
@@ -65,9 +65,9 @@ public class Typ
     public static ArrayType DoubleA;
     public static ArrayType StringA;
     public static ArrayType ObjectA;
-    public static final DeclaredType String = (DeclaredType) getTypeFor(String.class);
-    public static final DeclaredType Object = (DeclaredType) getTypeFor(Object.class);
-    public static final TypeMirror ReturnAddress = new ReturnAddress();
+    public static DeclaredType String;
+    public static DeclaredType Object;
+    public static TypeMirror ReturnAddress;
     
     private static Types types;
 
@@ -101,8 +101,25 @@ public class Typ
         DoubleA = types.getArrayType(Double);
         StringA = types.getArrayType(String);
         ObjectA = types.getArrayType(Object);
+        String = (DeclaredType) getTypeFor(String.class);
+        Object = (DeclaredType) getTypeFor(Object.class);
+        ReturnAddress = new ReturnAddress();
     }
 
+    public static boolean isJavaConstant(Object value)
+    {
+        return 
+                (value instanceof Boolean) ||
+                (value instanceof Character) ||
+                (value instanceof Byte) ||
+                (value instanceof Short) ||
+                (value instanceof Integer) ||
+                (value instanceof Long) ||
+                (value instanceof Float) ||
+                (value instanceof Double) ||
+                (value instanceof String)
+                ;
+    }
     public static boolean isPrimitive(TypeMirror type)
     {
         switch (type.getKind())

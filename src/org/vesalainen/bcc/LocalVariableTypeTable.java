@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.annotation.dump.Descriptor;
-import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.model.Typ;
 
 /**
@@ -35,9 +33,9 @@ public class LocalVariableTypeTable extends AttributeInfo
     private List<LocalTypeVariable> localTypeVariables = new ArrayList<>();
     private int codeLength;
     
-    public LocalVariableTypeTable(ClassFile classFile, int codelength)
+    public LocalVariableTypeTable(SubClass subClass, int codelength)
     {
-        super(classFile, "LocalVariableTypeTable");
+        super(subClass, "LocalVariableTypeTable");
         this.codeLength = codelength;
     }
 
@@ -103,8 +101,9 @@ public class LocalVariableTypeTable extends AttributeInfo
 
         private LocalTypeVariable(VariableElement ve, String signature, int index)
         {
-            this.nameIndex = classFile.getNameIndex(ve.getSimpleName().toString());
-            this.signatureIndex = classFile.getNameIndex(signature);
+            SubClass subClass = (SubClass) classFile;
+            this.nameIndex = subClass.resolveNameIndex(ve.getSimpleName().toString());
+            this.signatureIndex = subClass.resolveNameIndex(signature);
             this.index = index;
         }
 

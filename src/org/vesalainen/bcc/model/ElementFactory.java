@@ -88,6 +88,10 @@ public class ElementFactory
             Annotation a = (Annotation) ob;
             return get(a);
         }
+        if (ob instanceof Enum)
+        {
+            return get(ob.getClass());
+        }
         throw new UnsupportedOperationException(ob+" not supported");
     }
     public static TypeElement get(Class<?> type)

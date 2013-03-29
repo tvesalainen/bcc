@@ -60,10 +60,10 @@ public class AttributeInfo implements Writable
         return type.equals(name);
     }
 
-    public AttributeInfo(ClassFile classFile, String attributeName)
+    public AttributeInfo(SubClass classFile, String attributeName)
     {
         this.classFile = classFile;
-        this.attribute_name_index = classFile.getNameIndex(attributeName);
+        this.attribute_name_index = classFile.resolveNameIndex(attributeName);
     }
 
     public AttributeInfo(ClassFile classFile, int attribute_name_index, int attribute_length)
@@ -73,10 +73,10 @@ public class AttributeInfo implements Writable
         this.attribute_length = attribute_length;
     }
 
-    public AttributeInfo(ClassFile classFile, String attributeName, int attribute_length)
+    public AttributeInfo(SubClass classFile, String attributeName, int attribute_length)
     {
         this.classFile = classFile;
-        this.attribute_name_index = classFile.getNameIndex(attributeName);
+        this.attribute_name_index = classFile.resolveNameIndex(attributeName);
         this.attribute_length = attribute_length;
     }
 

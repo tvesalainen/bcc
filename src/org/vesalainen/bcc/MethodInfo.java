@@ -36,8 +36,6 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.annotation.dump.Descriptor;
-import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.AccessFlags.MethodFlags;
 import org.vesalainen.bcc.model.Typ;
 
@@ -63,12 +61,12 @@ public class MethodInfo implements Writable, ExecutableElement
      * @param name_index
      * @param descriptor_index
      */
-    MethodInfo(ClassFile cf, ExecutableElement executableElement)
+    MethodInfo(SubClass cf, ExecutableElement executableElement)
     {
         this.enclosingElement = cf;
         this.executableElement = executableElement;
-        this.name_index = enclosingElement.getNameIndex(executableElement.getSimpleName());
-        this.descriptor_index = enclosingElement.getNameIndex(Descriptor.getDesriptor(executableElement));
+        this.name_index = cf.resolveNameIndex(executableElement.getSimpleName());
+        this.descriptor_index = cf.resolveNameIndex(Descriptor.getDesriptor(executableElement));
         code = new CodeAttribute(cf);
         attributes.add(code);
     }
@@ -128,7 +126,7 @@ public class MethodInfo implements Writable, ExecutableElement
             }
             if (ea == null)
             {
-                ea = new ExceptionsAttribute(enclosingElement);
+                ea = new ExceptionsAttribute((SubClass)enclosingElement);
                 attributes.add(ea);
             }
             ea.addThrowable((TypeElement)Typ.asElement(tt));
@@ -140,7 +138,7 @@ public class MethodInfo implements Writable, ExecutableElement
         String signature = Signature.getSignature(this);
         if (!signature.isEmpty())
         {
-            attributes.add(new SignatureAttribute(enclosingElement, signature));
+            attributes.add(new SignatureAttribute((SubClass)enclosingElement, signature));
         }
     }
     @Override

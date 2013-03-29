@@ -736,9 +736,9 @@ public abstract class ConstantInfo implements Writable
     }
     public static class Utf8 extends ConstantInfo
     {
-    	private java.lang.String string;
+    	private CharSequence string;
 
-        public Utf8(java.lang.String string)
+        public Utf8(CharSequence string)
         {
             super(CONSTANT_Utf8);
             this.string = string;
@@ -755,15 +755,16 @@ public abstract class ConstantInfo implements Writable
             string = in.readUTF();
         }
 
+        @Override
         public void write(DataOutput out) throws IOException
         {
             super.write(out);
-            out.writeUTF(string);
+            out.writeUTF(string.toString());
         }
 
         public java.lang.String getString()
         {
-            return string;
+            return string.toString();
         }
 
         @Override

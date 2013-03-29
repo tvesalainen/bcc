@@ -27,10 +27,10 @@ public class SourceFileAttribute extends AttributeInfo
 {
     private int sourcefile_index;
 
-    public SourceFileAttribute(ClassFile classFile, String sourceName)
+    public SourceFileAttribute(SubClass subClass, String sourceName)
     {
-        super(classFile, "SourceFile", 2);
-        this.sourcefile_index = classFile.getNameIndex(sourceName);
+        super(subClass, "SourceFile", 2);
+        this.sourcefile_index = subClass.resolveNameIndex(sourceName);
     }
 
     @Override

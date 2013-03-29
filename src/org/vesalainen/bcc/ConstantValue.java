@@ -25,31 +25,31 @@ import java.io.IOException;
 public class ConstantValue extends AttributeInfo
 {
     private int constantvalue_index;
-    public ConstantValue(ClassFile cf, long constant)
+    public ConstantValue(SubClass cf, long constant)
     {
         super(cf, "ConstantValue");
         this.constantvalue_index = cf.getConstantIndex(constant);
     }
     
-    public ConstantValue(ClassFile cf, float constant)
+    public ConstantValue(SubClass cf, float constant)
     {
         super(cf, "ConstantValue");
         this.constantvalue_index = cf.getConstantIndex(constant);
     }
     
-    public ConstantValue(ClassFile cf, double constant)
+    public ConstantValue(SubClass cf, double constant)
     {
         super(cf, "ConstantValue");
         this.constantvalue_index = cf.getConstantIndex(constant);
     }
     
-    public ConstantValue(ClassFile cf, int constant)
+    public ConstantValue(SubClass cf, int constant)
     {
         super(cf, "ConstantValue");
         this.constantvalue_index = cf.getConstantIndex(constant);
     }
     
-    public ConstantValue(ClassFile cf, String constant)
+    public ConstantValue(SubClass cf, String constant)
     {
         super(cf, "ConstantValue");
         this.constantvalue_index = cf.getConstantIndex(constant);

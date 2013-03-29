@@ -31,8 +31,6 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.annotation.dump.Descriptor;
-import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.AccessFlags.FieldFlags;
 
 /**
@@ -73,12 +71,13 @@ public class FieldInfo implements Writable, VariableElement
     @Override
     public void write(DataOutput out) throws IOException
     {
+        SubClass subClass = (SubClass) classFile;
         addSignatureIfNeed();
         int modifier = FieldFlags.getModifier(getModifiers());
         modifier |= FieldFlags.ACC_SYNTHETIC;
         out.writeShort(modifier);
-        out.writeShort(classFile.getNameIndex(getSimpleName()));
-        out.writeShort(classFile.getNameIndex(Descriptor.getDesriptor(this)));
+        out.writeShort(subClass.resolveNameIndex(getSimpleName()));
+        out.writeShort(subClass.resolveNameIndex(Descriptor.getDesriptor(this)));
         out.writeShort(attributes.size());
         for (AttributeInfo ai : attributes)
         {
@@ -91,7 +90,8 @@ public class FieldInfo implements Writable, VariableElement
         String signature = Signature.getSignature(this);
         if (!signature.isEmpty())
         {
-            attributes.add(new SignatureAttribute(classFile, signature));
+            SubClass subClass = (SubClass) classFile;
+            attributes.add(new SignatureAttribute(subClass, signature));
         }
     }
     

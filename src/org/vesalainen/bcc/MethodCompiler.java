@@ -42,7 +42,7 @@ import org.vesalainen.bcc.model.UpdateableElement;
 public abstract class MethodCompiler extends Assembler
 {
     public static final String SUBROUTINERETURNADDRESSNAME = "$subroutineReturnAddressName";
-    private SubClass subClass;
+    protected SubClass subClass;
     private CodeAttribute code;
     private List<VariableElement> localVariables = new ArrayList<>();
     private ExecutableElement debugMethod;
@@ -52,8 +52,8 @@ public abstract class MethodCompiler extends Assembler
     private boolean dump;
     private List<ExceptionTable> exceptionTableList = new ArrayList<>();
     private MethodInfo methodInfo;
-    private ExecutableElement executableElement;
-    private ExecutableType executableType;
+    protected ExecutableElement executableElement;
+    protected ExecutableType executableType;
 
     protected MethodCompiler()
     {
@@ -1131,7 +1131,7 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @throws NoSuchMethodException
      */
-    public void optimizedSwitch(LookupList list) throws IOException, NoSuchMethodException
+    public void optimizedSwitch(LookupList list) throws IOException
     {
         String def = createBranch();
         optimizedSwitch(def, list);
@@ -1303,7 +1303,10 @@ public abstract class MethodCompiler extends Assembler
      */
     public void checkcast(TypeMirror objectref) throws IOException
     {
-        if (objectref.getKind() != TypeKind.DECLARED)
+        if (
+                objectref.getKind() != TypeKind.ARRAY &&
+                objectref.getKind() != TypeKind.DECLARED
+                )
         {
             throw new IllegalArgumentException("checkcast type must be objectref");
         }

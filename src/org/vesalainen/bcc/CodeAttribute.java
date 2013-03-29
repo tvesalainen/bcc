@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
-import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.model.Typ;
 
 /**
@@ -38,7 +37,7 @@ public class CodeAttribute extends AttributeInfo
     private ExceptionTable[] exception_table;
     private List<AttributeInfo> attributes = new ArrayList<>();
 
-    public CodeAttribute(ClassFile cf)
+    public CodeAttribute(SubClass cf)
     {
         super(cf, "Code");
     }
@@ -70,7 +69,8 @@ public class CodeAttribute extends AttributeInfo
         {
             throw new IllegalStateException("code is not set yet");
         }
-        LocalVariableTable lvt = new LocalVariableTable(classFile, code.length);
+        SubClass subClass = (SubClass) classFile;
+        LocalVariableTable lvt = new LocalVariableTable(subClass, code.length);
         attributes.add(lvt);
         LocalVariableTypeTable lvtt = null;
         int index = 0;
@@ -82,7 +82,7 @@ public class CodeAttribute extends AttributeInfo
             {
                 if (lvtt == null)
                 {
-                    lvtt = new LocalVariableTypeTable(classFile, code.length);
+                    lvtt = new LocalVariableTypeTable(subClass, code.length);
                     attributes.add(lvtt);
                 }
                 lvtt.addLocalTypeVariable(lv, signature, index);

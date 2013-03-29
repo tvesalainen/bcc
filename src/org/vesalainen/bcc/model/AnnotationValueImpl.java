@@ -40,10 +40,7 @@ class AnnotationValueImpl implements AnnotationValue
         else
         {
             Class<?> returnType = value.getClass();
-            if (
-                    returnType.isPrimitive() ||
-                    String.class.equals(returnType)
-                    )
+            if (Typ.isJavaConstant(value))
             {
                 this.value = value;
             }

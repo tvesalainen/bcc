@@ -57,6 +57,10 @@ public class LocalVariable implements VariableElement
 
     protected LocalVariable(ExecutableElement enclosingElement, TypeMirror type, ElementKind kind, CharSequence simpleName)
     {
+        assert enclosingElement != null;
+        assert type != null;
+        assert kind != null;
+        assert simpleName != null;
         this.enclosingElement = enclosingElement;
         this.type = type;
         this.kind = kind;

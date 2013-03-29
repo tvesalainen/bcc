@@ -61,8 +61,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
-import org.vesalainen.annotation.dump.Descriptor;
-import org.vesalainen.annotation.dump.Signature;
 import org.vesalainen.bcc.AccessFlags.ClassFlags;
 import org.vesalainen.bcc.ClassFile.ClassType;
 import org.vesalainen.bcc.ConstantInfo.Filler;
@@ -80,25 +78,25 @@ public class ClassFile implements Writable, TypeElement
     protected int magic;
     protected int minor_version;
     protected int major_version;
-    private List<ConstantInfo> constant_pool = new ArrayList<>();
+    protected List<ConstantInfo> constant_pool = new ArrayList<>();
     protected int this_class;
     protected int super_class;
-    private List<Short> interfaces = new ArrayList<>();
-    private List<FieldInfo> fields = new ArrayList<>();
-    private List<MethodInfo> methods = new ArrayList<>();
-    private List<AttributeInfo> attributes = new ArrayList<>();
+    protected List<Short> interfaces = new ArrayList<>();
+    protected List<FieldInfo> fields = new ArrayList<>();
+    protected List<MethodInfo> methods = new ArrayList<>();
+    protected List<AttributeInfo> attributes = new ArrayList<>();
 
-    private Map<Integer,Element> indexedElementMap = new HashMap<>();
-    private Map<Class<? extends ConstantInfo>,List<ConstantInfo>> constantPoolMap = new HashMap<>();
-    private Map<ConstantInfo,Integer> constantPoolIndexMap = new HashMap<>();
+    protected Map<Integer,Element> indexedElementMap = new HashMap<>();
+    protected Map<Class<? extends ConstantInfo>,List<ConstantInfo>> constantPoolMap = new HashMap<>();
+    protected Map<ConstantInfo,Integer> constantPoolIndexMap = new HashMap<>();
     protected Map<String, TypeParameterElement> typeParameterMap = new HashMap<>();
     
     protected TypeElement superClass;
     protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-    protected ClassType type;
+    protected ClassType type = new ClassType();
     protected Name qualifiedName;
     protected PackageElement packageElement;
-    protected List<Element> enclosedElements;
+    protected List<Element> enclosedElements = new ArrayList<>();
     private Name simpleName;
     private boolean synthetic = true;
 
@@ -630,60 +628,6 @@ public class ClassFile implements Writable, TypeElement
         Utf8 utf8 = (Utf8) getConstantInfo(index);
         return utf8.getString();
     }
-    /**
-     * Writes the class
-     * @param out
-     * @throws IOException
-     */
-    @Override
-    public void write(DataOutput out) throws IOException
-    {
-        out.writeInt(magic);
-        out.writeShort(minor_version);
-        out.writeShort(major_version);
-        out.writeShort(constant_pool.size()+1);
-        for (ConstantInfo ci : constant_pool)
-        {
-            ci.write(out);
-        }
-        int modifier = ClassFlags.getModifier(getModifiers());
-        modifier |= ClassFlags.ACC_SYNTHETIC | ClassFlags.ACC_PUBLIC | ClassFlags.ACC_SUPER;
-        out.writeShort(modifier);
-        out.writeShort(this_class);
-        out.writeShort(super_class);
-        out.writeShort(interfaces.size());
-        for (int ii : interfaces)
-        {
-            out.writeShort(ii);
-        }
-        out.writeShort(fields.size());
-        for (FieldInfo fi : fields)
-        {
-            fi.write(out);
-        }
-        out.writeShort(methods.size());
-        for (MethodInfo mi : methods)
-        {
-            mi.write(out);
-        }
-        addSignatureIfNeed();
-        out.writeShort(attributes.size());
-        for (AttributeInfo ai : attributes)
-        {
-            ai.write(out);
-        }
-
-    }
-
-    private void addSignatureIfNeed()
-    {
-        String signature = Signature.getSignature(this);
-        if (!signature.isEmpty())
-        {
-            attributes.add(new SignatureAttribute(this, signature));
-        }
-    }
-
     public boolean isSynthetic()
     {
         return synthetic;
@@ -772,6 +716,12 @@ public class ClassFile implements Writable, TypeElement
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
         return v.visitType(this, p);
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     public class ClassType implements DeclaredType

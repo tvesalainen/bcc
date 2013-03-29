@@ -34,7 +34,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
-import org.vesalainen.annotation.dump.Descriptor;
+import org.vesalainen.bcc.Descriptor;
 
 /**
  * @author Timo Vesalainen
@@ -221,7 +221,7 @@ public class El
 
     public static String getInternalForm(TypeElement type)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return type.getQualifiedName().toString().replace('.', '/');
     }
 
     /**
@@ -230,7 +230,7 @@ public class El
      * @param cls
      * @return 
      */
-    public static Iterable<ExecutableElement> getEffectiveMethods(TypeElement cls)
+    public static List<? extends ExecutableElement> getEffectiveMethods(TypeElement cls)
     {
         List<ExecutableElement> list = new ArrayList<>();
         while (cls != null)

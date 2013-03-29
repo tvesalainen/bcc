@@ -36,7 +36,7 @@ public class ExceptionsAttribute extends AttributeInfo
      * @param attribute_name_index
      * @param exceptionIndexes 
      */
-    ExceptionsAttribute(ClassFile classFile)
+    ExceptionsAttribute(SubClass classFile)
     {
         super(classFile, "Exceptions");
     }
@@ -47,7 +47,7 @@ public class ExceptionsAttribute extends AttributeInfo
      * @param attribute_name_index
      * @param exceptionIndexes 
      */
-    ExceptionsAttribute(ClassFile classFile, int attribute_name_index, int... exceptionIndexes)
+    ExceptionsAttribute(SubClass classFile, int attribute_name_index, int... exceptionIndexes)
     {
         super(classFile, "Exceptions");
         for (int ei : exceptionIndexes)

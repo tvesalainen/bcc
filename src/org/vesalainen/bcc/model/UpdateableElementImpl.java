@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -31,6 +32,8 @@ import javax.lang.model.element.Name;
  */
 public class UpdateableElementImpl<E extends Element> implements InvocationHandler
 {
+    private static final InterfaceComp IComp = new InterfaceComp();
+    
     private E element;
     private Element enclosingElement;
     private Set<Modifier> modifier;
@@ -41,9 +44,24 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
         this.element = element;
         return (E) Proxy.newProxyInstance(
                 element.getClass().getClassLoader(), 
-                new Class<?>[] {element.getClass(), UpdateableElement.class }, 
+                new Class<?>[] {extractInterface(element), UpdateableElement.class }, 
                 this
                 );
+    }
+    private Class<?> extractInterface(E element)
+    {
+        Class<? extends Element> aClass = element.getClass();
+        Class<?>[] interfaces = aClass.getInterfaces();
+        switch (interfaces.length)
+        {
+            case 0:
+                throw new IllegalArgumentException(element+" doesn't have any interface");
+            case 1:
+                return interfaces[0];
+            default:
+                Arrays.sort(interfaces, IComp);
+                return interfaces[0];
+        }
     }
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
@@ -91,4 +109,38 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
         }
     }
 
+    private static class InterfaceComp implements Comparator<Class<?>>
+    {
+
+        @Override
+        public int compare(Class<?> o1, Class<?> o2)
+        {
+            if (contains(o1.getInterfaces(), o2))
+            {
+                return 1;
+            }
+            else
+            {
+                if (contains(o2.getInterfaces(), o1))
+                {
+                    return -1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+        private boolean contains(Class<?>[] arr, Class<?> i)
+        {
+            for (Class<?> a : arr)
+            {
+                if (a.equals(i))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 }

@@ -118,7 +118,7 @@ public class TypeMirrorFactory
 
     public static DeclaredType get(Enum en)
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return (DeclaredType) ElementFactory.get(en).asType();
     }
 
     public static ExecutableType get(Constructor constructor)

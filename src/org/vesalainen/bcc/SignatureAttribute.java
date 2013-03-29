@@ -26,10 +26,10 @@ public class SignatureAttribute extends AttributeInfo
 {
     private int signature_index;
 
-    public SignatureAttribute(ClassFile classFile, String signature)
+    public SignatureAttribute(SubClass subClass, String signature)
     {
-        super(classFile, "Signature", 2);
-        this.signature_index = classFile.getNameIndex(signature);
+        super(subClass, "Signature", 2);
+        this.signature_index = subClass.resolveNameIndex(signature);
     }
 
     @Override
