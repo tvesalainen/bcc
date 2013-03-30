@@ -57,6 +57,7 @@ import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -86,7 +87,7 @@ public class ClassFile implements Writable, TypeElement
     protected List<MethodInfo> methods = new ArrayList<>();
     protected List<AttributeInfo> attributes = new ArrayList<>();
 
-    protected Map<Integer,Element> indexedElementMap = new HashMap<>();
+    protected Map<Integer,Object> indexedElementMap = new HashMap<>();
     protected Map<Class<? extends ConstantInfo>,List<ConstantInfo>> constantPoolMap = new HashMap<>();
     protected Map<ConstantInfo,Integer> constantPoolIndexMap = new HashMap<>();
     protected Map<String, TypeParameterElement> typeParameterMap = new HashMap<>();
@@ -490,9 +491,10 @@ public class ClassFile implements Writable, TypeElement
         return index;
     }
     
-    protected void addIndexedElement(int index, Element element)
+    protected void addIndexedElement(int index, Object type)
     {
-        indexedElementMap.put(index, element);
+        assert (type instanceof Element) || (type instanceof ArrayType);
+        indexedElementMap.put(index, type);
     }
 
     private List<ConstantInfo> listConstantInfo(Class<? extends ConstantInfo> cls)
@@ -522,9 +524,9 @@ public class ClassFile implements Writable, TypeElement
      * @param index
      * @return
      */
-    Element getIndexedElement(int index)
+    Object getIndexedType(int index)
     {
-        Element ae = indexedElementMap.get(index);
+        Object ae = indexedElementMap.get(index);
         if (ae == null)
         {
             throw new VerifyError("constant pool at "+index+" not proper type");
@@ -594,8 +596,15 @@ public class ClassFile implements Writable, TypeElement
     }
     protected final int getClassIndex(TypeElement type)
     {
+        return getClassIndex(El.getInternalForm(type));
+    }
+    protected final int getClassIndex(ArrayType at)
+    {
+        return getClassIndex(Descriptor.getFieldDesriptor(at));
+    }
+    private final int getClassIndex(String name)
+    {
         int index = -1;
-        String name = El.getInternalForm(type);
         for (ConstantInfo ci : listConstantInfo(Clazz.class))
         {
             Clazz cls = (Clazz) ci;

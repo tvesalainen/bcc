@@ -1281,7 +1281,7 @@ public abstract class MethodCompiler extends Assembler
         newarray(type, size);
         if (!Typ.isPrimitive(at.getComponentType()))
         {
-            checkcast(type);
+            checkcast(at);
         }
         tstore(name);
     }
@@ -1293,7 +1293,7 @@ public abstract class MethodCompiler extends Assembler
      */
     public void checkcast(Class<?> objectref) throws IOException
     {
-        checkcast(Typ.getTypeFor(objectref));
+        checkcast(El.getTypeElement(objectref.getCanonicalName()));
     }
     /**
      * Check whether object is of given type
@@ -1301,17 +1301,21 @@ public abstract class MethodCompiler extends Assembler
      * @param objectref
      * @throws IOException
      */
-    public void checkcast(TypeMirror objectref) throws IOException
+    public void checkcast(TypeElement objectref) throws IOException
     {
-        if (
-                objectref.getKind() != TypeKind.ARRAY &&
-                objectref.getKind() != TypeKind.DECLARED
-                )
-        {
-            throw new IllegalArgumentException("checkcast type must be objectref");
-        }
-        DeclaredType dt = (DeclaredType) objectref;
-        int index = subClass.resolveClassIndex((TypeElement)dt.asElement());
+        int index = subClass.resolveClassIndex(objectref);
+        checkcast(index);
+    }
+
+    /**
+     * Check whether object is of given type
+     * <p>Stack: ..., objectref =&gt; ..., objectref
+     * @param array
+     * @throws IOException
+     */
+    public void checkcast(ArrayType array) throws IOException
+    {
+        int index = subClass.resolveClassIndex(array);
         checkcast(index);
     }
 

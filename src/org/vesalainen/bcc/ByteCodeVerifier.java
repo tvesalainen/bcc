@@ -1222,44 +1222,45 @@ public class ByteCodeVerifier extends OpCodeUtil
                     return s.getMax();
                 case GETSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedElement(i);
+                    fi = (VariableElement) cf.getIndexedType(i);
                     s.push(fi.asType());
                     break;
                 case PUTSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedElement(i);
+                    fi = (VariableElement) cf.getIndexedType(i);
                     verify(fi.asType(), s.pop());
                     break;
                 case GETFIELD:
                     i = in.readUnsignedShort();
                     verify(Typ.Object, s.pop());
-                    fi = (VariableElement) cf.getIndexedElement(i);
+                    fi = (VariableElement) cf.getIndexedType(i);
                     s.push(fi.asType());
                     break;
                 case PUTFIELD:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedElement(i);
+                    fi = (VariableElement) cf.getIndexedType(i);
                     verify(fi.asType(), s.pop());
                     verify(Typ.Object, s.pop());
                     break;
                 case INVOKEVIRTUAL:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedElement(i);
+                    me =  (ExecutableElement) cf.getIndexedType(i);
                     verifyMethod(s, me);
                     verifyVirtualClass(s.pop(), me);
                     s.push(me.getReturnType());
                     break;
                 case INVOKESPECIAL: // TODO is there any different in these options
                     i = in.readUnsignedShort();
-                    if (cf.getIndexedElement(i).getKind() == ElementKind.CONSTRUCTOR)
+                    me =  (ExecutableElement) cf.getIndexedType(i);
+                    if (me.getKind() == ElementKind.CONSTRUCTOR)
                     {
-                        co = (ExecutableElement) cf.getIndexedElement(i);
+                        co = (ExecutableElement) cf.getIndexedType(i);
                         verifyMethod(s, co);
                         verifyClass(s.pop(), co);
                     }
                     else
                     {
-                        me =  (ExecutableElement) cf.getIndexedElement(i);
+                        me =  (ExecutableElement) cf.getIndexedType(i);
                         verifyMethod(s, me);
                         verifyClass(s.pop(), me);
                         s.push(me.getReturnType());
@@ -1267,13 +1268,13 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case INVOKESTATIC:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedElement(i);
+                    me =  (ExecutableElement) cf.getIndexedType(i);
                     verifyMethod(s, me);
                     s.push(me.getReturnType());
                     break;
                 case INVOKEINTERFACE:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedElement(i);
+                    me =  (ExecutableElement) cf.getIndexedType(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {
@@ -1290,7 +1291,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case NEW:
                     i = in.readUnsignedShort();
-                    te = (TypeElement) cf.getIndexedElement(i);
+                    te = (TypeElement) cf.getIndexedType(i);
                     cw = te.asType();
                     s.push(cw);
                     break;
@@ -1330,7 +1331,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case ANEWARRAY:
                     i = in.readUnsignedShort();
                     verify(Typ.Int, s.pop());
-                    te = (TypeElement) cf.getIndexedElement(i);
+                    te = (TypeElement) cf.getIndexedType(i);
                     s.push(Typ.ObjectA);
                     break;
                 case ARRAYLENGTH:
@@ -1344,7 +1345,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     i = in.readUnsignedShort();
                     v1 = s.pop();
                     verify(Typ.Object, v1);
-                    te = (TypeElement) cf.getIndexedElement(i);
+                    te = (TypeElement) cf.getIndexedType(i);
                     s.push(te.asType());
                     break;
                 case INSTANCEOF:
@@ -1426,7 +1427,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case MULTIANEWARRAY:
                     i = in.readUnsignedShort();
                     verify(Typ.Int, s.pop());
-                    te = (TypeElement) cf.getIndexedElement(i);
+                    te = (TypeElement) cf.getIndexedType(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {

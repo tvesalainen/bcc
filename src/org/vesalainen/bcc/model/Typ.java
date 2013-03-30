@@ -412,6 +412,11 @@ public class Typ
                 return false;
         }
     }
+
+    public static java.lang.String getInternalForm(TypeMirror type)
+    {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
     
     private static class StringIterator implements Iterator<Character>
     {

@@ -33,6 +33,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
@@ -343,6 +344,35 @@ public class SubClass extends ClassFile
             index = addConstantInfo(new Clazz(nameIndex), size);
         }
         addIndexedElement(index, type);
+        return index;
+    }
+    /**
+     * Returns the constant map index to class
+     * If entry doesn't exist it is created.
+     * @param arrayType
+     * @return
+     */
+    public final int resolveClassIndex(ArrayType arrayType)
+    {
+        int size = 0;
+        int index = 0;
+        constantReadLock.lock();
+        try
+        {
+            size = getConstantPoolSize();
+            index = getClassIndex(arrayType);
+        }
+        finally
+        {
+            constantReadLock.unlock();
+        }
+        if (index == -1)
+        {
+            String name = Descriptor.getFieldDesriptor(arrayType);
+            int nameIndex = resolveNameIndex(name);
+            index = addConstantInfo(new Clazz(nameIndex), size);
+        }
+        addIndexedElement(index, arrayType);
         return index;
     }
     /**
