@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
@@ -174,7 +175,17 @@ public class ElementsImpl implements Elements
     @Override
     public void printElements(Writer w, Element... elements)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        try
+        {
+            for (Element el : elements)
+            {
+                w.write(el.toString());
+            }
+        }
+        catch (IOException ex)
+        {
+            throw new IllegalArgumentException(ex);
+        }
     }
 
     @Override

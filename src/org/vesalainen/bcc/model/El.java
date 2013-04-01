@@ -117,7 +117,7 @@ public class El
 
     public static ExecutableElement getConstructor(TypeElement typeElement, TypeMirror... parameters)
     {
-        for (ExecutableElement method : ElementFilter.methodsIn(typeElement.getEnclosedElements()))
+        for (ExecutableElement method : ElementFilter.constructorsIn(typeElement.getEnclosedElements()))
         {
             if (parameters.length == method.getParameters().size())
             {

@@ -240,24 +240,25 @@ public class ByteCodeVerifier extends OpCodeUtil
         OperandStack s = ctx.getS(); // stack
         TypeMirror[] lv = ctx.getLvType();
         in = in.branch(ctx.getPc());
-        int pc = 0;  // index
-        int i = 0;  // index
-        int c = 0;  // const
-        int o = 0;  // offset
-        int def = 0;
-        int low = 0;
-        int high = 0;
+        int pc;  // index
+        int i;  // index
+        int c;  // const
+        int o;  // offset
+        int def;
+        int low;
+        int high;
         TypeMirror v1 = null;
-        TypeMirror v2 = null;
+        TypeMirror v2;
         TypeMirror v3;
         TypeMirror v4;
         ArrayType a1;
         VariableElement fi;
-        ExecutableElement me = null;
-        ConstantInfo ci = null;
-        TypeMirror cw;
+        ExecutableElement me;
+        ConstantInfo ci;
+        TypeMirror tm;
         ExecutableElement co;
         TypeElement te;
+        Object ob;
         while (in.available() > 0)
         {
             pc = in.pc();
@@ -272,7 +273,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case NOP:
                     break;
                 case ACONST_NULL:
-                    s.push(null);
+                    s.push(Typ.Null);
                     break;
                 case ICONST_M1:
                 case ICONST_0:
@@ -1222,45 +1223,45 @@ public class ByteCodeVerifier extends OpCodeUtil
                     return s.getMax();
                 case GETSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedType(i);
+                    fi = getIndexedVariable(i);
                     s.push(fi.asType());
                     break;
                 case PUTSTATIC:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedType(i);
+                    fi = getIndexedVariable(i);
                     verify(fi.asType(), s.pop());
                     break;
                 case GETFIELD:
                     i = in.readUnsignedShort();
                     verify(Typ.Object, s.pop());
-                    fi = (VariableElement) cf.getIndexedType(i);
+                    fi = getIndexedVariable(i);
                     s.push(fi.asType());
                     break;
                 case PUTFIELD:
                     i = in.readUnsignedShort();
-                    fi = (VariableElement) cf.getIndexedType(i);
+                    fi = getIndexedVariable(i);
                     verify(fi.asType(), s.pop());
                     verify(Typ.Object, s.pop());
                     break;
                 case INVOKEVIRTUAL:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedType(i);
+                    me =  getIndexedExecutable(i);
                     verifyMethod(s, me);
                     verifyVirtualClass(s.pop(), me);
                     s.push(me.getReturnType());
                     break;
                 case INVOKESPECIAL: // TODO is there any different in these options
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedType(i);
+                    me =  getIndexedExecutable(i);
                     if (me.getKind() == ElementKind.CONSTRUCTOR)
                     {
-                        co = (ExecutableElement) cf.getIndexedType(i);
+                        co =  getIndexedExecutable(i);
                         verifyMethod(s, co);
                         verifyClass(s.pop(), co);
                     }
                     else
                     {
-                        me =  (ExecutableElement) cf.getIndexedType(i);
+                        me =  getIndexedExecutable(i);
                         verifyMethod(s, me);
                         verifyClass(s.pop(), me);
                         s.push(me.getReturnType());
@@ -1268,13 +1269,13 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case INVOKESTATIC:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedType(i);
+                    me =  getIndexedExecutable(i);
                     verifyMethod(s, me);
                     s.push(me.getReturnType());
                     break;
                 case INVOKEINTERFACE:
                     i = in.readUnsignedShort();
-                    me =  (ExecutableElement) cf.getIndexedType(i);
+                    me =  getIndexedExecutable(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {
@@ -1291,9 +1292,8 @@ public class ByteCodeVerifier extends OpCodeUtil
                     break;
                 case NEW:
                     i = in.readUnsignedShort();
-                    te = (TypeElement) cf.getIndexedType(i);
-                    cw = te.asType();
-                    s.push(cw);
+                    tm = getIndexedType(i);
+                    s.push(tm);
                     break;
                 case NEWARRAY:
                     i = in.readByte();
@@ -1331,8 +1331,8 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case ANEWARRAY:
                     i = in.readUnsignedShort();
                     verify(Typ.Int, s.pop());
-                    te = (TypeElement) cf.getIndexedType(i);
-                    s.push(Typ.ObjectA);
+                    tm = getIndexedType(i);
+                    s.push(Typ.getArrayType(tm));
                     break;
                 case ARRAYLENGTH:
                     verify(Typ.ObjectA, s.pop());
@@ -1345,8 +1345,8 @@ public class ByteCodeVerifier extends OpCodeUtil
                     i = in.readUnsignedShort();
                     v1 = s.pop();
                     verify(Typ.Object, v1);
-                    te = (TypeElement) cf.getIndexedType(i);
-                    s.push(te.asType());
+                    tm = getIndexedType(i);
+                    s.push(tm);
                     break;
                 case INSTANCEOF:
                     i = in.readUnsignedShort();
@@ -1427,7 +1427,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case MULTIANEWARRAY:
                     i = in.readUnsignedShort();
                     verify(Typ.Int, s.pop());
-                    te = (TypeElement) cf.getIndexedType(i);
+                    tm = getIndexedType(i);
                     i = in.readUnsignedByte();
                     if (i == 0)
                     {
@@ -1437,7 +1437,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                     {
                         verify(Typ.Int, s.pop());
                     }
-                    s.push(Typ.ObjectA);
+                    s.push(Typ.getArrayType(tm));
                     break;
                 case IFNULL:
                 case IFNONNULL:
@@ -1592,6 +1592,42 @@ public class ByteCodeVerifier extends OpCodeUtil
             default:
             throw new VerifyError(cw+" not byte or boolean array");
         }
+    }
+
+    private VariableElement getIndexedVariable(int i)
+    {
+        Object indexedType = cf.getIndexedType(i);
+        if (indexedType instanceof VariableElement)
+        {
+            return (VariableElement) indexedType;
+        }
+        throw new VerifyError("indexed object at "+i+" not field");
+    }
+
+    private ExecutableElement getIndexedExecutable(int i)
+    {
+        Object indexedType = cf.getIndexedType(i);
+        if (indexedType instanceof ExecutableElement)
+        {
+            return (ExecutableElement) indexedType;
+        }
+        throw new VerifyError("indexed object at "+i+" not method");
+    }
+
+    private TypeMirror getIndexedType(int i)
+    {
+        Object indexedType = cf.getIndexedType(i);
+        if (indexedType instanceof TypeElement)
+        {
+            TypeElement te = (TypeElement) indexedType;
+            return te.asType();
+        }
+        if (indexedType instanceof ArrayType)
+        {
+            ArrayType at = (ArrayType) indexedType;
+            return at;
+        }
+        throw new VerifyError("indexed object at "+i+" not class");
     }
 
     private class Context

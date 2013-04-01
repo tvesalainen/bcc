@@ -1310,13 +1310,26 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Check whether object is of given type
      * <p>Stack: ..., objectref =&gt; ..., objectref
-     * @param array
+     * @param type
      * @throws IOException
      */
-    public void checkcast(ArrayType array) throws IOException
+    public void checkcast(TypeMirror type) throws IOException
     {
-        int index = subClass.resolveClassIndex(array);
-        checkcast(index);
+        switch (type.getKind())
+        {
+            case ARRAY:
+                ArrayType array = (ArrayType) type;
+                int index = subClass.resolveClassIndex(array);
+                checkcast(index);
+                break;
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) type;
+                TypeElement te = (TypeElement) dt.asElement();
+                checkcast(te);
+                break;
+            default:
+                throw new IllegalArgumentException(type+" wrong for checkcast");
+        }
     }
 
     /**

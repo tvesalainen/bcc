@@ -35,7 +35,7 @@ public class NewMain
     {
         try
         {
-            int i = 1;
+            Object ob = new int[1];
         }
         catch (Exception ex)
         {

@@ -33,8 +33,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
-import org.vesalainen.bcc.Signature;
-import org.vesalainen.bcc.LocalVariableTypeTable;
 import org.vesalainen.bcc.ReturnAddress;
 
 /**
@@ -91,6 +89,8 @@ public class Typ
         Long = types.getPrimitiveType(TypeKind.LONG);
         Float = types.getPrimitiveType(TypeKind.FLOAT);
         Double = types.getPrimitiveType(TypeKind.DOUBLE);
+        String = (DeclaredType) getTypeFor(String.class);
+        Object = (DeclaredType) getTypeFor(Object.class);
         ByteA = types.getArrayType(Byte);
         BooleanA = types.getArrayType(Boolean);
         CharA = types.getArrayType(Char);
@@ -101,8 +101,6 @@ public class Typ
         DoubleA = types.getArrayType(Double);
         StringA = types.getArrayType(String);
         ObjectA = types.getArrayType(Object);
-        String = (DeclaredType) getTypeFor(String.class);
-        Object = (DeclaredType) getTypeFor(Object.class);
         ReturnAddress = new ReturnAddress();
     }
 

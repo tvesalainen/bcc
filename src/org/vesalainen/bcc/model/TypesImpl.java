@@ -188,7 +188,14 @@ public class TypesImpl implements Types
             case LONG:
             case SHORT:
             case DECLARED:
-                return false;
+                if (t1.getKind() == TypeKind.ARRAY)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             case NULL:
             case ARRAY:
             default:

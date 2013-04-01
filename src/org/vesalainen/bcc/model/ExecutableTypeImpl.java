@@ -21,6 +21,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -36,6 +39,21 @@ class ExecutableTypeImpl implements ExecutableType
     private TypeMirror returnType;
     private List<TypeMirror> parameterTypes = new ArrayList<>();
     private List<TypeMirror> thrownTypes = new ArrayList<>();
+
+    public ExecutableTypeImpl(ExecutableElement method)
+    {
+        returnType = Typ.getNullType();
+        for (VariableElement param : method.getParameters())
+        {
+            parameterTypes.add(param.asType());
+        }
+        for (TypeParameterElement tpe : method.getTypeParameters())
+        {
+            typeVariables.add((TypeVariable)tpe.asType());
+        }
+        thrownTypes.addAll(method.getThrownTypes());
+    }
+    
     public ExecutableTypeImpl(Constructor constructor)
     {
         returnType = Typ.getNullType();

@@ -110,6 +110,7 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
 
         public ExecutableElement getExecutableElement()
         {
+            exe.type = new ExecutableTypeImpl(exe);
             return exe;
         }
         
