@@ -584,7 +584,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                 case AALOAD:
                     verify(Typ.Int, s.pop());
                     a1 = (ArrayType) s.pop();
-                    verify(Typ.ObjectA, v1);
+                    verify(Typ.ObjectA, a1);
                     s.push(a1.getComponentType());
                     break;
                 case BALOAD:
@@ -1737,7 +1737,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             {
                 if (!Typ.isAssignable(sub, ve.asType()))
                 {
-                    throw new VerifyError("method "+method+"expected "+ve+" but got "+sub+" for arg "+index);
+                    throw new VerifyError("method "+method+"expected "+ve.asType()+" but got "+sub+" for arg "+index);
                 }
             }
             index++;

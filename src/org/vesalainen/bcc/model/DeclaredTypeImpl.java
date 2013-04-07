@@ -170,4 +170,10 @@ public class DeclaredTypeImpl implements DeclaredType
         return true;
     }
 
+    @Override
+    public String toString()
+    {
+        return "DeclaredTypeImpl{" + element.getQualifiedName()+ '}';
+    }
+
 }

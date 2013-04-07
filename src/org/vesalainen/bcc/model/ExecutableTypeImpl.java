@@ -42,7 +42,7 @@ class ExecutableTypeImpl implements ExecutableType
 
     public ExecutableTypeImpl(ExecutableElement method)
     {
-        returnType = Typ.getNullType();
+        returnType = method.getReturnType();
         for (VariableElement param : method.getParameters())
         {
             parameterTypes.add(param.asType());

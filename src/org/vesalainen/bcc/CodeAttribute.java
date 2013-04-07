@@ -76,16 +76,19 @@ public class CodeAttribute extends AttributeInfo
         int index = 0;
         for (VariableElement lv : localVariables)
         {
-            lvt.addLocalVariable(lv, index);
-            String signature = Signature.getSignature(lv);
-            if (!signature.isEmpty())
+            if (lv.asType().getKind() != TypeKind.OTHER)    // skipping returnAddress types which are coded as OTHER
             {
-                if (lvtt == null)
+                lvt.addLocalVariable(lv, index);
+                String signature = Signature.getSignature(lv);
+                if (!signature.isEmpty())
                 {
-                    lvtt = new LocalVariableTypeTable(subClass, code.length);
-                    attributes.add(lvtt);
+                    if (lvtt == null)
+                    {
+                        lvtt = new LocalVariableTypeTable(subClass, code.length);
+                        attributes.add(lvtt);
+                    }
+                    lvtt.addLocalTypeVariable(lv, signature, index);
                 }
-                lvtt.addLocalTypeVariable(lv, signature, index);
             }
             if (Typ.isCategory2(lv.asType()))
             {

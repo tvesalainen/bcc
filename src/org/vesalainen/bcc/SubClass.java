@@ -507,11 +507,6 @@ public class SubClass extends ClassFile
         return addConstantInfo(new ConstantString(nameIndex), size);
     }
 
-    private void implement(MethodCompiler mc) throws IOException
-    {
-        mc.implement(); // TO DO concurrent
-    }
-    
     public void codeDefaultConstructor(final FieldInitializer... fis) throws IOException
     {
         for (final ExecutableElement constructor : ElementFilter.constructorsIn(superClass.getEnclosedElements()))
@@ -535,7 +530,6 @@ public class SubClass extends ClassFile
                             fi.init(this);
                         }
                         treturn();
-                        end();
                     }
                 };
                 overrideMethod(c, constructor, constructor.getModifiers());
@@ -556,7 +550,6 @@ public class SubClass extends ClassFile
                         fi.init(this);
                     }
                     treturn();
-                    end();
                 }
             };
             createStaticInitializer(c);
@@ -587,6 +580,7 @@ public class SubClass extends ClassFile
         builder.setType(type);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement());
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
     /**
      * Define constant field and set the constant value.
@@ -603,6 +597,7 @@ public class SubClass extends ClassFile
         builder.setType(Typ.IntA);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
     /**
      * Define constant field and set the constant value.
@@ -619,6 +614,7 @@ public class SubClass extends ClassFile
         builder.setType(Typ.Long);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
     /**
      * Define constant field and set the constant value.
@@ -635,6 +631,7 @@ public class SubClass extends ClassFile
         builder.setType(Typ.Float);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
     /**
      * Define constant field and set the constant value.
@@ -651,6 +648,7 @@ public class SubClass extends ClassFile
         builder.setType(Typ.Double);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
     /**
      * Define constant field and set the constant value.
@@ -667,6 +665,7 @@ public class SubClass extends ClassFile
         builder.setType(Typ.String);
         FieldInfo fieldInfo = new FieldInfo(this, builder.getVariableElement(), new ConstantValue(this, constant));
         addFieldInfo(fieldInfo);
+        fieldInfo.readyToWrite();
     }
 
     public void createStaticInitializer(MethodCompiler mc) throws IOException
@@ -683,7 +682,7 @@ public class SubClass extends ClassFile
         MethodInfo methodInfo = new MethodInfo(this, builder.getExecutableElement());
         addMethodInfo(methodInfo);
         mc.startImplement(this, methodInfo);
-        implement(mc);
+        methodInfo.readyToWrite();
     }
     public MethodBuilder buildMethod(String methodName)
     {
@@ -701,7 +700,6 @@ public class SubClass extends ClassFile
     }
     public void defineMethod(MethodCompiler mc, int modifier, String methodName, Class<?> returnType, Class<?>[] exceptionTypes, Class<?>... parameters) throws IOException
     {
-        DeclaredType dt = (DeclaredType)asType();
         MethodBuilder builder = buildMethod(methodName);
         builder.addModifiers(modifier);
         builder.setReturnType(returnType);
@@ -753,7 +751,7 @@ public class SubClass extends ClassFile
         MethodInfo methodInfo = new MethodInfo(this, method);
         addMethodInfo(methodInfo);
         mc.startImplement(this, methodInfo);
-        implement(mc);
+        methodInfo.readyToWrite();
     }
     public Object newInstance() throws IOException
     {
@@ -793,7 +791,7 @@ public class SubClass extends ClassFile
 
     public void createSourceFile(Filer filer) throws IOException
     {
-        FileObject sourceFile = filer.getResource(
+        FileObject sourceFile = filer.createResource(
                 StandardLocation.SOURCE_OUTPUT, 
                 El.getPackageOf(this).getQualifiedName(), 
                 getSimpleName()+".jasm"
@@ -849,6 +847,7 @@ public class SubClass extends ClassFile
     @Override
     public void write(DataOutput out) throws IOException
     {
+        addSignatureIfNeed();
         out.writeInt(magic);
         out.writeShort(minor_version);
         out.writeShort(major_version);
@@ -877,7 +876,6 @@ public class SubClass extends ClassFile
         {
             mi.write(out);
         }
-        addSignatureIfNeed();
         out.writeShort(attributes.size());
         for (AttributeInfo ai : attributes)
         {

@@ -43,6 +43,7 @@ public class FieldInfo implements Writable, VariableElement
     private VariableElement variableElement;
     private List<AttributeInfo> attributes = new ArrayList<>();
     private boolean synthetic = true;
+    private boolean readyToWrite;
 
     public FieldInfo(ClassFile classFile, VariableElement variableElement)
     {
@@ -68,11 +69,24 @@ public class FieldInfo implements Writable, VariableElement
         }
     }
 
+    /**
+     * Call to this method tells that the Attribute is ready writing. This method 
+     * must be called before constant pool is written.
+     */
+    public void readyToWrite()
+    {
+        addSignatureIfNeed();
+        readyToWrite = true;
+    }
+    
     @Override
     public void write(DataOutput out) throws IOException
     {
+        if (!readyToWrite)
+        {
+            throw new IllegalStateException("not ready to write");
+        }
         SubClass subClass = (SubClass) classFile;
-        addSignatureIfNeed();
         int modifier = FieldFlags.getModifier(getModifiers());
         modifier |= FieldFlags.ACC_SYNTHETIC;
         out.writeShort(modifier);

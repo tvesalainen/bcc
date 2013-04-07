@@ -49,6 +49,7 @@ public class Descriptor
                 case LOCAL_VARIABLE:
                     return getFieldDesriptor(element);
                 case CONSTRUCTOR:
+                case STATIC_INIT:
                 case METHOD:
                     ExecutableElement executableElement = (ExecutableElement) element;
                     return getMethodDesriptor(executableElement);

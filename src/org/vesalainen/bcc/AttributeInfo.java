@@ -97,7 +97,6 @@ public class AttributeInfo implements Writable
         info = new byte[attribute_length];
         in.readFully(info);
     }
-
     @Override
     public void write(DataOutput out) throws IOException
     {

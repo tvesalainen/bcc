@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 /**
@@ -42,9 +43,16 @@ public class DeclaredTypeBuilder
     {
         return addNested(element.getCanonicalName());
     }
-    public DeclaredTypeBuilder addNested(String element)
+    public DeclaredTypeBuilder addNested(String type)
     {
-        return addNested((TypeElement)typeParamBuilder.resolvElement(element));
+        TypeMirror t = typeParamBuilder.resolvType(type);
+        if (t.getKind() == TypeKind.DECLARED)
+        {
+            DeclaredType dt = (DeclaredType) t;
+            TypeElement te = (TypeElement) dt.asElement();
+            return addNested(te);
+        }
+        throw new IllegalArgumentException(type+" not declared type");
     }
     public DeclaredTypeBuilder addNested(TypeElement element)
     {

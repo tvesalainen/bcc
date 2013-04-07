@@ -2232,8 +2232,9 @@ public class Assembler implements OpCode
                         i2d();
                         break;
                     default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
                 }
+                break;
             case LONG:
                 switch (to.getKind())
                 {
@@ -2249,8 +2250,9 @@ public class Assembler implements OpCode
                         l2d();
                         break;
                     default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
                 }
+                break;
             case FLOAT:
                 switch (to.getKind())
                 {
@@ -2266,8 +2268,9 @@ public class Assembler implements OpCode
                         f2d();
                         break;
                     default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
                 }
+                break;
             case DOUBLE:
                 switch (to.getKind())
                 {
@@ -2283,8 +2286,11 @@ public class Assembler implements OpCode
                     case DOUBLE:
                         break;
                     default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supprted");
+                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
                 }
+                break;
+            default:
+                throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
         }
     }
 }

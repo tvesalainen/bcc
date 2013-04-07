@@ -36,6 +36,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -67,24 +68,25 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         }
         public MethodBuilder setReturnType(String returnType, String... typeArgs)
         {
-            Element element = resolvElement(returnType);
-            switch (element.getKind())
+            TypeMirror type = resolvType(returnType);
+            if (typeArgs.length > 0 && type.getKind() == TypeKind.DECLARED)
             {
-                case CLASS:
-                case INTERFACE:
-                    TypeElement te = (TypeElement) element;
-                    List<TypeMirror> args = new ArrayList<>();
-                    for (String a : typeArgs)
-                    {
-                        args.add(resolvType(a));
-                    }
-                    return setReturnType(new DeclaredTypeImpl(te, args));
-                default:
-                    if (typeArgs.length > 0)
-                    {
-                        throw new IllegalArgumentException("type args not used");
-                    }
-                    return setReturnType(element.asType());
+                DeclaredType dt = (DeclaredType) type;
+                TypeElement te = (TypeElement) dt.asElement();
+                TypeMirror[] args = new TypeMirror[typeArgs.length];
+                for (int ii=0;ii<args.length;ii++)
+                {
+                    args[ii] = resolvType(typeArgs[ii]);
+                }
+                return setReturnType(Typ.getDeclaredType(te, args));
+            }
+            else
+            {
+                if (typeArgs.length > 0)
+                {
+                    throw new IllegalArgumentException("type args not used");
+                }
+                return setReturnType(type);
             }
         }
         public MethodBuilder setReturnType(TypeMirror returnType)
@@ -157,11 +159,6 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         protected TypeMirror resolvType(String type)
         {
             return typeParamBuilder.resolvType(type);
-        }
-
-        protected Element resolvElement(String type)
-        {
-            return typeParamBuilder.resolvElement(type);
         }
 
         public ConstructorBuilder addTypeParameter(String name, Class<?>... bounds)

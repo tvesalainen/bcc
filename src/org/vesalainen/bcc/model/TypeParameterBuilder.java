@@ -69,16 +69,36 @@ public class TypeParameterBuilder<R>
         {
             throw new IllegalArgumentException("null or empty type");
         }
-        if (type.charAt(0) == '[')
+        switch (type)
         {
-            return Typ.getArrayType(resolvType(type.substring(1)));
-        }
-        else
-        {
-            return resolvElement(type).asType();
+            case "boolean":
+                return Typ.Boolean;
+            case "byte":
+                return Typ.Byte;
+            case "char":
+                return Typ.Char;
+            case "short":
+                return Typ.Short;
+            case "int":
+                return Typ.Int;
+            case "long":
+                return Typ.Long;
+            case "float":
+                return Typ.Float;
+            case "double":
+                return Typ.Double;
+            default:
+                if (type.charAt(0) == '[')
+                {
+                    return Typ.getArrayType(resolvType(type.substring(1)));
+                }
+                else
+                {
+                    return resolvElement(type).asType();
+                }
         }
     }
-    protected Element resolvElement(String type)
+    private Element resolvElement(String type)
     {
         TypeParameterElement t = typeParameterMap.get(type);
         if (t != null)

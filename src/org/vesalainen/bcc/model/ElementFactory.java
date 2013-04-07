@@ -159,6 +159,11 @@ public class ElementFactory
         }
         return pe;
     }
+    public static PackageElement getPackageElement(CharSequence name)
+    {
+        return new PackageElementImpl(name.toString());
+    }
+
     public static TypeParameterElement getTypeParameterElement(TypeVariable typeVariable)
     {
         TypeParameterElement tpe = typeParameterMap.get(typeVariable);

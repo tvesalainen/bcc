@@ -21,7 +21,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
@@ -55,6 +54,7 @@ public class MethodInfo implements Writable, ExecutableElement
     private boolean varArgs;
     private boolean synthetic = true;
     private CodeAttribute code;
+    private boolean readyToWrite;
     /**
      * 
      * @param access_flags
@@ -113,7 +113,8 @@ public class MethodInfo implements Writable, ExecutableElement
     }
     private void addThrowables()
     {
-        for (TypeMirror tt : getThrownTypes())
+        List<? extends TypeMirror> thrownTypes = getThrownTypes();
+        if (!thrownTypes.isEmpty())
         {
             ExceptionsAttribute ea = null;
             for (AttributeInfo ai : attributes)
@@ -129,7 +130,10 @@ public class MethodInfo implements Writable, ExecutableElement
                 ea = new ExceptionsAttribute((SubClass)enclosingElement);
                 attributes.add(ea);
             }
-            ea.addThrowable((TypeElement)Typ.asElement(tt));
+            for (TypeMirror tt : thrownTypes)
+            {
+                ea.addThrowable((TypeElement)Typ.asElement(tt));
+            }
         }
     }
     
@@ -185,11 +189,24 @@ public class MethodInfo implements Writable, ExecutableElement
         return null;
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException
+    /**
+     * Call to this method tells that the Attribute is ready writing. This method 
+     * must be called before constant pool is written.
+     */
+    public void readyToWrite()
     {
         addSignatureIfNeed();
         addThrowables();
+        readyToWrite = true;
+    }
+    
+    @Override
+    public void write(DataOutput out) throws IOException
+    {
+        if (!readyToWrite)
+        {
+            throw new IllegalStateException("not ready to write");
+        }
         int modifier = MethodFlags.getModifier(getModifiers());
         modifier |= MethodFlags.ACC_SYNTHETIC;
         out.writeShort(modifier);

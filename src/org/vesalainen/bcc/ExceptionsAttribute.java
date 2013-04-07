@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.lang.model.element.TypeElement;
-import org.vesalainen.bcc.model.El;
 
 /**
  * @author Timo Vesalainen
@@ -68,7 +67,8 @@ public class ExceptionsAttribute extends AttributeInfo
 
     public void addThrowable(TypeElement thr)
     {
-        exceptionIndexes.add(classFile.getClassIndex(thr));
+        SubClass subClass = (SubClass) classFile;
+        exceptionIndexes.add(subClass.resolveClassIndex(thr));
     }
     @Override
     public void write(DataOutput out) throws IOException

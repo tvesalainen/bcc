@@ -17,8 +17,8 @@
 
 package org.vesalainen.bcc.model;
 
-import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +31,8 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
@@ -41,8 +43,173 @@ import org.vesalainen.bcc.Descriptor;
  */
 public class El 
 {
-    private static Elements elements = new ElementsImpl();
-
+    private static final Elements myElements = new ElementsImpl();
+    private static Elements elements = myElements;
+    /**
+     * Returns method in text form. Format is
+     * &lt;canonical name of method class&gt; ' ' &lt;method name&gt; '(' arguments ')'
+     * 
+     * Arguments is a comma separated list of argument type names. Argument type name
+     * is canonical name of argument class. Arrays however are printed with leading '['.
+     * Example T0.class.getDeclaredMethod("m1", String.class, int.class, long[].class) 
+     * produces "org.vesalainen.bcc.T0 m1(java.lang.String,int,[long)"
+     * 
+     * @param method
+     * @return 
+     */
+    public static String getExecutableString(Method method)
+    {
+        if (method == null)
+        {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append(method.getDeclaringClass().getCanonicalName());
+        sb.append(' ');
+        sb.append(method.getName());
+        sb.append('(');
+        boolean f = true;
+        for (Class<?> p : method.getParameterTypes())
+        {
+            if (f)
+            {
+                f = false;
+            }
+            else
+            {
+                sb.append(',');
+            }
+            aName(sb, p);
+        }
+        sb.append(')');
+        return sb.toString();
+    }
+    private static void aName(StringBuilder sb, Class<?> c)
+    {
+        if (c.isArray())
+        {
+            sb.append('[');
+            aName(sb, c.getComponentType());
+        }
+        else
+        {
+            sb.append(c.getCanonicalName());
+        }
+    }
+    /**
+     * Returns ExecutableElement from text form. Format is
+     * &lt;canonical name of method class&gt; ' ' &lt;method name&gt; '(' arguments ')'
+     * 
+     * Arguments is a comma separated list of argument type names. Argument type name
+     * is canonical name of argument class. Arrays however are printed with leading '['.
+     * Example T0.class.getDeclaredMethod("m1", String.class, int.class, long[].class) 
+     * produces "org.vesalainen.bcc.T0 m1(java.lang.String,int,[long)"
+     * 
+     * @param methodString
+     * @return 
+     */
+    public static ExecutableElement getExecutableElement(String methodString)
+    {
+        if (methodString == null)
+        {
+            throw new NullPointerException();
+        }
+        if (methodString.isEmpty())
+        {
+            return null;
+        }
+        int i1 = methodString.indexOf(' ');
+        if (i1 == -1)
+        {
+            throw new IllegalArgumentException(methodString+" illegal");
+        }
+        TypeElement cls = El.getTypeElement(methodString.substring(0, i1));
+        if (cls == null)
+        {
+            throw new IllegalArgumentException(methodString+" class not found");
+        }
+        int i2 = methodString.indexOf('(', i1);
+        if (i2 == -1)
+        {
+            throw new IllegalArgumentException(methodString+" illegal");
+        }
+        String name = methodString.substring(i1+1, i2);
+        String[] args = methodString.substring(i2+1, methodString.length()-1).split(",");
+        TypeMirror[] params = new TypeMirror[args.length];
+        for (int ii=0;ii<args.length;ii++)
+        {
+            params[ii] = Typ.getTypeFor(args[ii]);
+        }
+        return getMethod(cls, name, params);
+    }
+    /**
+     * Returns method in text form. Format is
+     * &lt;canonical name of method class&gt; ' ' &lt;method name&gt; '(' arguments ')'
+     * 
+     * Arguments is a comma separated list of argument type names. Argument type name
+     * is canonical name of argument class. Arrays however are printed with leading '['.
+     * Example T0.class.getDeclaredMethod("m1", String.class, int.class, long[].class) 
+     * produces "org.vesalainen.bcc.T0 m1(java.lang.String,int,[long)"
+     * 
+     * @param method
+     * @return 
+     */
+    public static String getExecutableString(ExecutableElement method)
+    {
+        if (method == null)
+        {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        TypeElement te = (TypeElement) method.getEnclosingElement();
+        sb.append(te.getQualifiedName());
+        sb.append(' ');
+        sb.append(method.getSimpleName());
+        sb.append('(');
+        boolean f = true;
+        for (VariableElement p : method.getParameters())
+        {
+            if (f)
+            {
+                f = false;
+            }
+            else
+            {
+                sb.append(',');
+            }
+            addTypeName(sb, p.asType());
+        }
+        sb.append(')');
+        return sb.toString();
+    }
+    private static void addTypeName(StringBuilder sb, TypeMirror type)
+    {
+        switch (type.getKind())
+        {
+            case BOOLEAN:
+            case BYTE:
+            case CHAR:
+            case DOUBLE:
+            case FLOAT:
+            case INT:
+            case LONG:
+            case SHORT:
+                sb.append(type.getKind().name().toLowerCase());
+                break;
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) type;
+                TypeElement te = (TypeElement) dt.asElement();
+                sb.append(te.getQualifiedName());
+                break;
+            case ARRAY:
+                ArrayType at = (ArrayType) type;
+                sb.append('[');
+                addTypeName(sb, at.getComponentType());
+                break;
+            default:
+                throw new UnsupportedOperationException(type+" not supported");
+        }
+    }
     public static <E extends Element> E createUpdateableElement(E element)
     {
         UpdateableElementImpl<E> uei = new UpdateableElementImpl<>();
@@ -125,7 +292,7 @@ public class El
                 List<? extends VariableElement> calleeParams = method.getParameters();
                 for (int ii=0;ii<parameters.length;ii++)
                 {
-                    if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
+                    if (!Typ.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
                     {
                         ok = false;
                         continue;
@@ -156,7 +323,12 @@ public class El
 
     public static TypeElement getTypeElement(CharSequence name)
     {
-        return elements.getTypeElement(name);
+        TypeElement te = elements.getTypeElement(name);
+        if (te == null)
+        {
+            throw new IllegalArgumentException(name+" not TypeElement");
+        }
+        return te;
     }
 
     public static Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValuesWithDefaults(AnnotationMirror a)
@@ -181,7 +353,7 @@ public class El
 
     public static PackageElement getPackageOf(Element type)
     {
-        return elements.getPackageOf(type);
+        return myElements.getPackageOf(type);
     }
 
     public static List<? extends Element> getAllMembers(TypeElement type)
@@ -211,7 +383,7 @@ public class El
 
     public static void printElements(Writer w, Element... elements)
     {
-        El.elements.printElements(w, elements);
+        myElements.printElements(w, elements);
     }
 
     public static Name getName(CharSequence cs)

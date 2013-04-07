@@ -76,4 +76,10 @@ public class PrimitiveTypeImpl implements PrimitiveType
         return true;
     }
 
+    @Override
+    public String toString()
+    {
+        return "PrimitiveTypeImpl{" + "kind=" + kind + '}';
+    }
+
 }

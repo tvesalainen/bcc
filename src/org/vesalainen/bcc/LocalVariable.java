@@ -30,7 +30,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.model.El;
 
@@ -131,6 +130,12 @@ public class LocalVariable implements VariableElement
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
         return v.visitVariable(this, p);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "LocalVariable{" + "type=" + type + ", simpleName=" + simpleName + '}';
     }
 
 }

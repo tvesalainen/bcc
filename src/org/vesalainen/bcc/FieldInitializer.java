@@ -17,12 +17,15 @@
 package org.vesalainen.bcc;
 
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import org.vesalainen.bcc.model.El;
-import org.vesalainen.bcc.model.ElementFactory;
 
 /**
  *
@@ -81,6 +84,10 @@ public abstract class FieldInitializer
         return new ObjectInit(field, ocls);
     }
     public static FieldInitializer getObjectInstance(VariableElement field, String ocls)
+    {
+        return new ObjectInit(field, ocls);
+    }
+    public static FieldInitializer getObjectInstance(VariableElement field, TypeElement ocls)
     {
         return new ObjectInit(field, ocls);
     }
@@ -258,6 +265,24 @@ public abstract class FieldInitializer
             super(field);
             this.cls = cls;
             constructor = El.getConstructor(cls);
+            if (constructor == null)
+            {
+                OutputStreamWriter sw = new OutputStreamWriter(System.err);
+                El.printElements(sw, cls);
+                for (Element e : cls.getEnclosedElements())
+                {
+                    El.printElements(sw, e);
+                }
+                try
+                {
+                    sw.flush();
+                }
+                catch (IOException ex)
+                {
+                    Logger.getLogger(FieldInitializer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                throw new IllegalArgumentException("no constructor for "+cls);
+            }
         }
 
         @Override

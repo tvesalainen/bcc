@@ -42,7 +42,7 @@ public class Typ
 {
     public static NullType Null;
     public static NoType Void;
-    public static NoType Package;
+    //public static NoType Package;
     public static NoType None;
 
     public static PrimitiveType Byte;
@@ -67,11 +67,12 @@ public class Typ
     public static DeclaredType Object;
     public static TypeMirror ReturnAddress;
     
+    private static final Types myTypes = new TypesImpl();
     private static Types types;
 
     static
     {
-        setTypes(new TypesImpl());
+        setTypes(myTypes);
     }
     
     public static void setTypes(Types types)
@@ -79,7 +80,7 @@ public class Typ
         Typ.types = types;
         Null = types.getNullType();
         Void = types.getNoType(TypeKind.VOID);
-        Package = types.getNoType(TypeKind.PACKAGE);
+        //Package = types.getNoType(TypeKind.PACKAGE);
         None = types.getNoType(TypeKind.NONE);
         Byte = types.getPrimitiveType(TypeKind.BYTE);
         Boolean = types.getPrimitiveType(TypeKind.BOOLEAN);
@@ -173,6 +174,39 @@ public class Typ
             {
                 return El.getTypeElement(cls.getCanonicalName()).asType();
             }
+        }
+    }
+    public static TypeMirror getTypeFor(String type)
+    {
+        switch (type)
+        {
+            case "boolean":
+                return Boolean;
+            case "char":
+                return Char;
+            case "byte":
+                return Byte;
+            case "short":
+                return Short;
+            case "int":
+                return Int;
+            case "long":
+                return Long;
+            case "float":
+                return Float;
+            case "double":
+                return Double;
+            case "void":
+                return Void;
+            default:
+                if (type.charAt(0) == '[')
+                {
+                    return types.getArrayType(getTypeFor(type.substring(1)));
+                }
+                else
+                {
+                    return El.getTypeElement(type).asType();
+                }
         }
     }
     public static int getMaxIndexOf(List<? extends VariableElement> params)
@@ -296,7 +330,7 @@ public class Typ
 
     public static boolean isAssignable(TypeMirror t1, TypeMirror t2)
     {
-        return types.isAssignable(t1, t2);
+        return myTypes.isAssignable(t1, t2);
     }
 
     public static boolean contains(TypeMirror t1, TypeMirror t2)
@@ -385,6 +419,7 @@ public class Typ
         {
             case INT:
             case SHORT:
+            case CHAR:
             case BYTE:
             case BOOLEAN:
                 return true;

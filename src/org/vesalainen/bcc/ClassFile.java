@@ -732,7 +732,19 @@ public class ClassFile implements Writable, TypeElement
     {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
+    /*
+    public static void main(String... args)
+    {
+        try
+        {
+            ClassFile cf = new ClassFile(Dumper.class);
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+    */
     public class ClassType implements DeclaredType
     {
 

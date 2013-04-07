@@ -83,13 +83,8 @@ public class VariableElementImpl extends ElementImpl<TypeMirror> implements Vari
         }
         public VariableBuilder setType(String type)
         {
-            PrimitiveType primitive = TypeMirrorFactory.getPrimitiveType(type);
-            if (primitive != null)
-            {
-                return setType(primitive);
-            }
-            Element element = typeParamBuilder.resolvElement(type);
-            return setType(element);
+            TypeMirror t = typeParamBuilder.resolvType(type);
+            return setType(t);
         }
         public VariableBuilder setType(Element element)
         {

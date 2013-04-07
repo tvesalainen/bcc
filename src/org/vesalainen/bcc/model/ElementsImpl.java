@@ -50,7 +50,7 @@ public class ElementsImpl implements Elements
         }
         else
         {
-            return null;
+            return ElementFactory.getPackageElement(name);
         }
     }
 

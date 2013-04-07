@@ -307,39 +307,25 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
         {
             enclosingElement = ElementFactory.getPackageElement(cls.getPackage());
         }
-        if (cls.isAnnotation())
+        for (Field field : cls.getDeclaredFields())
         {
-            
+            enclosedElements.add(ElementFactory.get(field));
         }
-        else
+        for (Constructor constructor : cls.getDeclaredConstructors())
         {
-            if (cls.isEnum())
-            {
-                
-            }
-            else
-            {
-                for (Field field : cls.getDeclaredFields())
-                {
-                    enclosedElements.add(ElementFactory.get(field));
-                }
-                for (Constructor constructor : cls.getDeclaredConstructors())
-                {
-                    enclosedElements.add(ElementFactory.get(constructor));
-                }
-                for (Method method : cls.getDeclaredMethods())
-                {
-                    enclosedElements.add(ElementFactory.get(method));
-                }
-                for (Class<?> c : cls.getDeclaredClasses())
-                {
-                    enclosedElements.add(ElementFactory.get(c));
-                }
-                for (Type intf : cls.getGenericInterfaces())
-                {
-                    interfaces.add(TypeMirrorFactory.get(intf));
-                }
-            }
+            enclosedElements.add(ElementFactory.get(constructor));
+        }
+        for (Method method : cls.getDeclaredMethods())
+        {
+            enclosedElements.add(ElementFactory.get(method));
+        }
+        for (Class<?> c : cls.getDeclaredClasses())
+        {
+            enclosedElements.add(ElementFactory.get(c));
+        }
+        for (Type intf : cls.getGenericInterfaces())
+        {
+            interfaces.add(TypeMirrorFactory.get(intf));
         }
     }
 

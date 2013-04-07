@@ -43,6 +43,7 @@ public class Signature extends Descriptor
                     VariableElement variableElement = (VariableElement) element;
                     return getFieldSignature(variableElement);
                 case CONSTRUCTOR:
+                case STATIC_INIT:
                 case METHOD:
                     ExecutableElement executableElement = (ExecutableElement) element;
                     return getMethodSignature(executableElement);
@@ -254,7 +255,7 @@ public class Signature extends Descriptor
                 arrayTypeSignature(sb, (ArrayType)type);
                 break;
             default:
-                throw new UnsupportedOperationException(type.getKind()+" unsupported");
+                //throw new UnsupportedOperationException(type.getKind()+" unsupported");
         }
     }
 

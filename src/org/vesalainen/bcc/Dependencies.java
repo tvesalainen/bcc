@@ -51,8 +51,8 @@ public class Dependencies
     }
     public SortedMap<String,Boolean> dependenciesFor(String... classNames) throws IOException
     {
-        SortedMap<String,Boolean> map = new TreeMap<String,Boolean>();
-        Deque<String> deque = new ArrayDeque<String>();
+        SortedMap<String,Boolean> map = new TreeMap<>();
+        Deque<String> deque = new ArrayDeque<>();
         for (String cn : classNames)
         {
             cn = cn.trim();
@@ -87,10 +87,9 @@ public class Dependencies
     {
         try
         {
-            File p1 = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\RegexParser\\dist\\RegexParser.jar");
-            File p2 = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\JavaLPG\\dist\\JavaLPG.jar");
+            File p2 = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\LPG\\dist\\LPG.jar");
             File p3 = new File("C:\\Users\\tkv\\Documents\\NetBeansProjects\\ByteCodeCompiler\\dist\\ByteCodeCompiler.jar");
-            Dependencies d = new Dependencies("org.vesalainen", p1, p2, p3);
+            Dependencies d = new Dependencies("org.vesalainen", p2, p3);
             Map<String,Boolean> s = d.dependenciesFor("org.vesalainen.regex.Regex");
             System.err.println(s);
         }

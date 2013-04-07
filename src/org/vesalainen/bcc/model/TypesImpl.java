@@ -18,7 +18,9 @@
 package org.vesalainen.bcc.model;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
@@ -78,7 +80,39 @@ public class TypesImpl implements Types
         }
         else
         {
-            return t1.getKind() == t2.getKind();
+            if (t1.getKind() == t2.getKind())
+            {
+                switch (t1.getKind())
+                {
+                    case BOOLEAN:
+                    case BYTE:
+                    case CHAR:
+                    case DOUBLE:
+                    case FLOAT:
+                    case INT:
+                    case LONG:
+                    case SHORT:
+                    case VOID:
+                    case OTHER:
+                        return true;
+                    case ARRAY:
+                        ArrayType at1 = (ArrayType) t1;
+                        ArrayType at2 = (ArrayType) t2;
+                        return isSameType(at1.getComponentType(), at2.getComponentType());
+                    case DECLARED:
+                        DeclaredType dt1 = (DeclaredType) t1;
+                        DeclaredType dt2 = (DeclaredType) t2;
+                        TypeElement te1 = (TypeElement) dt1.asElement();
+                        TypeElement te2 = (TypeElement) dt2.asElement();
+                        return te1.getQualifiedName().contentEquals(te2.getQualifiedName());
+                default:
+                    throw new IllegalArgumentException(t1+" is unsuitable type");
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 
@@ -151,7 +185,7 @@ public class TypesImpl implements Types
                     case DECLARED:
                         for (TypeMirror t : directSupertypes(sub))
                         {
-                            if (t.equals(sup))
+                            if (isSameType(t, sup))
                             {
                                 return true;
                             }
@@ -187,17 +221,37 @@ public class TypesImpl implements Types
             case INT:
             case LONG:
             case SHORT:
+                return false;
             case DECLARED:
-                if (t1.getKind() == TypeKind.ARRAY)
+                switch (t1.getKind())
                 {
-                    return true;
-                }
-                else
-                {
+                    case NULL:
+                    case ARRAY:
+                        return true;
+                    default:
                     return false;
                 }
             case NULL:
+                switch (t1.getKind())
+                {
+                    case DECLARED:
+                    case ARRAY:
+                        return true;
+                    default:
+                    return false;
+                }
             case ARRAY:
+                switch (t1.getKind())
+                {
+                    case NULL:
+                        return true;
+                    case ARRAY:
+                        ArrayType at1 = (ArrayType) t1;
+                        ArrayType at2 = (ArrayType) t2;
+                        return isAssignable(at1.getComponentType(), at2.getComponentType());
+                    default:
+                        return false;
+                }
             default:
                 throw new IllegalArgumentException(t2+" not suitable type");
             case EXECUTABLE:
@@ -227,13 +281,12 @@ public class TypesImpl implements Types
                 DeclaredType dt = (DeclaredType) t;
                 TypeElement te = (TypeElement) dt.asElement();
                 List<TypeMirror> list = new ArrayList<>();
-                TypeMirror superclass = te.getSuperclass();
-                while (TypeKind.NONE != superclass.getKind())
+                TypeElement superclass = (TypeElement) asElement(te.getSuperclass());
+                while (superclass != null)
                 {
-                    list.add(0, superclass);
+                    list.add(0, superclass.asType());
                     list.addAll(te.getInterfaces());
-                    TypeElement sc = (TypeElement) superclass;
-                    superclass = sc.getSuperclass();
+                    superclass = (TypeElement) asElement(superclass.getSuperclass());
                 }
                 return list;
             case EXECUTABLE:
@@ -287,21 +340,21 @@ public class TypesImpl implements Types
             TypeElement te = (TypeElement) dt.asElement();
             switch (te.getQualifiedName().toString())
             {
-                case "byte":
+                case "java.lang.Byte":
                     return Byte;
-                case "boolean":
+                case "java.lang.Boolean":
                     return Boolean;
-                case "char":
+                case "java.lang.Character":
                     return Char;
-                case "short":
+                case "java.lang.Short":
                     return Short;
-                case "int":
+                case "java.lang.Integer":
                     return Int;
-                case "long":
+                case "java.lang.Long":
                     return Long;
-                case "float":
+                case "java.lang.Float":
                     return Float;
-                case "double":
+                case "java.lang.Double":
                     return Double;
             }
         }
@@ -377,7 +430,7 @@ public class TypesImpl implements Types
     @Override
     public DeclaredType getDeclaredType(TypeElement typeElem, TypeMirror... typeArgs)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        return new DeclaredTypeImpl(typeElem, Arrays.asList(typeArgs));
     }
 
     @Override
