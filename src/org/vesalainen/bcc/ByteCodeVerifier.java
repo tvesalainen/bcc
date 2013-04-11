@@ -1563,6 +1563,7 @@ public class ByteCodeVerifier extends OpCodeUtil
         {
             case ARRAY:
             case DECLARED:
+            case TYPEVAR:
                 return;
             default:
             throw new VerifyError(cw+" not assignable to array");

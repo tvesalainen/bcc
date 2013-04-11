@@ -30,6 +30,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import org.vesalainen.bcc.model.El;
 import org.vesalainen.bcc.model.ElementFactory;
 import org.vesalainen.bcc.model.Typ;
@@ -1327,8 +1328,12 @@ public abstract class MethodCompiler extends Assembler
                 TypeElement te = (TypeElement) dt.asElement();
                 checkcast(te);
                 break;
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) type;
+                checkcast(tv.getUpperBound());
+                break;
             default:
-                throw new IllegalArgumentException(type+" wrong for checkcast");
+                throw new IllegalArgumentException(type+" "+type.getKind()+" wrong for checkcast");
         }
     }
 

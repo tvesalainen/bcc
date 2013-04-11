@@ -89,6 +89,7 @@ public class Assembler implements OpCode
         types.put(TypeKind.DOUBLE, d);
         types.put(TypeKind.ARRAY, a);
         types.put(TypeKind.DECLARED, a);
+        types.put(TypeKind.TYPEVAR, a);
         types.put(TypeKind.VOID, v);
     }
 

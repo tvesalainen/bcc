@@ -412,7 +412,11 @@ public class Typ
     {
         throw new UnsupportedOperationException("Not yet implemented");
     }
-
+    /**
+     * Returns true if type is one of int, short, char, byte or boolean
+     * @param type
+     * @return 
+     */
     public static boolean isInteger(TypeMirror type)
     {
         switch (type.getKind())
@@ -427,8 +431,12 @@ public class Typ
                 return false;
         }
     }
-
-    public static boolean isJavaConstantClass(TypeMirror type)
+    /**
+     * Returns true if type is one of int, long, float, double or java.lang.String
+     * @param type
+     * @return 
+     */
+    public static boolean isJavaConstantType(TypeMirror type)
     {
         switch (type.getKind())
         {
@@ -445,7 +453,28 @@ public class Typ
                 return false;
         }
     }
-
+    /**
+     * Returns a Object of type type converted from constant
+     * @param constant
+     * @param kind
+     * @return 
+     */
+    public static Object convert(String constant, TypeKind kind)
+    {
+        switch (kind)
+        {
+            case INT:
+                return Integer.parseInt(constant);
+            case LONG:
+                return java.lang.Long.parseLong(constant);
+            case FLOAT:
+                return java.lang.Float.parseFloat(constant);
+            case DOUBLE:
+                return java.lang.Double.parseDouble(constant);
+            default:
+                throw new UnsupportedOperationException(kind+ "Not yet implemented");
+        }
+    }
     public static java.lang.String getInternalForm(TypeMirror type)
     {
         throw new UnsupportedOperationException("Not yet implemented");

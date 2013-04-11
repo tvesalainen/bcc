@@ -94,6 +94,7 @@ public class TypesImpl implements Types
                     case SHORT:
                     case VOID:
                     case OTHER:
+                    case NULL:
                         return true;
                     case ARRAY:
                         ArrayType at1 = (ArrayType) t1;
@@ -105,8 +106,12 @@ public class TypesImpl implements Types
                         TypeElement te1 = (TypeElement) dt1.asElement();
                         TypeElement te2 = (TypeElement) dt2.asElement();
                         return te1.getQualifiedName().contentEquals(te2.getQualifiedName());
-                default:
-                    throw new IllegalArgumentException(t1+" is unsuitable type");
+                    case TYPEVAR:
+                        TypeVariable tv1 = (TypeVariable) t1;
+                        TypeVariable tv2 = (TypeVariable) t2;
+                        return isSameType(tv1.getUpperBound(), tv2.getUpperBound()) && isSameType(tv1.getLowerBound(), tv2.getLowerBound());
+                    default:
+                        throw new IllegalArgumentException(t1+" "+t1.getKind()+" is unsuitable type");
                 }
             }
             else
@@ -180,6 +185,9 @@ public class TypesImpl implements Types
                         return false;
                 }
             case DECLARED:
+                DeclaredType dt = (DeclaredType) sup;
+                TypeElement te = (TypeElement) dt.asElement();
+                boolean isObject = te.getQualifiedName().contentEquals("java.lang.Object");
                 switch (sub.getKind())
                 {
                     case DECLARED:
@@ -190,17 +198,25 @@ public class TypesImpl implements Types
                                 return true;
                             }
                         }
-                        return false;
+                        return isObject;    // TODO
+                    case TYPEVAR:
+                        TypeVariable tv = (TypeVariable) sub;
+                        return isSubtype(tv.getUpperBound(), sup);
+                    case ARRAY:
+                        return isObject;
                     case NULL:
                         return true;
                     default:
                         return false;
                 }
-            case EXECUTABLE:
-            case PACKAGE:
-                throw new IllegalArgumentException(sup+" is unsuitable type");
-            default:
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) sup;
+                return isSubtype(sub, tv.getUpperBound());
+            case ARRAY:
+            case BOOLEAN:
                 return false;
+            default:
+                throw new IllegalArgumentException(sup+" is unsuitable type");
         }
     }
 
@@ -252,11 +268,25 @@ public class TypesImpl implements Types
                     default:
                         return false;
                 }
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) t2;
+                if (isSubtype(t1, tv.getUpperBound()))
+                {
+                    if (tv.getLowerBound().getKind() != TypeKind.NULL)
+                    {
+                        return isSubtype(tv.getLowerBound(), t1);
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
             default:
                 throw new IllegalArgumentException(t2+" not suitable type");
-            case EXECUTABLE:
-            case PACKAGE:
-                throw new IllegalArgumentException(t2+" is unsuitable type");
         }
     }
 

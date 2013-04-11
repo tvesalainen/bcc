@@ -134,13 +134,25 @@ public class El
             throw new IllegalArgumentException(methodString+" illegal");
         }
         String name = methodString.substring(i1+1, i2);
-        String[] args = methodString.substring(i2+1, methodString.length()-1).split(",");
-        TypeMirror[] params = new TypeMirror[args.length];
-        for (int ii=0;ii<args.length;ii++)
+        int i3 = methodString.indexOf(')', i2);
+        if (i3 == -1)
         {
-            params[ii] = Typ.getTypeFor(args[ii]);
+            throw new IllegalArgumentException(methodString+" illegal");
         }
-        return getMethod(cls, name, params);
+        if (i3-i2 > 1)
+        {
+            String[] args = methodString.substring(i2+1, methodString.length()-1).split(",");
+            TypeMirror[] params = new TypeMirror[args.length];
+            for (int ii=0;ii<args.length;ii++)
+            {
+                params[ii] = Typ.getTypeFor(args[ii]);
+            }
+            return getMethod(cls, name, params);
+        }
+        else
+        {
+            return getMethod(cls, name);
+        }
     }
     /**
      * Returns method in text form. Format is
@@ -266,7 +278,7 @@ public class El
                     List<? extends VariableElement> calleeParams = method.getParameters();
                     for (int ii=0;ii<parameters.length;ii++)
                     {
-                        if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
+                        if (!Typ.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
                         {
                             ok = false;
                             continue;
