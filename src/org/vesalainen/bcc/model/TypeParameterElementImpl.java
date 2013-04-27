@@ -38,8 +38,9 @@ import javax.lang.model.type.TypeVariable;
 /**
  * @author Timo Vesalainen
  */
-public class TypeParameterElementImpl extends ElementImpl<TypeVariable> implements TypeParameterElement 
+public class TypeParameterElementImpl extends ElementImpl implements TypeParameterElement 
 {
+    private TypeVariable type;
     private Parameterizable genericElement;
     private List<TypeMirror> bounds = new ArrayList<>();
 
@@ -158,6 +159,12 @@ public class TypeParameterElementImpl extends ElementImpl<TypeVariable> implemen
             return false;
         }
         return true;
+    }
+
+    @Override
+    public TypeMirror asType()
+    {
+        return type;
     }
 
 }

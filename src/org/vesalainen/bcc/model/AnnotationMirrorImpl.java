@@ -18,10 +18,13 @@
 package org.vesalainen.bcc.model;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.ExecutableElement;
@@ -33,12 +36,31 @@ import javax.lang.model.type.DeclaredType;
 public class AnnotationMirrorImpl implements AnnotationMirror
 {
     private Map<ExecutableElement,AnnotationValue> elementValues = new HashMap<>();
+    private Map<ExecutableElement,AnnotationValue> elementValuesWithDefaults = new HashMap<>();
     private DeclaredType declaredType;
     public AnnotationMirrorImpl(Annotation annotation)
     {
         for (Method method : annotation.annotationType().getDeclaredMethods())
         {
-            elementValues.put(ElementFactory.get(method), new AnnotationValueImpl(method.getDefaultValue()));
+            try
+            {
+                ExecutableElement exe = ElementFactory.get(method);
+                Object value = method.invoke(annotation);
+                if (value != null)
+                {
+                    AnnotationValueImpl annotationValueImpl = new AnnotationValueImpl(value);
+                    elementValues.put(exe, annotationValueImpl);
+                    elementValuesWithDefaults.put(exe, annotationValueImpl);
+                }
+                else
+                {
+                    elementValuesWithDefaults.put(exe, new AnnotationValueImpl(method.getDefaultValue()));
+                }
+            }
+            catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex)
+            {
+                throw new IllegalArgumentException(ex);
+            }
         }
         declaredType = TypeMirrorFactory.get(annotation);
     }
@@ -53,6 +75,11 @@ public class AnnotationMirrorImpl implements AnnotationMirror
     public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValues()
     {
         return elementValues;
+    }
+
+    public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValuesWithDefaults()
+    {
+        return elementValuesWithDefaults;
     }
 
     @Override

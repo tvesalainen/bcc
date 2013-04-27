@@ -21,20 +21,30 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import javax.annotation.processing.Filer;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
@@ -739,14 +749,16 @@ public class SubClass extends ClassFile
     }
     public void overrideMethod(MethodCompiler mc, ExecutableElement method, Set<Modifier> modifiers) throws IOException
     {
-        method = El.createUpdateableElement(method);
-        UpdateableElement ue = (UpdateableElement) method;
-        ue.setEnclosingElement(this);
-        ue.setModifiers(modifiers);
-        defineMethod(mc, method);
+        Method m = new Method(method);
+        m.setModifiers(modifiers);
+        defineMethod(mc, m);
     }
 
     public void defineMethod(MethodCompiler mc, ExecutableElement method) throws IOException
+    {
+        defineMethod(mc, new Method(method));
+    }
+    private void defineMethod(MethodCompiler mc, Method method) throws IOException
     {
         MethodInfo methodInfo = new MethodInfo(this, method);
         addMethodInfo(methodInfo);
@@ -893,4 +905,316 @@ public class SubClass extends ClassFile
         }
     }
 
+    VariableElement getVariableFor(VariableElement ve)
+    {
+        if (hasTypeParameters(ve))
+        {
+            DeclaredType parameterizedType = (DeclaredType) ve.asType();
+            TypeMirror actualType = getActualType(parameterizedType);
+            return new Variable(ve, actualType);
+        }
+        return ve;
+    }
+    private boolean hasTypeParameters(VariableElement ve)
+    {
+        return hasTypeParameters(ve.asType());
+    }
+    private boolean hasTypeParameters(TypeMirror type)
+    {
+        if (type.getKind() == TypeKind.DECLARED)
+        {
+            DeclaredType dt = (DeclaredType) type;
+            for (TypeMirror ta : dt.getTypeArguments())
+            {
+                switch (ta.getKind())
+                {
+                    case DECLARED:
+                        if (hasTypeParameters(ta))
+                        {
+                            return true;
+                        }
+                        break;
+                    case TYPEVAR:
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+    private TypeMirror getActualType(TypeMirror type)
+    {
+        if (hasTypeParameters(type))
+        {
+            DeclaredType parameterizedType = (DeclaredType) type;
+            TypeElement typeElement = (TypeElement) parameterizedType.asElement();
+            TypeMirror[] typeArguments = new TypeMirror[parameterizedType.getTypeArguments().size()];
+            int index = 0;
+            for (TypeMirror typeArg : parameterizedType.getTypeArguments())
+            {
+                if (typeArg.getKind() == TypeKind.TYPEVAR)
+                {
+                    TypeParameterElement typeParameter = typeElement.getTypeParameters().get(index);
+                    typeArguments[index] = getActualType(getActualTypeFor(typeParameter));
+                }
+                else
+                {
+                    typeArguments[index] = getActualType(typeArg);
+                }
+                index++;
+            }
+            return Typ.getDeclaredType(typeElement, typeArguments);
+        }
+        else
+        {
+            return type;
+        }
+    }
+    private TypeMirror getActualTypeFor(TypeParameterElement typeParameter)
+    {
+        TypeMirror type = asType();
+        while (type.getKind() == TypeKind.DECLARED)
+        {
+            DeclaredType dt = (DeclaredType) type;
+            TypeElement te = (TypeElement) dt.asElement();
+            Name name = typeParameter.getSimpleName();
+            int index = 0;
+            for (TypeParameterElement tpe : te.getTypeParameters())
+            {
+                if (name.contentEquals(tpe.getSimpleName()))
+                {
+                    TypeMirror actualType = dt.getTypeArguments().get(index);
+                    return actualType;
+                }
+                index++;
+            }
+            type = te.getSuperclass();
+        }
+        throw new IllegalArgumentException("no actual type for type parameter "+typeParameter+" "+typeParameter.getEnclosingElement());
+    }
+
+    public class Method implements ExecutableElement, UpdateableElement
+    {
+        private ExecutableElement parent;
+        private Name name;
+        private Set<Modifier> modifiers;
+        private List<VariableElement> parameters = new ArrayList<>();
+        private TypeMirror returnType;
+
+        public Method(ExecutableElement parent)
+        {
+            this.parent = parent;
+            this.name = parent.getSimpleName();
+            this.modifiers = parent.getModifiers();
+            for (VariableElement ve : parent.getParameters())
+            {
+                parameters.add(getVariableFor(ve));
+            }
+            returnType = getActualType(parent.getReturnType());
+        }
+
+        @Override
+        public List<? extends TypeParameterElement> getTypeParameters()
+        {
+            return parent.getTypeParameters();
+        }
+
+        @Override
+        public TypeMirror getReturnType()
+        {
+            return returnType;
+        }
+
+        @Override
+        public List<? extends VariableElement> getParameters()
+        {
+            return parameters;
+        }
+
+        @Override
+        public boolean isVarArgs()
+        {
+            return parent.isVarArgs();
+        }
+
+        @Override
+        public List<? extends TypeMirror> getThrownTypes()
+        {
+            return parent.getThrownTypes();
+        }
+
+        @Override
+        public AnnotationValue getDefaultValue()
+        {
+            return parent.getDefaultValue();
+        }
+
+        @Override
+        public Name getSimpleName()
+        {
+            return name;
+        }
+
+        @Override
+        public TypeMirror asType()
+        {
+            return parent.asType();
+        }
+
+        @Override
+        public ElementKind getKind()
+        {
+            return parent.getKind();
+        }
+
+        @Override
+        public List<? extends AnnotationMirror> getAnnotationMirrors()
+        {
+            return parent.getAnnotationMirrors();
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+        {
+            return parent.getAnnotation(annotationType);
+        }
+
+        @Override
+        public Set<Modifier> getModifiers()
+        {
+            return modifiers;
+        }
+
+        @Override
+        public Element getEnclosingElement()
+        {
+            return SubClass.this;
+        }
+
+        @Override
+        public List<? extends Element> getEnclosedElements()
+        {
+            return parent.getEnclosedElements();
+        }
+
+        @Override
+        public <R, P> R accept(ElementVisitor<R, P> v, P p)
+        {
+            return parent.accept(v, p);
+        }
+        
+        @Override
+        public void setEnclosingElement(Element enclosingElement)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void setModifiers(Set<Modifier> modifiers)
+        {
+            this.modifiers = modifiers;
+        }
+
+        @Override
+        public void setSimpleName(Name name)
+        {
+            this.name = name;
+        }
+        
+    }
+    public class Variable implements VariableElement, UpdateableElement
+    {
+        private VariableElement parent;
+        private TypeMirror type;
+        private Element enclosingElement;
+        private Name name;
+        private Set<Modifier> modifiers;
+
+        public Variable(VariableElement parent, TypeMirror type)
+        {
+            this.parent = parent;
+            this.enclosingElement = parent.getEnclosingElement();
+            this.name = parent.getSimpleName();
+            this.modifiers = parent.getModifiers();
+            this.type = type;
+        }
+
+        @Override
+        public Object getConstantValue()
+        {
+            return parent.getConstantValue();
+        }
+
+        @Override
+        public TypeMirror asType()
+        {
+            return type;
+        }
+
+        @Override
+        public ElementKind getKind()
+        {
+            return parent.getKind();
+        }
+
+        @Override
+        public List<? extends AnnotationMirror> getAnnotationMirrors()
+        {
+            return parent.getAnnotationMirrors();
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+        {
+            return parent.getAnnotation(annotationType);
+        }
+
+        @Override
+        public Set<Modifier> getModifiers()
+        {
+            return modifiers;
+        }
+
+        @Override
+        public Name getSimpleName()
+        {
+            return name;
+        }
+
+        @Override
+        public Element getEnclosingElement()
+        {
+            return enclosingElement;
+        }
+
+        @Override
+        public List<? extends Element> getEnclosedElements()
+        {
+            return parent.getEnclosedElements();
+        }
+
+        @Override
+        public <R, P> R accept(ElementVisitor<R, P> v, P p)
+        {
+            return parent.accept(v, p);
+        }
+
+        @Override
+        public void setEnclosingElement(Element enclosingElement)
+        {
+            this.enclosingElement = enclosingElement;
+        }
+
+        @Override
+        public void setModifiers(Set<Modifier> modifiers)
+        {
+            this.modifiers = modifiers;
+        }
+
+        @Override
+        public void setSimpleName(Name name)
+        {
+            this.name = name;
+        }
+        
+    }
 }

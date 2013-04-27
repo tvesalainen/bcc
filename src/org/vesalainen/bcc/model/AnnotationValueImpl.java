@@ -78,7 +78,18 @@ class AnnotationValueImpl implements AnnotationValue
                             }
                             else
                             {
-                                throw new UnsupportedOperationException(value+" Not supported as annotation value.");
+                                for (Class<?> intf : returnType.getInterfaces())
+                                {
+                                    if (intf.isAnnotation())
+                                    {
+                                        Annotation annotation = (Annotation) intf.cast(value);
+                                        this.value = ElementFactory.getAnnotationMirror(annotation);
+                                    }
+                                }
+                                if (this.value == null)
+                                {
+                                    throw new UnsupportedOperationException(returnType+" "+value+" Not supported as annotation value.");
+                                }
                             }
                         }
                     }

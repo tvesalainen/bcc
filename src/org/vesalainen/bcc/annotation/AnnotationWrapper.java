@@ -47,7 +47,7 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
     private int typeIndex;
     private DeclaredType annotationType;
     private Map<ExecutableElement, AnnotationValue> elementValues = new HashMap<>();
-    private Map<? extends ExecutableElement, ? extends AnnotationValue> elementValuesWithDefaults;
+    private Map<ExecutableElement, AnnotationValue> elementValuesWithDefaults = new HashMap<>();
     private List<ElementValuePair> elementValuePairs = new ArrayList<>();
     private final TypeElement typeElement;
 
@@ -63,7 +63,15 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
             ElementValuePair elementValuePair = new ElementValuePair(classFile, in);
             ExecutableElement executableElement = getExecutableElement(elementValuePair.getName());
             elementValues.put(executableElement, elementValuePair.getValue());
+            elementValuesWithDefaults.put(executableElement, elementValuePair.getValue());
             elementValuePairs.add(elementValuePair);
+        }
+        for (ExecutableElement ee : ElementFilter.methodsIn(typeElement.getEnclosedElements()))
+        {
+            if (!elementValuesWithDefaults.containsKey(ee))
+            {
+                elementValuesWithDefaults.put(ee, ee.getDefaultValue());
+            }
         }
     }
 
@@ -90,12 +98,14 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
         return elementValues;
     }
 
+    public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValuesWithDefaults()
+    {
+        return elementValuesWithDefaults;
+    }
+
+    @SuppressWarnings("unchecked")
     public <A extends Annotation> A getAnnotation(Class<A> annotationType)
     {
-        if (elementValuesWithDefaults == null)
-        {
-            elementValuesWithDefaults = El.getElementValuesWithDefaults(this);
-        }
         return (A) Proxy.newProxyInstance(
                 annotationType.getClassLoader(), 
                 new Class<?>[] { annotationType}, 
@@ -166,7 +176,15 @@ public class AnnotationWrapper implements AnnotationMirror, Writable, Invocation
         {
             throw new IllegalArgumentException(method+" not found");
         }
-        return elementValuesWithDefaults.get(executableElement);
+        AnnotationValue av = elementValuesWithDefaults.get(executableElement);
+        if (av != null)
+        {
+            return av.getValue();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     

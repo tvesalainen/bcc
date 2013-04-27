@@ -39,6 +39,7 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
     private Set<Modifier> modifier;
     private Name name;
     
+    @SuppressWarnings("unchecked")
     public E getUpdateableElement(E element)
     {
         this.element = element;
@@ -63,6 +64,7 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
                 return interfaces[0];
         }
     }
+    @SuppressWarnings("unchecked")
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
@@ -107,6 +109,12 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
             default:
                 return method.invoke(element, args);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "UpdateableElementImpl{" + element.toString()+'}';
     }
 
     private static class InterfaceComp implements Comparator<Class<?>>

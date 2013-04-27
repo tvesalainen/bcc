@@ -47,14 +47,21 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 /**
  * @author Timo Vesalainen
  */
-public class ExecutableElementImpl extends ElementImpl<ExecutableType> implements ExecutableElement 
+public class ExecutableElementImpl extends ElementImpl implements ExecutableElement 
 {
+    private ExecutableType type;
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private TypeMirror returnType = Typ.getNoType(TypeKind.VOID);
     private List<VariableElement> parameters = new ArrayList<>();
     private boolean varArgs;
     private List<TypeMirror> thrownTypes = new ArrayList<>();
     private AnnotationValue defaultValue;
+
+    @Override
+    public TypeMirror asType()
+    {
+        return type;
+    }
     
     public static class MethodBuilder extends ConstructorBuilder
     {
@@ -352,5 +359,10 @@ public class ExecutableElementImpl extends ElementImpl<ExecutableType> implement
         return true;
     }
 
+    @Override
+    public String toString()
+    {
+        return "ExecutableElementImpl{" + getSimpleName()+'}';
+    }
 
 }

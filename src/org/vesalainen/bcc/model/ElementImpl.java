@@ -30,21 +30,20 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
-import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.annotation.ModelUtil;
 
 /**
  * @author Timo Vesalainen
  */
-public abstract class ElementImpl<T extends TypeMirror> implements Element, UpdateableElement
+public abstract class ElementImpl implements Element, UpdateableElement
 {
-    protected T type;
     protected Element enclosingElement;
     protected ElementKind kind;
     protected Name simpleName;
     protected Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
     protected Annotation[] annotations;
-    protected List<AnnotationMirror> annotationMirrors = new ArrayList<>();
+    private AnnotatedElement annotatedElement;
+    private List<AnnotationMirror> annotationMirrors;
 
     ElementImpl(ElementKind kind, String name)
     {
@@ -62,11 +61,8 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
     {
         this.kind = kind;
         this.simpleName = El.getName(name);
+        annotatedElement = element;
         annotations = element.getAnnotations();
-        for (Annotation annotation : element.getDeclaredAnnotations())
-        {
-            annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
-        }
         ModelUtil.setModifiers(modifiers, modifier);
     }
 
@@ -123,6 +119,24 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
     @Override
     public List<? extends AnnotationMirror> getAnnotationMirrors()
     {
+        if (annotationMirrors == null)
+        {
+            annotationMirrors = new ArrayList<>();
+            if (annotatedElement != null)
+            {
+                for (Annotation annotation : annotatedElement.getDeclaredAnnotations())
+                {
+                    annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
+                }
+            }
+            else
+            {
+                for (Annotation annotation : annotations)
+                {
+                    annotationMirrors.add(ElementFactory.getAnnotationMirror(annotation));
+                }
+            }
+        }
         return annotationMirrors;
     }
 
@@ -146,11 +160,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
             return false;
         }
         @SuppressWarnings("unchecked")
-        final ElementImpl<T> other = (ElementImpl<T>) obj;
-        if (!Objects.equals(this.type, other.type))
-        {
-            return false;
-        }
+        final ElementImpl other = (ElementImpl) obj;
         if (this.kind != other.kind)
         {
             return false;
@@ -167,17 +177,7 @@ public abstract class ElementImpl<T extends TypeMirror> implements Element, Upda
         {
             return false;
         }
-        if (!Objects.equals(this.annotationMirrors, other.annotationMirrors))
-        {
-            return false;
-        }
         return true;
-    }
-
-    @Override
-    public T asType()
-    {
-        return type;
     }
 
     @Override

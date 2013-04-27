@@ -43,6 +43,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -59,15 +60,18 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
+import javax.lang.model.util.ElementFilter;
 import org.vesalainen.bcc.AccessFlags.ClassFlags;
 import org.vesalainen.bcc.ClassFile.ClassType;
 import org.vesalainen.bcc.ConstantInfo.Filler;
 import org.vesalainen.bcc.ConstantInfo.InterfaceMethodref;
 import org.vesalainen.bcc.annotation.ModelUtil;
 import org.vesalainen.bcc.model.El;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  * ClassFile wraps java classfile
@@ -574,7 +578,33 @@ public class ClassFile implements Writable, TypeElement
     }
     public boolean isImplemented(ExecutableElement method)
     {
-        return methods.contains(method);
+        ExecutableType mt = (ExecutableType) method.asType();
+        List<? extends TypeMirror> mpt = mt.getParameterTypes();
+        int count = mpt.size();
+        for (ExecutableElement exe : ElementFilter.methodsIn(enclosedElements))
+        {
+            ExecutableType et = (ExecutableType) exe.asType();
+            List<? extends TypeMirror> ept = et.getParameterTypes();
+            if (
+                    exe.getSimpleName().contentEquals(method.getSimpleName()) &&
+                    count == ept.size()
+                    )
+            {
+                boolean is = true;
+                for (int ii=0;ii<count;ii++)
+                {
+                    if (!Typ.isSameType(ept.get(ii), mpt.get(ii)))
+                    {
+                        is = false;
+                    }
+                }
+                if (is)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     /**
      * Return true if class contains method ref to given method
@@ -761,10 +791,10 @@ public class ClassFile implements Writable, TypeElement
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public List<? extends TypeMirror> getTypeArguments()
         {
-            return Collections.EMPTY_LIST;
+            DeclaredType dt = (DeclaredType) superClass.asType();
+            return dt.getTypeArguments();
         }
 
         @Override

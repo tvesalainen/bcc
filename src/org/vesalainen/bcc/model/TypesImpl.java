@@ -20,7 +20,6 @@ package org.vesalainen.bcc.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
@@ -214,6 +213,7 @@ public class TypesImpl implements Types
                 return isSubtype(sub, tv.getUpperBound());
             case ARRAY:
             case BOOLEAN:
+            case VOID:
                 return false;
             default:
                 throw new IllegalArgumentException(sup+" is unsuitable type");
@@ -237,6 +237,7 @@ public class TypesImpl implements Types
             case INT:
             case LONG:
             case SHORT:
+            case VOID:
                 return false;
             case DECLARED:
                 switch (t1.getKind())

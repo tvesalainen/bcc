@@ -43,14 +43,16 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 /**
  * @author Timo Vesalainen
  */
-public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeElement
+public class TypeElementImpl extends ElementImpl implements TypeElement
 {
-    private List<Element> enclosedElements = new ArrayList<>();
-    private List<TypeMirror> interfaces = new ArrayList<>();
-    private NestingKind nestingKind = NestingKind.TOP_LEVEL;
+    private DeclaredType type;
+    private List<Element> enclosedElements;
+    private List<TypeMirror> interfaces;
+    private NestingKind nestingKind;
     private Name qualifiedName;
-    private TypeMirror superclass = Typ.getNoType(TypeKind.NONE);
-    private List<TypeParameterElement> typeParameters = new ArrayList<>();
+    private TypeMirror superclass;
+    private List<TypeParameterElement> typeParameters;
+    private Class<?> cls = null;
 
     public static class ClassBuilder
     {
@@ -138,6 +140,10 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
         }
         public ClassBuilder addEnclosedElement(Element el)
         {
+            if (element.enclosedElements == null)
+            {
+                element.enclosedElements = new ArrayList<>();
+            }
             element.enclosedElements.add(el);
             return this;
         }
@@ -259,74 +265,38 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     TypeElementImpl(Class<?> cls)
     {
         super(detectKind(cls), cls, cls.getModifiers(), cls.getSimpleName());
+        this.cls = cls;
     }
-    void init(Class<?> cls)
+    @Override
+    public TypeMirror asType()
     {
-        type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
-        qualifiedName = El.getName(cls.getName());
-        if (cls.getSuperclass() != null)
+        if (type == null)
         {
-            superclass = TypeMirrorFactory.get(cls.getGenericSuperclass());
+            type = (DeclaredType) TypeMirrorFactory.getClassType(cls);
         }
-        else
+        return type;
+    }
+
+    @Override
+    public Element getEnclosingElement()
+    {
+        if (enclosingElement == null)
         {
-            superclass = Typ.getNoType(TypeKind.NONE);
-        }
-        for (TypeVariable param : cls.getTypeParameters())
-        {
-            typeParameters.add(ElementFactory.getTypeParameterElement(param));
-        }
-        if (cls.isAnonymousClass())
-        {
-            nestingKind = NestingKind.ANONYMOUS;
-        }
-        else
-        {
-            if (cls.isLocalClass())
+            Class<?> enclosingClass = cls.getEnclosingClass();
+            if (enclosingClass != null)
             {
-                nestingKind = NestingKind.LOCAL;
+                enclosingElement = ElementFactory.get(enclosingClass);
             }
             else
             {
-                if (cls.isMemberClass())
-                {
-                    nestingKind = NestingKind.MEMBER;
-                }
-                else
-                {
-                    nestingKind = NestingKind.TOP_LEVEL;
-                }
+                enclosingElement = ElementFactory.getPackageElement(cls.getPackage());
             }
         }
-        Class<?> enclosingClass = cls.getEnclosingClass();
-        if (enclosingClass != null)
-        {
-            enclosingElement = ElementFactory.get(enclosingClass);
-        }
-        else
-        {
-            enclosingElement = ElementFactory.getPackageElement(cls.getPackage());
-        }
-        for (Field field : cls.getDeclaredFields())
-        {
-            enclosedElements.add(ElementFactory.get(field));
-        }
-        for (Constructor constructor : cls.getDeclaredConstructors())
-        {
-            enclosedElements.add(ElementFactory.get(constructor));
-        }
-        for (Method method : cls.getDeclaredMethods())
-        {
-            enclosedElements.add(ElementFactory.get(method));
-        }
-        for (Class<?> c : cls.getDeclaredClasses())
-        {
-            enclosedElements.add(ElementFactory.get(c));
-        }
-        for (Type intf : cls.getGenericInterfaces())
-        {
-            interfaces.add(TypeMirrorFactory.get(intf));
-        }
+        return enclosingElement;
+    }
+
+    void init(Class<?> cls)
+    {
     }
 
     void init(Type[] bounds)
@@ -367,36 +337,112 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
     @Override
     public List<? extends TypeParameterElement> getTypeParameters()
     {
+        if (typeParameters == null)
+        {
+            typeParameters = new ArrayList<>();
+            for (TypeVariable param : cls.getTypeParameters())
+            {
+                typeParameters.add(ElementFactory.getTypeParameterElement(param));
+            }
+        }
         return typeParameters;
     }
 
     @Override
     public List<? extends Element> getEnclosedElements()
     {
+        if (enclosedElements == null)
+        {
+            enclosedElements = new ArrayList<>();
+            for (Field field : cls.getDeclaredFields())
+            {
+                enclosedElements.add(ElementFactory.get(field));
+            }
+            for (Constructor constructor : cls.getDeclaredConstructors())
+            {
+                enclosedElements.add(ElementFactory.get(constructor));
+            }
+            for (Method method : cls.getDeclaredMethods())
+            {
+                enclosedElements.add(ElementFactory.get(method));
+            }
+            for (Class<?> c : cls.getDeclaredClasses())
+            {
+                enclosedElements.add(ElementFactory.get(c));
+            }
+        }
         return enclosedElements;
     }
 
     @Override
     public NestingKind getNestingKind()
     {
+        if (nestingKind == null)
+        {
+            if (cls.isAnonymousClass())
+            {
+                nestingKind = NestingKind.ANONYMOUS;
+            }
+            else
+            {
+                if (cls.isLocalClass())
+                {
+                    nestingKind = NestingKind.LOCAL;
+                }
+                else
+                {
+                    if (cls.isMemberClass())
+                    {
+                        nestingKind = NestingKind.MEMBER;
+                    }
+                    else
+                    {
+                        nestingKind = NestingKind.TOP_LEVEL;
+                    }
+                }
+            }
+        }
         return nestingKind;
     }
 
     @Override
     public Name getQualifiedName()
     {
+        if (qualifiedName == null)
+        {
+            qualifiedName = El.getName(cls.getName());
+        }
         return qualifiedName;
     }
 
     @Override
     public TypeMirror getSuperclass()
     {
+        if (superclass == null)
+        {
+            if (cls.getSuperclass() != null)
+            {
+                superclass = TypeMirrorFactory.get(cls.getGenericSuperclass());
+            }
+            else
+            {
+                superclass = Typ.getNoType(TypeKind.NONE);
+            }
+        }
         return superclass;
     }
 
     @Override
     public List<? extends TypeMirror> getInterfaces()
     {
+        if (interfaces == null)
+        {
+            interfaces = new ArrayList<>();
+            for (Type intf : cls.getGenericInterfaces())
+            {
+                interfaces.add(TypeMirrorFactory.get(intf));
+            }
+        }
         return interfaces;
     }
 
@@ -425,31 +471,7 @@ public class TypeElementImpl extends ElementImpl<DeclaredType> implements TypeEl
             return false;
         }
         final TypeElementImpl other = (TypeElementImpl) obj;
-        if (!Objects.equals(this.enclosedElements, other.enclosedElements))
-        {
-            return false;
-        }
-        if (!Objects.equals(this.interfaces, other.interfaces))
-        {
-            return false;
-        }
-        if (this.nestingKind != other.nestingKind)
-        {
-            return false;
-        }
-        if (!Objects.equals(this.qualifiedName, other.qualifiedName))
-        {
-            return false;
-        }
-        if (!Objects.equals(this.superclass, other.superclass))
-        {
-            return false;
-        }
-        if (!Objects.equals(this.enclosingElement, other.enclosingElement))
-        {
-            return false;
-        }
-        if (!Objects.equals(this.typeParameters, other.typeParameters))
+        if (!Objects.equals(this.getQualifiedName(), other.getQualifiedName()))
         {
             return false;
         }

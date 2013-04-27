@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -300,6 +301,12 @@ public class MethodInfo implements Writable, ExecutableElement
     public List<? extends Element> getEnclosedElements()
     {
         return executableElement.getEnclosedElements();
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        return executableElement.equals(obj);
     }
 
 }

@@ -18,12 +18,19 @@ package org.vesalainen.bcc;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -32,7 +39,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import org.vesalainen.bcc.model.El;
-import org.vesalainen.bcc.model.ElementFactory;
 import org.vesalainen.bcc.model.Typ;
 import org.vesalainen.bcc.model.UpdateableElement;
 
@@ -1332,8 +1338,6 @@ public abstract class MethodCompiler extends Assembler
                 TypeVariable tv = (TypeVariable) type;
                 checkcast(tv.getUpperBound());
                 break;
-            default:
-                throw new IllegalArgumentException(type+" "+type.getKind()+" wrong for checkcast");
         }
     }
 
@@ -1350,9 +1354,10 @@ public abstract class MethodCompiler extends Assembler
     public void convert(String fromVariable, TypeMirror to) throws IOException, IllegalConversionException
     {
         TypeMirror from = getLocalType(fromVariable);
-        if (Typ.isSameType(from, to))
+        if (Typ.isAssignable(from, to))
         {
             tload(fromVariable);
+            checkcast(to);
             return;
         }
         if (to.getKind() == TypeKind.DECLARED)
@@ -1476,6 +1481,7 @@ public abstract class MethodCompiler extends Assembler
                     throw new IllegalConversionException("Cannot convert from " + from + " to " + to);
             }
         }
+        throw new IllegalConversionException("!Cannot convert from " + from+" "+from.getKind() + " to " + to+" "+to.getKind());
     }
 
     /**
@@ -1500,4 +1506,5 @@ public abstract class MethodCompiler extends Assembler
     }
 
     protected abstract void implement() throws IOException;
+
 }

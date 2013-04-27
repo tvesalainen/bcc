@@ -21,7 +21,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,19 +31,22 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
-import org.vesalainen.bcc.AccessFlags;
 import org.vesalainen.bcc.AccessFlags.FieldFlags;
-import org.vesalainen.bcc.model.ExecutableElementImpl.ConstructorBuilder;
 
 /**
  * @author Timo Vesalainen
  */
-public class VariableElementImpl extends ElementImpl<TypeMirror> implements VariableElement
+public class VariableElementImpl extends ElementImpl implements VariableElement
 {
+    private TypeMirror type;
     private Object constantValue;
+
+    @Override
+    public TypeMirror asType()
+    {
+        return type;
+    }
 
     public static class VariableBuilder
     {

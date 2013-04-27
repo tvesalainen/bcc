@@ -20,6 +20,7 @@ package org.vesalainen.bcc.model;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -33,6 +34,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.util.Elements;
+import org.vesalainen.bcc.annotation.AnnotationWrapper;
 
 /**
  * @author Timo Vesalainen
@@ -71,7 +73,17 @@ public class ElementsImpl implements Elements
     @Override
     public Map<? extends ExecutableElement, ? extends AnnotationValue> getElementValuesWithDefaults(AnnotationMirror a)
     {
-        throw new UnsupportedOperationException("Not supported yet.");
+        if (a instanceof AnnotationMirrorImpl)
+        {
+            AnnotationMirrorImpl ami = (AnnotationMirrorImpl) a;
+            return ami.getElementValuesWithDefaults();
+        }
+        if (a instanceof AnnotationWrapper)
+        {
+            AnnotationWrapper aw = (AnnotationWrapper) a;
+            return aw.getElementValuesWithDefaults();
+        }
+        throw new UnsupportedOperationException("Not supported with "+a.getClass());
     }
 
     @Override

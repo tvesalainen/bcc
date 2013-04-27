@@ -34,6 +34,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import org.vesalainen.bcc.Descriptor;
@@ -218,8 +219,12 @@ public class El
                 sb.append('[');
                 addTypeName(sb, at.getComponentType());
                 break;
+            case TYPEVAR:
+                TypeVariable tv = (TypeVariable) type;
+                addTypeName(sb, tv.getUpperBound());
+                break;
             default:
-                throw new UnsupportedOperationException(type+" not supported");
+                throw new UnsupportedOperationException(type+" "+type.getKind()+" not supported");
         }
     }
     public static <E extends Element> E createUpdateableElement(E element)

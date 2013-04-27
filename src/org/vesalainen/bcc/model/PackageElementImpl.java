@@ -33,8 +33,9 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class PackageElementImpl extends ElementImpl<NoType> implements PackageElement
+public class PackageElementImpl extends ElementImpl implements PackageElement
 {
+    private NoType type;
     private Name qualifiedName;
 
     public PackageElementImpl(String qualifiedName)
@@ -101,6 +102,12 @@ public class PackageElementImpl extends ElementImpl<NoType> implements PackageEl
             return false;
         }
         return true;
+    }
+
+    @Override
+    public TypeMirror asType()
+    {
+        return type;
     }
 
 }
