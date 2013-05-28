@@ -123,7 +123,12 @@ public class ElementsImpl implements Elements
             case INTERFACE:
             case ENUM:
                 TypeElement te = (TypeElement) type;
-                return getPackageOf(te.getEnclosingElement());
+                Element ee = te.getEnclosingElement();
+                if (ee == null)
+                {
+                    throw new IllegalArgumentException(te+" doesn't have EnclosingElement");
+                }
+                return getPackageOf(ee);
             default:
                 throw new UnsupportedOperationException(type.getKind()+" not supported");
         }

@@ -121,6 +121,10 @@ public class ClassFile implements Writable, TypeElement
             packageElement = El.getPackageElement("");
             simpleName = El.getName(qualifiedName);
         }
+        if (packageElement == null)
+        {
+            throw new IllegalArgumentException("packageElement == null for "+qualifiedName);
+        }
     }
     public ClassFile(Class<?> cls) throws IOException
     {
