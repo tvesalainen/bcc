@@ -142,9 +142,7 @@ public abstract class MethodCompiler extends Assembler
 
     public String getMethodDescription()
     {
-        StringWriter sw = new StringWriter();
-        El.printElements(sw, executableElement);
-        return sw.toString();
+        return methodInfo.getSimpleName().toString()+" // "+methodInfo.getDescriptor();
     }
 
     public List<? extends TypeMirror> getParameters()
