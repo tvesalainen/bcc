@@ -99,6 +99,7 @@ public class LocalVariableTable extends AttributeInfo
 
         private LocalVariable(VariableElement ve, int index)
         {
+        if (!(classFile instanceof SubClass)) throw new UnsupportedOperationException("not supported 5");
             SubClass subClass = (SubClass) classFile;
             this.nameIndex = subClass.resolveNameIndex(ve.getSimpleName().toString());
             this.descriptorIndex = subClass.resolveNameIndex(Descriptor.getDesriptor(ve));
