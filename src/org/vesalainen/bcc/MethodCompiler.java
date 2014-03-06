@@ -142,7 +142,7 @@ public abstract class MethodCompiler extends Assembler
 
     public String getMethodDescription()
     {
-        return methodInfo.getSimpleName().toString()+" // "+methodInfo.getDescriptor();
+        return methodInfo.getSimpleName().toString()+methodInfo.getDescriptor();
     }
 
     public List<? extends TypeMirror> getParameters()
