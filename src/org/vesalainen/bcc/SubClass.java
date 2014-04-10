@@ -844,11 +844,17 @@ public class SubClass extends ClassFile
      */
     public void save(Filer filer) throws IOException
     {
-        JavaFileObject sourceFile = filer.createClassFile(getQualifiedName());
+        //JavaFileObject sourceFile = filer.createClassFile(getQualifiedName(), superClass);
+        FileObject sourceFile = filer.createResource(
+                StandardLocation.CLASS_OUTPUT, 
+                El.getPackageOf(this).getQualifiedName(), 
+                getSimpleName()+".class"
+                );
         BufferedOutputStream bos = new BufferedOutputStream(sourceFile.openOutputStream());
         DataOutputStream dos = new DataOutputStream(bos);
         write(dos);
         dos.close();
+        System.err.println("wrote "+sourceFile.getName());
     }
 
     /**
