@@ -8,3 +8,4 @@ doc-files/
 *.jasm
 *.zip
 *.jar
+/target/
