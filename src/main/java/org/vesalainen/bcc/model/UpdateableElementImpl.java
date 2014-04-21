@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
@@ -45,24 +46,24 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
         this.element = element;
         return (E) Proxy.newProxyInstance(
                 UpdateableElement.class.getClassLoader(), 
-                new Class<?>[] {extractElementInterface(element), UpdateableElement.class }, 
+                extractInterfaces(element), 
                 this
                 );
     }
-    private Class<?> extractElementInterface(E element)
+    private Class<?>[] extractInterfaces(E element)
     {
+        Set<Class<?>> set = new HashSet<>();
+        set.add(UpdateableElement.class);
         Class<? extends Element> aClass = element.getClass();
-        Class<?>[] interfaces = aClass.getInterfaces();
-        switch (interfaces.length)
+        while (aClass != null)
         {
-            case 0:
-                throw new IllegalArgumentException(element+" doesn't have any interface");
-            case 1:
-                return interfaces[0];
-            default:
-                Arrays.sort(interfaces, IComp);
-                return interfaces[0];
+            for (Class<?> intf : aClass.getInterfaces())
+            {
+                set.add(intf);
+            }
+            aClass = (Class<? extends Element>) aClass.getSuperclass();
         }
+        return set.toArray(new Class<?>[set.size()]);
     }
     @SuppressWarnings("unchecked")
     @Override
