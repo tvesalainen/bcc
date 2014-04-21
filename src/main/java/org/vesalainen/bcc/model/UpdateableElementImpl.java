@@ -45,11 +45,11 @@ public class UpdateableElementImpl<E extends Element> implements InvocationHandl
         this.element = element;
         return (E) Proxy.newProxyInstance(
                 UpdateableElement.class.getClassLoader(), 
-                new Class<?>[] {extractInterface(element), UpdateableElement.class }, 
+                new Class<?>[] {extractElementInterface(element), UpdateableElement.class }, 
                 this
                 );
     }
-    private Class<?> extractInterface(E element)
+    private Class<?> extractElementInterface(E element)
     {
         Class<? extends Element> aClass = element.getClass();
         Class<?>[] interfaces = aClass.getInterfaces();
