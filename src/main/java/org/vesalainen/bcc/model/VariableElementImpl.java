@@ -51,9 +51,9 @@ public class VariableElementImpl extends ElementImpl implements VariableElement
     public static class VariableBuilder
     {
         private VariableElementImpl var;
-        private TypeParameterBuilder<?> typeParamBuilder;
+        private TypeParameterBuilder typeParamBuilder;
 
-        public VariableBuilder(Element enclosingElement, String name, TypeParameterBuilder<?> typeParamBuilder)
+        public VariableBuilder(Element enclosingElement, String name, TypeParameterBuilder typeParamBuilder)
         {
             var = new VariableElementImpl(enclosingElement, name);
             this.typeParamBuilder = typeParamBuilder;
@@ -62,7 +62,7 @@ public class VariableElementImpl extends ElementImpl implements VariableElement
         public VariableBuilder(TypeElement enclosingElement, String name, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
             var = new VariableElementImpl(enclosingElement, name);
-            this.typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, enclosingElement.getTypeParameters(), classTypeArguments, classTypeParameterMap);
+            this.typeParamBuilder = new TypeParameterBuilder(enclosingElement, enclosingElement.getTypeParameters(), classTypeArguments, classTypeParameterMap);
         }
 
         public DeclaredTypeBuilder setComplexType(Class<?> cls)

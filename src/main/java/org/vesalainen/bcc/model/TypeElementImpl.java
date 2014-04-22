@@ -47,20 +47,20 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
 {
     private DeclaredType type;
     private List<Element> enclosedElements;
-    private List<TypeMirror> interfaces;
-    private NestingKind nestingKind;
+    private List<TypeMirror> interfaces = new ArrayList<>();
+    private NestingKind nestingKind = NestingKind.TOP_LEVEL;
     private Name qualifiedName;
     private TypeMirror superclass;
-    private List<TypeParameterElement> typeParameters;
+    private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private Class<?> cls = null;
 
     public static class ClassBuilder
     {
         private TypeElementImpl element = new TypeElementImpl();
-        private TypeParameterBuilder<ClassBuilder> typeParamBuilder;
+        private TypeParameterBuilder typeParamBuilder;
         public ClassBuilder()
         {
-            typeParamBuilder = new TypeParameterBuilder<>(this, element, element.typeParameters);
+            typeParamBuilder = new TypeParameterBuilder(element, element.typeParameters);
         }
         
         public TypeElementImpl getTypeElement()
@@ -87,27 +87,32 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
 
         public ClassBuilder addTypeParameter(String name, Class<?>... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            typeParamBuilder.addTypeParameter(name, bounds);
+            return this;
         }
 
         public ClassBuilder addTypeParameter(String name, CharSequence... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            typeParamBuilder.addTypeParameter(name, bounds);
+            return this;
         }
 
         public ClassBuilder addTypeParameter(String name, TypeElement... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            typeParamBuilder.addTypeParameter(name, bounds);
+            return this;
         }
 
         public ClassBuilder addTypeParameter(String name, TypeMirror... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            typeParamBuilder.addTypeParameter(name, bounds);
+            return this;
         }
 
         public ClassBuilder addTypeParameter(TypeParameterElement param)
         {
-            return typeParamBuilder.addTypeParameter(param);
+            typeParamBuilder.addTypeParameter(param);
+            return this;
         }
 
         public MethodBuilder addMethod(String name)
@@ -243,12 +248,12 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
     }
     TypeElementImpl()
     {
-        this("");
+        super(ElementKind.CLASS, "");
     }
 
     TypeElementImpl(TypeMirror[] bounds)
     {
-        this("");
+        super(ElementKind.CLASS, "");
         assert bounds.length > 0;
         superclass = bounds[0];
         for (int ii=1;ii<bounds.length;ii++)
@@ -256,16 +261,53 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
             interfaces.add(bounds[ii]);
         }
     }
-
-    TypeElementImpl(String name)
-    {
-        super(ElementKind.CLASS, name);
-    }
-
-    TypeElementImpl(Class<?> cls)
+    /**
+     * This is two-phase construction. init is called 
+     * @param cls 
+     */
+   TypeElementImpl(Class<?> cls)
     {
         super(detectKind(cls), cls, cls.getModifiers(), cls.getSimpleName());
         this.cls = cls;
+    }
+    void init(Class<?> cls)
+    {
+        this.qualifiedName = El.getName(cls.getCanonicalName());
+        if (cls.isAnonymousClass())
+        {
+            nestingKind = NestingKind.ANONYMOUS;
+        }
+        else
+        {
+            if (cls.isLocalClass())
+            {
+                nestingKind = NestingKind.LOCAL;
+            }
+            else
+            {
+                if (cls.isMemberClass())
+                {
+                    nestingKind = NestingKind.MEMBER;
+                }
+                else
+                {
+                    nestingKind = NestingKind.TOP_LEVEL;
+                }
+            }
+        }
+        initTypeParameters();
+        for (Type intf : cls.getGenericInterfaces())
+        {
+            interfaces.add(TypeMirrorFactory.get(intf));
+        }
+    }
+
+    private void initTypeParameters()
+    {
+        for (TypeVariable param : cls.getTypeParameters())
+        {
+            typeParameters.add(ElementFactory.getTypeParameterElement(param));
+        }
     }
     @Override
     public TypeMirror asType()
@@ -293,10 +335,6 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
             }
         }
         return enclosingElement;
-    }
-
-    void init(Class<?> cls)
-    {
     }
 
     void init(Type[] bounds)
@@ -337,14 +375,6 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
     @Override
     public List<? extends TypeParameterElement> getTypeParameters()
     {
-        if (typeParameters == null)
-        {
-            typeParameters = new ArrayList<>();
-            for (TypeVariable param : cls.getTypeParameters())
-            {
-                typeParameters.add(ElementFactory.getTypeParameterElement(param));
-            }
-        }
         return typeParameters;
     }
 
@@ -408,10 +438,6 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
     @Override
     public Name getQualifiedName()
     {
-        if (qualifiedName == null)
-        {
-            qualifiedName = El.getName(cls.getName());
-        }
         return qualifiedName;
     }
 
@@ -435,14 +461,6 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
     @Override
     public List<? extends TypeMirror> getInterfaces()
     {
-        if (interfaces == null)
-        {
-            interfaces = new ArrayList<>();
-            for (Type intf : cls.getGenericInterfaces())
-            {
-                interfaces.add(TypeMirrorFactory.get(intf));
-            }
-        }
         return interfaces;
     }
 

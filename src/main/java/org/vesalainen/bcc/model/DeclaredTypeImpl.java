@@ -173,7 +173,14 @@ public class DeclaredTypeImpl implements DeclaredType
     @Override
     public String toString()
     {
-        return "DeclaredTypeImpl{" + element.getQualifiedName()+ '}';
+        if (element != null)
+        {
+            return "DeclaredTypeImpl{" + element.getQualifiedName()+ '}';
+        }
+        else
+        {
+            return "DeclaredTypeImpl{ element == null }";
+        }
     }
 
 }

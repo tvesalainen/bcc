@@ -302,7 +302,12 @@ public class TypesImpl implements Types
     {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
+    /**
+     * The direct superclass is the class from whose implementation the 
+     * implementation of the current class is derived.
+     * @param t
+     * @return 
+     */
     @Override
     public List<? extends TypeMirror> directSupertypes(TypeMirror t)
     {
@@ -313,12 +318,11 @@ public class TypesImpl implements Types
                 TypeElement te = (TypeElement) dt.asElement();
                 List<TypeMirror> list = new ArrayList<>();
                 TypeElement superclass = (TypeElement) asElement(te.getSuperclass());
-                while (superclass != null)
+                if (superclass != null)
                 {
                     list.add(0, superclass.asType());
-                    list.addAll(te.getInterfaces());
-                    superclass = (TypeElement) asElement(superclass.getSuperclass());
                 }
+                list.addAll(te.getInterfaces());
                 return list;
             case EXECUTABLE:
             case PACKAGE:

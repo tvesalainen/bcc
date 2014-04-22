@@ -31,9 +31,9 @@ public class DeclaredTypeBuilder
 {
     private List<TypeMirror> typeArguments = new ArrayList<>();
     private DeclaredType declaredType;
-    private TypeParameterBuilder<?> typeParamBuilder;
+    private TypeParameterBuilder typeParamBuilder;
 
-    DeclaredTypeBuilder(TypeElement element, TypeParameterBuilder<?> typeParamBuilder)
+    DeclaredTypeBuilder(TypeElement element, TypeParameterBuilder typeParamBuilder)
     {
         this.declaredType = new DeclaredTypeImpl(element, typeArguments);
         this.typeParamBuilder = typeParamBuilder;

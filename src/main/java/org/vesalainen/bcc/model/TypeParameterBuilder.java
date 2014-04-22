@@ -29,24 +29,22 @@ import javax.lang.model.type.TypeMirror;
 /**
  * @author Timo Vesalainen
  */
-public class TypeParameterBuilder<R>
+public class TypeParameterBuilder
 {
-    private R ret;
     private TypeElement element;
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private List<TypeMirror> typeArguments = new ArrayList<>();
     private Map<String,TypeParameterElement> typeParameterMap = new HashMap<>();
 
-    public TypeParameterBuilder(R ret, TypeElement element, List<TypeParameterElement> typeParameters)
+    public TypeParameterBuilder(TypeElement element, List<TypeParameterElement> typeParameters)
     {
-        this.ret = ret;
         this.element = element;
+        assert typeParameters != null;
         this.typeParameters = typeParameters;
     }
 
-    public TypeParameterBuilder(R ret, TypeElement element, List<? extends TypeParameterElement> typeParameters, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
+    public TypeParameterBuilder(TypeElement element, List<? extends TypeParameterElement> typeParameters, List<? extends TypeMirror> typeArguments, Map<String, TypeParameterElement> typeParameterMap)
     {
-        this.ret = ret;
         this.element = element;
         this.typeParameters.addAll(typeParameters);
         this.typeArguments.addAll(typeArguments);
@@ -115,7 +113,7 @@ public class TypeParameterBuilder<R>
             return te;
         }
     }
-    public R addTypeParameter(String name, Class<?>... bounds)
+    public TypeParameterElement addTypeParameter(String name, Class<?>... bounds)
     {
         TypeElement[] types = new TypeElement[bounds.length];
         for (int ii=0;ii<types.length;ii++)
@@ -124,7 +122,7 @@ public class TypeParameterBuilder<R>
         }
         return addTypeParameter(name, types);
     }
-    public R addTypeParameter(String name, CharSequence... bounds)
+    public TypeParameterElement addTypeParameter(String name, CharSequence... bounds)
     {
         TypeElement[] types = new TypeElement[bounds.length];
         for (int ii=0;ii<types.length;ii++)
@@ -133,7 +131,7 @@ public class TypeParameterBuilder<R>
         }
         return addTypeParameter(name, types);
     }
-    public R addTypeParameter(String name, TypeElement... bounds)
+    public TypeParameterElement addTypeParameter(String name, TypeElement... bounds)
     {
         TypeMirror[] types = new TypeMirror[bounds.length];
         for (int ii=0;ii<types.length;ii++)
@@ -142,15 +140,15 @@ public class TypeParameterBuilder<R>
         }
         return addTypeParameter(name, types);
     }
-    public R addTypeParameter(String name, TypeMirror... bounds)
+    public TypeParameterElement addTypeParameter(String name, TypeMirror... bounds)
     {
         return addTypeParameter(new TypeParameterElementImpl(name, element, bounds));
     }
-    public R addTypeParameter(TypeParameterElement param)
+    public TypeParameterElement addTypeParameter(TypeParameterElement param)
     {
         typeParameters.add(param);
         typeArguments.add(param.asType());
         typeParameterMap.put(param.getSimpleName().toString(), param);
-        return ret;
+        return param;
     }
 }

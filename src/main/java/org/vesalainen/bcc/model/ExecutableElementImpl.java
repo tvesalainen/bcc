@@ -105,7 +105,7 @@ public class ExecutableElementImpl extends ElementImpl implements ExecutableElem
     public static class ConstructorBuilder
     {
         protected ExecutableElementImpl exe;
-        private TypeParameterBuilder<ConstructorBuilder> typeParamBuilder;
+        private TypeParameterBuilder typeParamBuilder;
 
         public ConstructorBuilder(TypeElement enclosingElement, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
@@ -114,7 +114,7 @@ public class ExecutableElementImpl extends ElementImpl implements ExecutableElem
         public ConstructorBuilder(TypeElement enclosingElement, ElementKind kind, String name, List<? extends TypeMirror> classTypeArguments, Map<String, TypeParameterElement> classTypeParameterMap)
         {
             exe = new ExecutableElementImpl(enclosingElement, kind, name);
-            typeParamBuilder = new TypeParameterBuilder<>(this, enclosingElement, exe.typeParameters, classTypeArguments, classTypeParameterMap);
+            typeParamBuilder = new TypeParameterBuilder(enclosingElement, exe.typeParameters, classTypeArguments, classTypeParameterMap);
         }
 
         public ExecutableElement getExecutableElement()
@@ -170,27 +170,32 @@ public class ExecutableElementImpl extends ElementImpl implements ExecutableElem
 
         public ConstructorBuilder addTypeParameter(String name, Class<?>... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            exe.typeParameters.add(typeParamBuilder.addTypeParameter(name, bounds));
+            return this;
         }
 
         public ConstructorBuilder addTypeParameter(String name, CharSequence... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            exe.typeParameters.add(typeParamBuilder.addTypeParameter(name, bounds));
+            return this;
         }
 
         public ConstructorBuilder addTypeParameter(String name, TypeElement... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            exe.typeParameters.add(typeParamBuilder.addTypeParameter(name, bounds));
+            return this;
         }
 
         public ConstructorBuilder addTypeParameter(String name, TypeMirror... bounds)
         {
-            return typeParamBuilder.addTypeParameter(name, bounds);
+            exe.typeParameters.add(typeParamBuilder.addTypeParameter(name, bounds));
+            return this;
         }
 
         public ConstructorBuilder addTypeParameter(TypeParameterElement param)
         {
-            return typeParamBuilder.addTypeParameter(param);
+            exe.typeParameters.add(typeParamBuilder.addTypeParameter(param));
+            return this;
         }
         
     }
