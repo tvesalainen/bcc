@@ -17,7 +17,6 @@
 package org.vesalainen.bcc;
 
 import java.util.Map;
-import org.vesalainen.annotation.dump.AssertSignature;
 
 /**
  * @author Timo Vesalainen

@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
-import org.vesalainen.annotation.dump.AssertDescriptor;
-import org.vesalainen.annotation.dump.AssertSignature;
 
 /**
  * @author Timo Vesalainen

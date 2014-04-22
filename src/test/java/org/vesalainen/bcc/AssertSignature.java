@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Timo Vesalainen
+ * Copyright (C) 2013 Timo Vesalainen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,13 +16,18 @@
  */
 package org.vesalainen.bcc;
 
-import java.util.Set;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
+ *
  * @author Timo Vesalainen
  */
-@AssertSignature("Ljava/lang/Object;Ljava/util/Set<Ljava/lang/String;>;")
-public abstract class T7 implements Set<String>
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+public @interface AssertSignature
 {
-    
+    String value() default "";
 }

@@ -18,7 +18,6 @@ package org.vesalainen.bcc;
 
 import java.io.Serializable;
 import java.util.Set;
-import org.vesalainen.annotation.dump.AssertSignature;
 
 /**
  * @author Timo Vesalainen

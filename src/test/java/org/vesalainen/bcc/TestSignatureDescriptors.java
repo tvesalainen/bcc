@@ -32,8 +32,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.vesalainen.annotation.dump.AssertDescriptor;
-import org.vesalainen.annotation.dump.AssertSignature;
 import org.vesalainen.bcc.model.ElementFactory;
 import org.vesalainen.bcc.model.DeclaredTypeBuilder;
 import org.vesalainen.bcc.model.ExecutableElementImpl.MethodBuilder;
@@ -44,10 +42,10 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
  *
  * @author Timo Vesalainen
  */
-public class SignatureDescriptorTests
+public class TestSignatureDescriptors
 {
     
-    public SignatureDescriptorTests()
+    public TestSignatureDescriptors()
     {
     }
 

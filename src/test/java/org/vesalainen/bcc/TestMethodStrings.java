@@ -24,7 +24,7 @@ import org.vesalainen.bcc.model.El;
 /**
  * @author Timo Vesalainen
  */
-public class MethodStringTests 
+public class TestMethodStrings 
 {
     @Test
     public void test1() throws NoSuchMethodException

@@ -16,8 +16,6 @@
  */
 package org.vesalainen.bcc;
 
-import org.vesalainen.annotation.dump.AssertDescriptor;
-import org.vesalainen.annotation.dump.AssertSignature;
 
 /**
  * @author Timo Vesalainen
