@@ -190,7 +190,7 @@ public class TypesImpl implements Types
                 switch (sub.getKind())
                 {
                     case DECLARED:
-                        for (TypeMirror t : directSupertypes(sub))
+                        for (TypeMirror t : allSupertypes(sub))
                         {
                             if (isSameType(t, sup))
                             {
@@ -321,6 +321,31 @@ public class TypesImpl implements Types
                 if (superclass != null)
                 {
                     list.add(0, superclass.asType());
+                }
+                list.addAll(te.getInterfaces());
+                return list;
+            case EXECUTABLE:
+            case PACKAGE:
+                throw new IllegalArgumentException(t.getKind().name());
+            default:
+                throw new UnsupportedOperationException(t.getKind().name()+" not supported yet");
+        }
+    }
+
+    private List<? extends TypeMirror> allSupertypes(TypeMirror t)
+    {
+        switch (t.getKind())
+        {
+            case DECLARED:
+                DeclaredType dt = (DeclaredType) t;
+                TypeElement te = (TypeElement) dt.asElement();
+                List<TypeMirror> list = new ArrayList<>();
+                TypeElement superclass = (TypeElement) asElement(te.getSuperclass());
+                while (superclass != null)
+                {
+                    list.add(0, superclass.asType());
+                    list.addAll(1, superclass.getInterfaces());
+                    superclass = (TypeElement) asElement(superclass.getSuperclass());
                 }
                 list.addAll(te.getInterfaces());
                 return list;
