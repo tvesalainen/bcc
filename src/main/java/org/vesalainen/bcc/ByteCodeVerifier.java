@@ -1552,9 +1552,8 @@ public class ByteCodeVerifier extends OpCodeUtil
         TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
         if (!Typ.isAssignable(objectRef, declaringClass.asType()))
         {
-            throw new VerifyError("object "+objectRef+" for method "+method+" not compatible");
+            throw new VerifyError("class "+objectRef+" not assignable for method class "+declaringClass+" in method "+method);
         }
-        TypeMirror thisClass = mc.getLocalType(0);
     }
 
     private void verifyReferenceOrArray(TypeMirror cw)
