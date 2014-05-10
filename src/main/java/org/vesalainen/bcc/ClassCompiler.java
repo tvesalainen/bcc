@@ -16,9 +16,9 @@
  */
 package org.vesalainen.bcc;
 
-import java.io.File;
 import java.io.IOException;
 import javax.annotation.processing.Filer;
+import javax.annotation.processing.ProcessingEnvironment;
 
 /**
  *
@@ -27,10 +27,10 @@ import javax.annotation.processing.Filer;
 public interface ClassCompiler
 {
     /**
-     * Set the Filer
-     * @param classDir 
+     * Set the ProcessingEnvironment
+     * @param env ProcessingEnvironment 
      */
-    void setFiler(Filer filer);
+    void setProcessingEnvironment(ProcessingEnvironment env);
     /**
      * Compile classfile
      * @throws IOException
