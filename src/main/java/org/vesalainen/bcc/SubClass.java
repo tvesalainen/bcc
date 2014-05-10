@@ -786,9 +786,10 @@ public class SubClass extends ClassFile
     {
         GenClassLoader cl = new GenClassLoader(superClass.getClass().getClassLoader());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(baos);
-        write(dos);
-        dos.close();
+        try (DataOutputStream dos = new DataOutputStream(baos))
+        {
+            write(dos);
+        }
 
         try
         {
