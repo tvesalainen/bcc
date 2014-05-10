@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 import javax.annotation.processing.Filer;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -801,8 +802,9 @@ public class SubClass extends ClassFile
         }
     }
 
-    public void createSourceFile(Filer filer) throws IOException
+    public void createSourceFile(ProcessingEnvironment env) throws IOException
     {
+        Filer filer = env.getFiler();
         FileObject sourceFile = filer.createResource(
                 StandardLocation.SOURCE_OUTPUT, 
                 El.getPackageOf(this).getQualifiedName(), 
@@ -839,11 +841,12 @@ public class SubClass extends ClassFile
     }
     /**
      * Saves subclass as class file
-     * @param classpath
+     * @param env
      * @throws IOException
      */
-    public void save(Filer filer) throws IOException
+    public void save(ProcessingEnvironment env) throws IOException
     {
+        Filer filer = env.getFiler();
         //JavaFileObject sourceFile = filer.createClassFile(getQualifiedName(), superClass);
         FileObject sourceFile = filer.createResource(
                 StandardLocation.CLASS_OUTPUT, 
