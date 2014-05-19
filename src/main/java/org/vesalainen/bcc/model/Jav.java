@@ -17,11 +17,16 @@
 
 package org.vesalainen.bcc.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Timo Vesalainen
  */
 public class Jav 
 {
+    private static final Map<String,String> map = new HashMap<>();
+    
     public static String makeJavaIdentifier(String id)
     {
         if (id.isEmpty())
@@ -59,7 +64,13 @@ public class Jav
         {
             throw new IllegalArgumentException("couldn't convert '"+id+"' to java identifier");
         }
-        return sb.toString();
+        String jid = sb.toString();
+        String old = map.put(jid, id);
+        if (old != null)
+        {
+            throw new IllegalArgumentException("both "+old+" and "+id+" creates same java id "+jid);
+        }
+        return jid;
     }
 
     public static String makeJavaClassname(String id)
