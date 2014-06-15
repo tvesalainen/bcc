@@ -25,9 +25,9 @@ import java.util.Map;
  */
 public class Jav 
 {
-    private static final Map<String,String> map = new HashMap<>();
+    private final Map<String,String> map = new HashMap<>();
     
-    public static String makeJavaIdentifier(String id)
+    public String makeJavaIdentifier(String id)
     {
         if (id.isEmpty())
         {
@@ -73,7 +73,7 @@ public class Jav
         return jid;
     }
 
-    public static String makeJavaClassname(String id)
+    public String makeJavaClassname(String id)
     {
         if (id.isEmpty())
         {
