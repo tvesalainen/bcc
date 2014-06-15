@@ -26,8 +26,47 @@ import java.util.Map;
 public class Jav 
 {
     private final Map<String,String> map = new HashMap<>();
-    
+    /**
+     * Returns a String capable for java identifier. Throws IllegalArgumentException
+     * if same id was already created.
+     * 
+     * <p>Same id returns always the same java id.
+     * @param id
+     * @return 
+     */
     public String makeJavaIdentifier(String id)
+    {
+        String jid = makeJavaId(id);
+        String old = map.put(jid, id);
+        if (old != null && !old.equals(id))
+        {
+            throw new IllegalArgumentException("both "+id+" and "+old+" makes the same java id "+jid);
+        }
+        return jid;
+    }
+    /**
+     * Returns a unique String capable for java identifier. 
+     * 
+     * <p>Note! Even with the same id the returned string is unique.
+     * @param id
+     * @return 
+     */
+    public String makeUniqueJavaIdentifier(String id)
+    {
+        String jid = makeJavaId(id);
+        String old = map.put(jid, id);
+        if (old != null)
+        {
+            String oid = jid;
+            for (int ii=1;old != null;ii++)
+            {
+                jid = oid+ii;
+                old = map.put(jid, id);
+            }
+        }
+        return jid;
+    }
+    private String makeJavaId(String id)
     {
         if (id.isEmpty())
         {
@@ -64,13 +103,7 @@ public class Jav
         {
             throw new IllegalArgumentException("couldn't convert '"+id+"' to java identifier");
         }
-        String jid = sb.toString();
-        String old = map.put(jid, id);
-        if (old != null)
-        {
-            throw new IllegalArgumentException("both "+old+" and "+id+" creates same java id "+jid);
-        }
-        return jid;
+        return sb.toString();
     }
 
     public String makeJavaClassname(String id)
