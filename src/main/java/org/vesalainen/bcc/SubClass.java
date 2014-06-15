@@ -763,7 +763,14 @@ public class SubClass extends ClassFile
     {
         MethodInfo methodInfo = new MethodInfo(this, method);
         addMethodInfo(methodInfo);
-        mc.startImplement(this, methodInfo);
+        try
+        {
+            mc.startImplement(this, methodInfo);
+        }
+        catch (RuntimeException rex)
+        {
+            throw new IllegalArgumentException(method.getSimpleName().toString(), rex);
+        }
         methodInfo.readyToWrite();
     }
     public Object newInstance() throws IOException
