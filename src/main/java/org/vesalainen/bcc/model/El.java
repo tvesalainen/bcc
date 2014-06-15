@@ -271,6 +271,14 @@ public class El
         }
         return params;
     }
+    /**
+     * Returns named method in typeElement having exactly the same parameters, 
+     * or null if such method was not found
+     * @param typeElement Class
+     * @param name Method name
+     * @param parameters Method parameters
+     * @return 
+     */
     public static ExecutableElement getMethod(TypeElement typeElement, String name, TypeMirror... parameters)
     {
         for (ExecutableElement method : ElementFilter.methodsIn(El.getAllMembers(typeElement)))
@@ -283,7 +291,7 @@ public class El
                     List<? extends VariableElement> calleeParams = method.getParameters();
                     for (int ii=0;ii<parameters.length;ii++)
                     {
-                        if (!Typ.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                        if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
                         {
                             ok = false;
                             continue;
