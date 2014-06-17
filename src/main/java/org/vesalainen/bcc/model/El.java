@@ -307,6 +307,42 @@ public class El
         return null;
     }
 
+    /**
+     * Returns named method in typeElement having assignable parameters, 
+     * or null if such method was not found
+     * @param typeElement Class
+     * @param name Method name
+     * @param parameters Method parameters
+     * @return 
+     */
+    public static ExecutableElement getAssignableMethod(TypeElement typeElement, String name, TypeMirror... parameters)
+    {
+        for (ExecutableElement method : ElementFilter.methodsIn(El.getAllMembers(typeElement)))
+        {
+            if (name.contentEquals(method.getSimpleName()))
+            {
+                if (parameters.length == method.getParameters().size())
+                {
+                    boolean ok = true;
+                    List<? extends VariableElement> calleeParams = method.getParameters();
+                    for (int ii=0;ii<parameters.length;ii++)
+                    {
+                        if (!Typ.isAssignable(parameters[ii], calleeParams.get(ii).asType()))
+                        {
+                            ok = false;
+                            continue;
+                        }
+                    }
+                    if (ok)
+                    {
+                        return method;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     public static ExecutableElement getConstructor(TypeElement typeElement, TypeMirror... parameters)
     {
         for (ExecutableElement method : ElementFilter.constructorsIn(typeElement.getEnclosedElements()))
