@@ -1008,7 +1008,7 @@ public abstract class MethodCompiler extends Assembler
 
     private int argumentCount(List<? extends VariableElement> parameters)
     {
-        int result = 0;
+        int result = 1; // this
         for (VariableElement parameter : parameters)
         {
             if (Typ.isCategory2(parameter.asType()))
