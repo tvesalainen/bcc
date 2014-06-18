@@ -973,13 +973,14 @@ public abstract class MethodCompiler extends Assembler
      */
     public void invokevirtual(ExecutableElement method) throws IOException
     {
-        int index = subClass.resolveMethodIndex(method);
         if (method.getEnclosingElement().getKind() == ElementKind.INTERFACE)
         {
+            int index = subClass.resolveInterfaceMethodIndex(method);
             invokeinterface(index, argumentCount(method.getParameters()));
         }
         else
         {
+            int index = subClass.resolveMethodIndex(method);
             invokevirtual(index);
         }
     }

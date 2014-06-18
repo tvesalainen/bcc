@@ -224,7 +224,7 @@ public class SubClass extends ClassFile
      */
     int resolveMethodIndex(ExecutableElement method)
     {
-        int size = 0;
+         int size = 0;
         int index = 0;
         constantReadLock.lock();
         TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
@@ -245,14 +245,41 @@ public class SubClass extends ClassFile
             // add entry to constant pool
             int ci = resolveClassIndex(declaringClass);
             int nati = resolveNameAndTypeIndex(name, descriptor);
-            if (ElementKind.INTERFACE == method.getKind())
-            {
-                index = addConstantInfo(new InterfaceMethodref(ci, nati), size);
-            }
-            else
-            {
-                index = addConstantInfo(new Methodref(ci, nati), size);
-            }
+            index = addConstantInfo(new Methodref(ci, nati), size);
+        }
+        addIndexedElement(index, method);
+        return index;
+    }
+    /**
+     * Returns the constant map index to method
+     * If entry doesn't exist it is created.
+     * @param method
+     * @return
+     */
+    int resolveInterfaceMethodIndex(ExecutableElement method)
+    {
+         int size = 0;
+        int index = 0;
+        constantReadLock.lock();
+        TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        String declaringClassname = declaringClass.getQualifiedName().toString();
+        String descriptor = Descriptor.getDesriptor(method);
+        String name = method.getSimpleName().toString();
+        try
+        {
+            size = getConstantPoolSize();
+            index = getRefIndex(InterfaceMethodref.class, declaringClassname, name, descriptor);
+        }
+        finally
+        {
+            constantReadLock.unlock();
+        }
+        if (index == -1)
+        {
+            // add entry to constant pool
+            int ci = resolveClassIndex(declaringClass);
+            int nati = resolveNameAndTypeIndex(name, descriptor);
+            index = addConstantInfo(new InterfaceMethodref(ci, nati), size);
         }
         addIndexedElement(index, method);
         return index;

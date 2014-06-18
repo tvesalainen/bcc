@@ -26,6 +26,7 @@ import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
@@ -489,5 +490,17 @@ public class El
             }
         }
         return false;
+    }
+
+    public static boolean isInterface(ElementKind kind)
+    {
+        switch (kind)
+        {
+            case INTERFACE:
+            case ANNOTATION_TYPE:
+                return true;
+            default:
+                return false;
+        }
     }
 }

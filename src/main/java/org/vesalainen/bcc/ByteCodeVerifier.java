@@ -35,6 +35,7 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.El;
 import org.vesalainen.bcc.model.Typ;
 
 /**
@@ -1287,7 +1288,7 @@ public class ByteCodeVerifier extends OpCodeUtil
                         throw new IllegalArgumentException("padding must be zero");
                     }
                     verifyMethod(s, me);
-                    verifyClass(s.pop(), me);
+                    verifyInterfaceClass(s.pop(), me);
                     s.push(me.getReturnType());
                     break;
                 case NEW:
@@ -1550,6 +1551,19 @@ public class ByteCodeVerifier extends OpCodeUtil
     private void verifyVirtualClass(TypeMirror objectRef, ExecutableElement method)
     {
         TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        if (!Typ.isAssignable(objectRef, declaringClass.asType()))
+        {
+            throw new VerifyError("class "+objectRef+" not assignable for method class "+declaringClass+" in method "+method);
+        }
+    }
+
+    private void verifyInterfaceClass(TypeMirror objectRef, ExecutableElement method)
+    {
+        TypeElement declaringClass = (TypeElement) method.getEnclosingElement();
+        if (!El.isInterface(declaringClass.getKind()))
+        {
+            throw new VerifyError("class "+declaringClass+" not interface");
+        }
         if (!Typ.isAssignable(objectRef, declaringClass.asType()))
         {
             throw new VerifyError("class "+objectRef+" not assignable for method class "+declaringClass+" in method "+method);
