@@ -256,6 +256,14 @@ public class El
                 getParams(parameters)
                 );
     }
+    public static ExecutableElement getAssignableMethod(Class<?> cls, String name, Class<?>... parameters)
+    {
+        return getAssignableMethod(
+                El.getTypeElement(cls.getCanonicalName()), 
+                name, 
+                getParams(parameters)
+                );
+    }
     public static ExecutableElement getConstructor(Class<?> cls, Class<?>... parameters)
     {
         return getConstructor(
