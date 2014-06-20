@@ -42,10 +42,10 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
  *
  * @author Timo Vesalainen
  */
-public class TestSignatureDescriptors
+public class SignatureDescriptorsTest
 {
     
-    public TestSignatureDescriptors()
+    public SignatureDescriptorsTest()
     {
     }
 
