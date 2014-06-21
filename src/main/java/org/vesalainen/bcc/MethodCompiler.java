@@ -964,11 +964,7 @@ public abstract class MethodCompiler extends Assembler
      * Invoke instance method; dispatch based on classIf method is interface
      * calls invokeinterface otherwise calls invokevirtual.
      * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
-     * @param fullyQualifiedName
-     * @param methodName
-     * @param isInterface
-     * @param returnType
-     * @param parameters
+     * @param method
      * @throws IOException
      */
     public void invokevirtual(ExecutableElement method) throws IOException

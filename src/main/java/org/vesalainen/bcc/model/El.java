@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.lang.model.element.AnnotationMirror;
@@ -256,14 +257,6 @@ public class El
                 getParams(parameters)
                 );
     }
-    public static ExecutableElement getAssignableMethod(Class<?> cls, String name, Class<?>... parameters)
-    {
-        return getAssignableMethod(
-                El.getTypeElement(cls.getCanonicalName()), 
-                name, 
-                getParams(parameters)
-                );
-    }
     public static ExecutableElement getConstructor(Class<?> cls, Class<?>... parameters)
     {
         return getConstructor(
@@ -281,7 +274,7 @@ public class El
         return params;
     }
     /**
-     * Returns named method in typeElement having exactly the same parameters, 
+     * Returns the most specific named method in typeElement, 
      * or null if such method was not found
      * @param typeElement Class
      * @param name Method name
@@ -290,42 +283,20 @@ public class El
      */
     public static ExecutableElement getMethod(TypeElement typeElement, String name, TypeMirror... parameters)
     {
-        for (ExecutableElement method : ElementFilter.methodsIn(El.getAllMembers(typeElement)))
+        List<ExecutableElement> allMethods = getAllMethods(typeElement, name, parameters);
+        if (allMethods.isEmpty())
         {
-            if (name.contentEquals(method.getSimpleName()))
-            {
-                if (parameters.length == method.getParameters().size())
-                {
-                    boolean ok = true;
-                    List<? extends VariableElement> calleeParams = method.getParameters();
-                    for (int ii=0;ii<parameters.length;ii++)
-                    {
-                        if (!Typ.isSameType(parameters[ii], calleeParams.get(ii).asType()))
-                        {
-                            ok = false;
-                            continue;
-                        }
-                    }
-                    if (ok)
-                    {
-                        return method;
-                    }
-                }
-            }
+            return null;
         }
-        return null;
+        else
+        {
+            Collections.sort(allMethods, new SpecificMethodComparator());
+            return allMethods.get(0);
+        }
     }
-
-    /**
-     * Returns named method in typeElement having assignable parameters, 
-     * or null if such method was not found
-     * @param typeElement Class
-     * @param name Method name
-     * @param parameters Method parameters
-     * @return 
-     */
-    public static ExecutableElement getAssignableMethod(TypeElement typeElement, String name, TypeMirror... parameters)
+    public static List<ExecutableElement> getAllMethods(TypeElement typeElement, String name, TypeMirror... parameters)
     {
+        List<ExecutableElement> list = new ArrayList<>();
         for (ExecutableElement method : ElementFilter.methodsIn(El.getAllMembers(typeElement)))
         {
             if (name.contentEquals(method.getSimpleName()))
@@ -344,12 +315,12 @@ public class El
                     }
                     if (ok)
                     {
-                        return method;
+                        list.add(method);
                     }
                 }
             }
         }
-        return null;
+        return list;
     }
 
     public static ExecutableElement getConstructor(TypeElement typeElement, TypeMirror... parameters)
