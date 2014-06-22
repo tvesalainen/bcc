@@ -330,6 +330,8 @@ public class Typ
 
     public static boolean isAssignable(TypeMirror t1, TypeMirror t2)
     {
+        // this is because com.sun.tools.javac.model.JavacTypes.isAssignable
+        // doesn't use javax.lang.model interfaces!
         return myTypes.isAssignable(t1, t2);
     }
 
