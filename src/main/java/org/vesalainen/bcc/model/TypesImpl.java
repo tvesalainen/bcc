@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -243,8 +244,12 @@ public class TypesImpl implements Types
                 switch (t1.getKind())
                 {
                     case NULL:
-                    case ARRAY:
                         return true;
+                    case ARRAY:
+                        DeclaredType dt = (DeclaredType) t2;
+                        TypeElement te = (TypeElement) dt.asElement();
+                        Name n = te.getQualifiedName();
+                        return n.contentEquals("java.lang.Object");
                     default:
                     return false;
                 }
