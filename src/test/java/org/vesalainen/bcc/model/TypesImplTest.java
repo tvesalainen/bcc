@@ -60,7 +60,7 @@ public class TypesImplTest
      * Test of isAssignable method, of class TypesImpl.
      */
     @Test
-    public void testIsAssignable()
+    public void testIsAssignable1()
     {
         TypeMirror stringType = Typ.getTypeFor(String.class);
         TypeMirror objectType = Typ.getTypeFor(Object.class);
