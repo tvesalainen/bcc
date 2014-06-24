@@ -320,6 +320,9 @@ public class ByteCodeVerifier extends OpCodeUtil
                         case ConstantInfo.CONSTANT_String:
                             s.push(Typ.String);
                             break;
+                        case ConstantInfo.CONSTANT_Class:
+                            s.push(Typ.getTypeFor(Class.class));
+                            break;
                         default:
                             throw new VerifyError("illegal constant info for ldc "+ci.getTag());
                     }
@@ -337,6 +340,9 @@ public class ByteCodeVerifier extends OpCodeUtil
                             break;
                         case ConstantInfo.CONSTANT_String:
                             s.push(Typ.String);
+                            break;
+                        case ConstantInfo.CONSTANT_Class:
+                            s.push(Typ.getTypeFor(Class.class));
                             break;
                         default:
                             throw new VerifyError("illegal constant info for ldc_w "+ci.getTag());
@@ -1751,7 +1757,7 @@ public class ByteCodeVerifier extends OpCodeUtil
             {
                 if (!Typ.isAssignable(sub, ve.asType()))
                 {
-                    throw new VerifyError("method "+method+"expected "+ve.asType()+" but got "+sub+" for arg "+index);
+                    throw new VerifyError("method "+method+" expected "+ve.asType()+" but got "+sub+" for arg "+index);
                 }
             }
             index++;

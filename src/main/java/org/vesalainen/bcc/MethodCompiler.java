@@ -660,6 +660,11 @@ public abstract class MethodCompiler extends Assembler
             ldc((String)value);
         }
         else
+        if (value instanceof Class)
+        {
+            ldc((Class)value);
+        }
+        else
         {
             throw new IllegalArgumentException(value+" is not a java constant type");
         }
@@ -770,6 +775,11 @@ public abstract class MethodCompiler extends Assembler
     public void ldc(String constant) throws IOException
     {
         int index = subClass.resolveConstantIndex(constant);
+        super.ldc(index);
+    }
+    public void ldc(Class constant) throws IOException
+    {
+        int index = subClass.resolveClassIndex(constant);
         super.ldc(index);
     }
     /**
