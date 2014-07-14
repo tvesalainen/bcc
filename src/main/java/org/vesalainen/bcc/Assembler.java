@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import org.vesalainen.bcc.model.Typ;
 
 /**
  *
@@ -2216,82 +2217,85 @@ public class Assembler implements OpCode
     
     public void convert(TypeMirror from, TypeMirror to) throws IOException
     {
-        switch (from.getKind())
+        if (!Typ.isSameType(from, to))
         {
-            case INT:
-                switch (to.getKind())
-                {
-                    case INT:
-                        break;
-                    case LONG:
-                        i2l();
-                        break;
-                    case FLOAT:
-                        i2f();
-                        break;
-                    case DOUBLE:
-                        i2d();
-                        break;
-                    default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
-                }
-                break;
-            case LONG:
-                switch (to.getKind())
-                {
-                    case INT:
-                        l2i();
-                        break;
-                    case LONG:
-                        break;
-                    case FLOAT:
-                        l2f();
-                        break;
-                    case DOUBLE:
-                        l2d();
-                        break;
-                    default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
-                }
-                break;
-            case FLOAT:
-                switch (to.getKind())
-                {
-                    case INT:
-                        f2i();
-                        break;
-                    case LONG:
-                        f2l();
-                        break;
-                    case FLOAT:
-                        break;
-                    case DOUBLE:
-                        f2d();
-                        break;
-                    default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
-                }
-                break;
-            case DOUBLE:
-                switch (to.getKind())
-                {
-                    case INT:
-                        d2i();
-                        break;
-                    case LONG:
-                        d2l();
-                        break;
-                    case FLOAT:
-                        d2f();
-                        break;
-                    case DOUBLE:
-                        break;
-                    default:
-                        throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
-                }
-                break;
-            default:
-                throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+            switch (from.getKind())
+            {
+                case INT:
+                    switch (to.getKind())
+                    {
+                        case INT:
+                            break;
+                        case LONG:
+                            i2l();
+                            break;
+                        case FLOAT:
+                            i2f();
+                            break;
+                        case DOUBLE:
+                            i2d();
+                            break;
+                        default:
+                            throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+                    }
+                    break;
+                case LONG:
+                    switch (to.getKind())
+                    {
+                        case INT:
+                            l2i();
+                            break;
+                        case LONG:
+                            break;
+                        case FLOAT:
+                            l2f();
+                            break;
+                        case DOUBLE:
+                            l2d();
+                            break;
+                        default:
+                            throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+                    }
+                    break;
+                case FLOAT:
+                    switch (to.getKind())
+                    {
+                        case INT:
+                            f2i();
+                            break;
+                        case LONG:
+                            f2l();
+                            break;
+                        case FLOAT:
+                            break;
+                        case DOUBLE:
+                            f2d();
+                            break;
+                        default:
+                            throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+                    }
+                    break;
+                case DOUBLE:
+                    switch (to.getKind())
+                    {
+                        case INT:
+                            d2i();
+                            break;
+                        case LONG:
+                            d2l();
+                            break;
+                        case FLOAT:
+                            d2f();
+                            break;
+                        case DOUBLE:
+                            break;
+                        default:
+                            throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException(from+" to "+to+" conversion not supported");
+            }
         }
     }
 }
