@@ -1491,15 +1491,44 @@ public abstract class MethodCompiler extends Assembler
      * @param catchTypes Throwable objects which are caught. If none is present then 
      * all throwables are caught. Note! This is not the same as finally!
      */
-    public void addExceptionHandler(Block block, String handler, Class<? extends Throwable> catchType)
+    public void addExceptionHandler(Block block, String handler, Class<? extends Throwable>... catchTypes)
     {
-        if (catchType != null)
+        Label label = getLabel(handler);
+        if (catchTypes.length > 0)
         {
-            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), subClass.resolveClassIndex(catchType)));
+            for (Class<? extends Throwable> catchType : catchTypes)
+            {
+                exceptionTableList.add(new ExceptionTable(block, label, subClass.resolveClassIndex(catchType)));
+            }
         }
         else
         {
-            exceptionTableList.add(new ExceptionTable(block, getLabel(handler), 0));
+            exceptionTableList.add(new ExceptionTable(block, label, 0));
+        }
+    }
+
+    /**
+     * Adds an exception handler. If one of catchTypes is thrown inside block the
+     * execution continues at handler address. Thrown object is pushed in stack.
+     * 
+     * @param block 
+     * @param handler
+     * @param thrownTypes Throwable objects which are caught. If none is present then 
+     * all throwables are caught. Note! This is not the same as finally!
+     */
+    public void addExceptionHandler(Block block, String handler, List<? extends TypeMirror> thrownTypes)
+    {
+        Label label = getLabel(handler);
+        if (!thrownTypes.isEmpty())
+        {
+            for (TypeMirror thrownType : thrownTypes)
+            {
+                exceptionTableList.add(new ExceptionTable(block, label, subClass.resolveClassIndex((TypeElement)Typ.asElement(thrownType))));
+            }
+        }
+        else
+        {
+            exceptionTableList.add(new ExceptionTable(block, label, 0));
         }
     }
 
