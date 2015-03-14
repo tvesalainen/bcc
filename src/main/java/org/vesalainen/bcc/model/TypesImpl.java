@@ -19,7 +19,9 @@ package org.vesalainen.bcc.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
@@ -337,23 +339,23 @@ public class TypesImpl implements Types
         }
     }
 
-    private List<? extends TypeMirror> allSupertypes(TypeMirror t)
+    private Set<? extends TypeMirror> allSupertypes(TypeMirror t)
     {
         switch (t.getKind())
         {
             case DECLARED:
                 DeclaredType dt = (DeclaredType) t;
                 TypeElement te = (TypeElement) dt.asElement();
-                List<TypeMirror> list = new ArrayList<>();
+                Set<TypeMirror> set = new HashSet<>();
+                addInterfaces(set, te);
                 TypeElement superclass = (TypeElement) asElement(te.getSuperclass());
                 while (superclass != null)
                 {
-                    list.add(0, superclass.asType());
-                    list.addAll(1, superclass.getInterfaces());
+                    set.add(superclass.asType());
+                    addInterfaces(set, superclass);
                     superclass = (TypeElement) asElement(superclass.getSuperclass());
                 }
-                list.addAll(te.getInterfaces());
-                return list;
+                return set;
             case EXECUTABLE:
             case PACKAGE:
                 throw new IllegalArgumentException(t.getKind().name());
@@ -361,7 +363,14 @@ public class TypesImpl implements Types
                 throw new UnsupportedOperationException(t.getKind().name()+" not supported yet");
         }
     }
-
+    private void addInterfaces(Set<TypeMirror> set, TypeElement type)
+    {
+        for (TypeMirror tm : type.getInterfaces())
+        {
+            set.add(tm);
+            addInterfaces(set, (TypeElement) asElement(tm));
+        }
+    }
     @Override
     public TypeMirror erasure(TypeMirror t)
     {

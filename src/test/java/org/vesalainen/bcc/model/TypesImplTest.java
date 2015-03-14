@@ -71,9 +71,9 @@ public class TypesImplTest
     @Test
     public void testIsAssignable2()
     {
-        TypeMirror stringType = Typ.getTypeFor(String.class);
-        TypeMirror charSequenceType = Typ.getTypeFor(CharSequence.class);
-        assertTrue(types.isAssignable(stringType, charSequenceType));
+        TypeMirror clsB = Typ.getTypeFor(ClsB.class);
+        TypeMirror int0 = Typ.getTypeFor(Int0.class);
+        assertTrue(types.isAssignable(clsB, int0));
     }
 
     /**
