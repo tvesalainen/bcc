@@ -25,6 +25,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeMirror;
 import org.vesalainen.bcc.model.El;
 
 /**
@@ -90,6 +91,10 @@ public abstract class FieldInitializer
     public static FieldInitializer getObjectInstance(VariableElement field, TypeElement ocls)
     {
         return new ObjectInit(field, ocls);
+    }
+    public static FieldInitializer getArrayInstance(VariableElement field, TypeMirror type, int size)
+    {
+        return new ArrayInit(field, type, size);
     }
     public static class IntInit extends FieldInitializer
     {
@@ -301,6 +306,32 @@ public abstract class FieldInitializer
                 c.anew(cls);
                 c.dup();
                 c.invokespecial(constructor);
+                c.putField(field);
+            }
+        }
+    }
+
+    public static class ArrayInit extends FieldInitializer
+    {
+        private final TypeMirror type;
+        private final int size;
+        public ArrayInit(VariableElement field, TypeMirror type, int size)
+        {
+            super(field);
+            this.type = type;
+            this.size = size;
+        }
+
+        @Override
+        public void init(MethodCompiler c) throws IOException
+        {
+            c.newarray(type, size);
+            if (field.getModifiers().contains(Modifier.STATIC))
+            {
+                c.putStaticField(field);
+            }
+            else
+            {
                 c.putField(field);
             }
         }
