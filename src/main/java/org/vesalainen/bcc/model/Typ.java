@@ -105,6 +105,34 @@ public class Typ
         ReturnAddress = new ReturnAddress();
     }
 
+    /**
+     * Returns primitive type for primitive and java.lang.Object type for references
+     * @param kind
+     * @return 
+     */
+    public static TypeMirror normalizeType(TypeKind kind)
+    {
+        switch (kind)
+        {
+            case BOOLEAN:
+            case BYTE:
+            case CHAR:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+                return Typ.getPrimitiveType(kind);
+            case DECLARED:
+            case TYPEVAR:
+            case ARRAY:
+                return El.getTypeElement("java.lang.Object").asType();
+            case VOID:
+                return Typ.Void;
+            default:
+                throw new IllegalArgumentException(kind+" not valid");
+        }
+    }
     public static boolean isJavaConstant(Object value)
     {
         return 
