@@ -426,7 +426,7 @@ public abstract class MethodCompiler extends Assembler
     }
     /**
      * Create new array
-     * <p>Stack: ..., count =&gt; ..., arrayref
+     * <p>Stack: ..., =&gt; ..., arrayref
      * @param type array class eg. String[].class
      * @param count array count
      * @throws IOException

@@ -547,6 +547,10 @@ public class SubClass extends ClassFile
 
     public void codeDefaultConstructor(final FieldInitializer... fis) throws IOException
     {
+        codeDefaultConstructor(null, fis);
+    }
+    public void codeDefaultConstructor(final FragmentCompiler fc, final FieldInitializer... fis) throws IOException
+    {
         for (final ExecutableElement constructor : ElementFilter.constructorsIn(superClass.getEnclosedElements()))
         {
             if (!constructor.getModifiers().contains(Modifier.PRIVATE))
@@ -567,23 +571,16 @@ public class SubClass extends ClassFile
                         {
                             fi.init(this);
                         }
-                        codeConstructor(this);
+                        if (fc != null)
+                        {
+                            fc.compile(this);
+                        }
                         treturn();
                     }
                 };
                 overrideMethod(c, constructor, constructor.getModifiers());
             }
         }
-    }
-    /**
-     * Placeholder for default constructor code. This is called for every 
-     * default constructor after FieldInitializers and before return. This 
-     * implementation does nothing.
-     * @param c 
-     */
-    protected void codeConstructor(MethodCompiler c)
-    {
-        
     }
     public void codeStaticInitializer(final FieldInitializer... fis) throws IOException
     {
