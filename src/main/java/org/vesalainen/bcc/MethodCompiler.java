@@ -808,7 +808,8 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Get field from class
      * <p>Stack: ..., =&gt; ..., value
-     * @param field
+     * @param cls
+     * @param name
      * @throws IOException
      */
     public void getField(Class<?> cls, String name) throws IOException
@@ -816,9 +817,20 @@ public abstract class MethodCompiler extends Assembler
         getField(El.getField(cls, name));
     }
     /**
+     * Get field from this class
+     * <p>Stack: ..., =&gt; ..., value
+     * @param name
+     * @throws IOException
+     */
+    public void getField(String name) throws IOException
+    {
+        getField(El.getField(subClass, name));
+    }
+    /**
      * Get field from class
      * <p>Stack: ..., =&gt; ..., value
-     * @param field
+     * @param cls
+     * @param name
      * @throws IOException
      */
     public void getStaticField(Class<?> cls, String name) throws IOException
@@ -826,8 +838,20 @@ public abstract class MethodCompiler extends Assembler
         getStaticField(El.getField(cls, name));
     }
     /**
+     * Get field from this class
+     * <p>Stack: ..., =&gt; ..., value
+     * @param name
+     * @throws IOException
+     */
+    public void getStaticField(String name) throws IOException
+    {
+        getStaticField(El.getField(subClass, name));
+    }
+    /**
      * Set field in object
      * <p>Stack: ..., objectref, value =&gt; ...
+     * @param field
+     * @throws java.io.IOException
      */
     public void putField(VariableElement field) throws IOException
     {
@@ -841,6 +865,8 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Set static field in object
      * <p>Stack: ..., objectref, value =&gt; ...
+     * @param field
+     * @throws java.io.IOException
      */
     public void putStaticField(VariableElement field) throws IOException
     {
@@ -854,7 +880,8 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Set field in class
      * <p>Stack: ..., value =&gt; ...
-     * @param field
+     * @param cls
+     * @param name
      * @throws IOException
      */
     public void putField(Class<?> cls, String name) throws IOException
@@ -862,9 +889,20 @@ public abstract class MethodCompiler extends Assembler
         putField(El.getField(cls, name));
     }
     /**
+     * Set field in this class
+     * <p>Stack: ..., value =&gt; ...
+     * @param name
+     * @throws IOException
+     */
+    public void putField(String name) throws IOException
+    {
+        putField(El.getField(subClass, name));
+    }
+    /**
      * Set field in class
      * <p>Stack: ..., value =&gt; ...
-     * @param field
+     * @param cls
+     * @param name
      * @throws IOException
      */
     public void putStaticField(Class<?> cls, String name) throws IOException
@@ -872,7 +910,18 @@ public abstract class MethodCompiler extends Assembler
         putStaticField(El.getField(cls, name));
     }
     /**
-     * @param constructor
+     * Set field in this class
+     * <p>Stack: ..., value =&gt; ...
+     * @param name
+     * @throws IOException
+     */
+    public void putStaticField(String name) throws IOException
+    {
+        putStaticField(El.getField(subClass, name));
+    }
+    /**
+     * @param cls
+     * @param parameters
      * @throws IOException 
      */
     public void invokeConstructor(Class<?> cls, Class<?>... parameters) throws IOException
