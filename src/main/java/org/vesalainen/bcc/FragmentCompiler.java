@@ -16,11 +16,13 @@
  */
 package org.vesalainen.bcc;
 
+import java.io.IOException;
+
 /**
  *
  * @author tkv
  */
 public interface FragmentCompiler
 {
-    void compile(MethodCompiler c);
+    void compile(MethodCompiler c) throws IOException;
 }

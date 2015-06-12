@@ -106,6 +106,33 @@ public class Typ
     }
 
     /**
+     * Returns TypeKind ordinal for primitive types and DECLARED ordinal for DECLARED, ARRAY and TYPEVAR
+     * @param kind
+     * @return 
+     */
+    public static int getTypeNumber(TypeKind kind)
+    {
+        switch (kind)
+        {
+            case BOOLEAN:
+            case BYTE:
+            case CHAR:
+            case SHORT:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case VOID:
+                return kind.ordinal();
+            case DECLARED:
+            case TYPEVAR:
+            case ARRAY:
+                return TypeKind.DECLARED.ordinal();
+            default:
+                throw new IllegalArgumentException(kind+" not valid");
+        }
+    }
+    /**
      * Returns primitive type for primitive and java.lang.Object type for references
      * @param kind
      * @return 

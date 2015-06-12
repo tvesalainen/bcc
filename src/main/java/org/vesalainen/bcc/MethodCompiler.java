@@ -520,6 +520,25 @@ public abstract class MethodCompiler extends Assembler
         }
     }
     /**
+     * Load from local variable or non-static field
+     * <p>Stack: ... =&gt; ..., value
+     * @param name local variable name
+     * @throws IOException
+     * @see nameArgument
+     * @see addVariable
+     */
+    public void load(String name) throws IOException
+    {
+        if (hasLocalVariable(name))
+        {
+            tload(name);
+        }
+        else
+        {
+            getField(name);
+        }
+    }
+    /**
      * Store into local variable
      * <p>Stack: ..., value =&gt; ...
      * @param name local variable name
@@ -538,6 +557,25 @@ public abstract class MethodCompiler extends Assembler
         else
         {
             astore(index);
+        }
+    }
+    /**
+     * Store into local variable or non-static field
+     * <p>Stack: ..., value =&gt; ...
+     * @param name local variable name
+     * @throws IOException
+     * @see nameArgument
+     * @see addVariable
+     */
+    public void store(String name) throws IOException
+    {
+        if (hasLocalVariable(name))
+        {
+            tstore(name);
+        }
+        else
+        {
+            putField(name);
         }
     }
     /**
