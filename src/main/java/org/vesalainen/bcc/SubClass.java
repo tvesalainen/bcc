@@ -567,12 +567,23 @@ public class SubClass extends ClassFile
                         {
                             fi.init(this);
                         }
+                        codeConstructor(this);
                         treturn();
                     }
                 };
                 overrideMethod(c, constructor, constructor.getModifiers());
             }
         }
+    }
+    /**
+     * Placeholder for default constructor code. This is called for every 
+     * default constructor after FieldInitializers and before return. This 
+     * implementation does nothing.
+     * @param c 
+     */
+    protected void codeConstructor(MethodCompiler c)
+    {
+        
     }
     public void codeStaticInitializer(final FieldInitializer... fis) throws IOException
     {
