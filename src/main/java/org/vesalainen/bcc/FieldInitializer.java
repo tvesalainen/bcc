@@ -325,13 +325,15 @@ public abstract class FieldInitializer
         @Override
         public void init(MethodCompiler c) throws IOException
         {
-            c.newarray(type, size);
             if (field.getModifiers().contains(Modifier.STATIC))
             {
+                c.newarray(type, size);
                 c.putStaticField(field);
             }
             else
             {
+                c.aload(0);
+                c.newarray(type, size);
                 c.putField(field);
             }
         }

@@ -43,7 +43,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -540,6 +539,25 @@ public class ClassFile implements Writable, TypeElement
             throw new VerifyError("constant pool at "+index+" not proper type");
         }
         return ae;
+    }
+    /**
+     * Returns a descriptor to fields at index.
+     * @param index
+     * @return
+     */
+    public String getFieldDescription(int index)
+    {
+        ConstantInfo constantInfo = getConstantInfo(index);
+        if (constantInfo instanceof Fieldref)
+        {
+            Fieldref fr = (Fieldref) getConstantInfo(index);
+            int nt = fr.getName_and_type_index();
+            NameAndType nat = (NameAndType) getConstantInfo(nt);
+            int ni = nat.getName_index();
+            int di = nat.getDescriptor_index();
+            return getString(ni)+" "+getString(di);
+        }
+        return "unknown "+constantInfo;
     }
     /**
      * Returns a descriptor to method at index.

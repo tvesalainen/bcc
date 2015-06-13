@@ -18,9 +18,6 @@ package org.vesalainen.bcc;
 
 import java.io.IOException;
 import java.lang.reflect.Member;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import org.vesalainen.bcc.model.El;
 
 /**
  *
@@ -486,18 +483,22 @@ public class ByteCodeDump extends OpCodeUtil
                 case GETSTATIC:
                     us = in.readUnsignedShort();
                     out.print(" " + us);
+                    out.print(" // "+cf.getFieldDescription(us));
                     break;
                 case PUTSTATIC:
                     us = in.readUnsignedShort();
                     out.print(" " + us);
+                    out.print(" // "+cf.getFieldDescription(us));
                     break;
                 case GETFIELD:
                     us = in.readUnsignedShort();
                     out.print(" " + us);
+                    out.print(" // "+cf.getFieldDescription(us));
                     break;
                 case PUTFIELD:
                     us = in.readUnsignedShort();
                     out.print(" " + us);
+                    out.print(" // "+cf.getFieldDescription(us));
                     break;
                 case INVOKEVIRTUAL:
                 case INVOKESPECIAL:

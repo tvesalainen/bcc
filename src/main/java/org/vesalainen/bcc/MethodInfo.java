@@ -304,9 +304,30 @@ public class MethodInfo implements Writable, ExecutableElement
     }
 
     @Override
+    public int hashCode()
+    {
+        int hash = 7;
+        hash = 11 * hash + Objects.hashCode(this.executableElement);
+        return hash;
+    }
+
+    @Override
     public boolean equals(Object obj)
     {
-        return executableElement.equals(obj);
+        if (obj == null)
+        {
+            return false;
+        }
+        if (getClass() != obj.getClass())
+        {
+            return false;
+        }
+        final MethodInfo other = (MethodInfo) obj;
+        if (!Objects.equals(this.executableElement, other.executableElement))
+        {
+            return false;
+        }
+        return true;
     }
 
 }

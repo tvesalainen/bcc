@@ -44,6 +44,9 @@ public class FieldInfo implements Writable, VariableElement
     private List<AttributeInfo> attributes = new ArrayList<>();
     private boolean synthetic = true;
     private boolean readyToWrite;
+    private int access_flags;
+    private int name_index;
+    private int descriptor_index;
 
     public FieldInfo(ClassFile classFile, VariableElement variableElement)
     {
@@ -59,9 +62,9 @@ public class FieldInfo implements Writable, VariableElement
 
     public FieldInfo(DataInput in) throws IOException
     {
-        int access_flags = in.readUnsignedShort();
-        int name_index = in.readUnsignedShort();
-        int descriptor_index = in.readUnsignedShort();
+        access_flags = in.readUnsignedShort();
+        name_index = in.readUnsignedShort();
+        descriptor_index = in.readUnsignedShort();
         int attributes_count = in.readUnsignedShort();
         for (int ii=0;ii<attributes_count;ii++)
         {
@@ -76,6 +79,8 @@ public class FieldInfo implements Writable, VariableElement
     public void readyToWrite()
     {
         addSignatureIfNeed();
+        this.name_index = ((SubClass)classFile).resolveNameIndex(getSimpleName());
+        this.descriptor_index = ((SubClass)classFile).resolveNameIndex(Descriptor.getDesriptor(this));
         readyToWrite = true;
     }
     
@@ -86,12 +91,11 @@ public class FieldInfo implements Writable, VariableElement
         {
             throw new IllegalStateException("not ready to write");
         }
-        SubClass subClass = (SubClass) classFile;
         int modifier = FieldFlags.getModifier(getModifiers());
         modifier |= FieldFlags.ACC_SYNTHETIC;
         out.writeShort(modifier);
-        out.writeShort(subClass.resolveNameIndex(getSimpleName()));
-        out.writeShort(subClass.resolveNameIndex(Descriptor.getDesriptor(this)));
+        out.writeShort(name_index);
+        out.writeShort(descriptor_index);
         out.writeShort(attributes.size());
         for (AttributeInfo ai : attributes)
         {
@@ -109,51 +113,61 @@ public class FieldInfo implements Writable, VariableElement
         }
     }
     
+    @Override
     public Object getConstantValue()
     {
         return variableElement.getConstantValue();
     }
 
+    @Override
     public TypeMirror asType()
     {
         return variableElement.asType();
     }
 
+    @Override
     public ElementKind getKind()
     {
         return variableElement.getKind();
     }
 
+    @Override
     public List<? extends AnnotationMirror> getAnnotationMirrors()
     {
         return variableElement.getAnnotationMirrors();
     }
 
+    @Override
     public <A extends Annotation> A getAnnotation(Class<A> annotationType)
     {
         return variableElement.getAnnotation(annotationType);
     }
 
+    @Override
     public Set<Modifier> getModifiers()
     {
         return variableElement.getModifiers();
     }
 
+    @Override
     public Name getSimpleName()
     {
         return variableElement.getSimpleName();
     }
 
+    @Override
     public Element getEnclosingElement()
     {
         return variableElement.getEnclosingElement();
     }
 
+    @Override
     public List<? extends Element> getEnclosedElements()
     {
         return variableElement.getEnclosedElements();
     }
 
+    @Override
     public <R, P> R accept(ElementVisitor<R, P> v, P p)
     {
         return variableElement.accept(v, p);

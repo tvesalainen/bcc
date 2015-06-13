@@ -49,7 +49,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.FileObject;
-import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import org.vesalainen.bcc.AccessFlags.ClassFlags;
 import org.vesalainen.bcc.AccessFlags.MethodFlags;
@@ -77,13 +76,13 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
  */
 public class SubClass extends ClassFile
 {
-    private ReentrantLock intfLock = new ReentrantLock();
-    private ReentrantLock fieldLock = new ReentrantLock();
-    private ReentrantLock attrLock = new ReentrantLock();
-    private ReentrantLock methodLock = new ReentrantLock();
-    private ReentrantReadWriteLock constantLock = new ReentrantReadWriteLock();
-    private ReadLock constantReadLock = constantLock.readLock();
-    private WriteLock constantWriteLock = constantLock.writeLock();
+    private final ReentrantLock intfLock = new ReentrantLock();
+    private final ReentrantLock fieldLock = new ReentrantLock();
+    private final ReentrantLock attrLock = new ReentrantLock();
+    private final ReentrantLock methodLock = new ReentrantLock();
+    private final ReentrantReadWriteLock constantLock = new ReentrantReadWriteLock();
+    private final ReadLock constantReadLock = constantLock.readLock();
+    private final WriteLock constantWriteLock = constantLock.writeLock();
 
     public SubClass(Class<?> superClass, String qualifiedName, Modifier... modifiers) throws IOException
     {

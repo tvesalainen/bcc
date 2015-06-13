@@ -336,16 +336,38 @@ public abstract class MethodCompiler extends Assembler
      */
     public void assignDefault(String name) throws IOException
     {
-        TypeMirror t = getLocalType(name);
-        if (Typ.isPrimitive(t))
+        if (hasLocalVariable(name))
         {
-            tconst(t, 0);
+            TypeMirror t = getLocalType(name);
+            if (Typ.isPrimitive(t))
+            {
+                tconst(t, 0);
+            }
+            else
+            {
+                aconst_null();
+            }
+            tstore(name);
         }
         else
         {
-            aconst_null();
+            VariableElement field = El.getField(subClass, name);
+            if (field == null)
+            {
+                throw new IllegalArgumentException("field "+name+" not found");
+            }
+            aload(0);
+            TypeMirror t = field.asType();
+            if (Typ.isPrimitive(t))
+            {
+                tconst(t, 0);
+            }
+            else
+            {
+                aconst_null();
+            }
+            putField(name);
         }
-        tstore(name);
     }
     /**
      * Load default value to stack depending on type
@@ -535,6 +557,7 @@ public abstract class MethodCompiler extends Assembler
         }
         else
         {
+            aload(0);
             getField(name);
         }
     }
@@ -575,7 +598,54 @@ public abstract class MethodCompiler extends Assembler
         }
         else
         {
+            VariableElement field = El.getField(subClass, name);
+            if (field == null)
+            {
+                throw new IllegalArgumentException("field "+name+" not found");
+            }
+            aload(0);
+            if (Typ.isCategory2(field.asType()))
+            {
+                dup_x2();
+                pop();
+            }
+            else
+            {
+                swap();
+            }
             putField(name);
+        }
+    }
+    /**
+     * Increment local variable or field by constant
+     * <p>Stack: No change
+     * @param name local variable name
+     * @param con signed byte
+     * @throws IOException
+     * @see nameArgument
+     * @see addVariable
+     */
+    public void inc(String name, int con) throws IOException
+    {
+        if (hasLocalVariable(name))
+        {
+            tinc(name, con);
+        }
+        else
+        {
+            VariableElement field = El.getField(subClass, name);
+            if (field == null)
+            {
+                throw new IllegalArgumentException("field "+name+" not found");
+            }
+            aload(0);
+            getField(field);
+            TypeMirror type = field.asType();
+            tconst(type, con);
+            tadd(type);
+            aload(0);
+            swap();
+            putField(field);
         }
     }
     /**
@@ -862,7 +932,12 @@ public abstract class MethodCompiler extends Assembler
      */
     public void getField(String name) throws IOException
     {
-        getField(El.getField(subClass, name));
+        VariableElement field = El.getField(subClass, name);
+        if (field == null)
+        {
+            throw new IllegalArgumentException("field "+name+" not found");
+        }
+        getField(field);
     }
     /**
      * Get field from class
@@ -934,7 +1009,12 @@ public abstract class MethodCompiler extends Assembler
      */
     public void putField(String name) throws IOException
     {
-        putField(El.getField(subClass, name));
+        VariableElement field = El.getField(subClass, name);
+        if (field == null)
+        {
+            throw new IllegalArgumentException("field "+name+" not found");
+        }
+        putField(field);
     }
     /**
      * Set field in class

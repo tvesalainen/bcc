@@ -20,6 +20,7 @@ package org.vesalainen.bcc.model;
 import java.io.Writer;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -39,6 +40,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
+import org.vesalainen.bcc.ClassFile;
 import org.vesalainen.bcc.Descriptor;
 
 /**
@@ -399,7 +401,20 @@ public class El
 
     public static List<? extends Element> getAllMembers(TypeElement type)
     {
-        return elements.getAllMembers(type);
+        if (type instanceof ClassFile)
+        {
+            ClassFile cf = (ClassFile) type;
+            List<Element> list = new ArrayList<>();
+            list.addAll(cf.getEnclosedElements());
+            TypeMirror superclass = type.getSuperclass();
+            TypeElement te = (TypeElement) Typ.asElement(superclass);
+            list.addAll(El.getAllMembers(te));
+            return list;
+        }
+        else
+        {
+            return elements.getAllMembers(type);
+        }
     }
 
     public static List<? extends AnnotationMirror> getAllAnnotationMirrors(Element e)
