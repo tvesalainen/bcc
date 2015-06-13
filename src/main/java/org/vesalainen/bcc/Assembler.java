@@ -817,7 +817,7 @@ public class Assembler implements OpCode
      */
     public void dup_x2() throws IOException
     {
-        out.writeOpCode(DUP_X1);
+        out.writeOpCode(DUP_X2);
     }
     /**
      * Duplicate the top one or two operand stack values
