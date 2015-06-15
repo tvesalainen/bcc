@@ -44,13 +44,13 @@ public abstract class MethodCompiler extends Assembler
     public static final String SUBROUTINERETURNADDRESSNAME = "$subroutineReturnAddressName";
     protected SubClass subClass;
     private CodeAttribute code;
-    private List<VariableElement> localVariables = new ArrayList<>();
+    private final List<VariableElement> localVariables = new ArrayList<>();
     private ExecutableElement debugMethod;
     private boolean compiled;
     private String subroutine;
     private boolean optimize = true;
     private boolean dump;
-    private List<ExceptionTable> exceptionTableList = new ArrayList<>();
+    private final List<ExceptionTable> exceptionTableList = new ArrayList<>();
     private MethodInfo methodInfo;
     protected ExecutableElement executableElement;
     protected ExecutableType executableType;
@@ -182,7 +182,6 @@ public abstract class MethodCompiler extends Assembler
         {
             UpdateableElement ue = (UpdateableElement) lv;
             ue.setSimpleName(El.getName(name));
-            return;
         }
         else
         {
@@ -693,14 +692,14 @@ public abstract class MethodCompiler extends Assembler
             int position = position();
             tload("this");
             ldc(position);
-            ldc(name.toString());
+            ldc(name);
             invokevirtual(debugMethod);
         }
     }
     /**
      * Create new object
      * <p>Stack: ... =&gt; ..., objectref
-     * @param type class eg. String.class
+     * @param clazz
      * @throws IOException
      */
     public void anew(Class<?> clazz) throws IOException
@@ -710,7 +709,7 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Create new object
      * <p>Stack: ... =&gt; ..., objectref
-     * @param type class eg. String.class
+     * @param clazz
      * @throws IOException
      */
     public void anew(TypeElement clazz) throws IOException
@@ -810,7 +809,6 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @see nameArgument
      * @see addVariable
-     * @throws IOException
      */
     @Override
     public void ldc(int constant) throws IOException
@@ -826,7 +824,6 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @see nameArgument
      * @see addVariable
-     * @throws IOException
      */
     public void ldc(float constant) throws IOException
     {
@@ -841,7 +838,6 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @see nameArgument
      * @see addVariable
-     * @throws IOException
      */
     public void ldc(long constant) throws IOException
     {
@@ -856,7 +852,6 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @see nameArgument
      * @see addVariable
-     * @throws IOException
      */
     public void ldc(double constant) throws IOException
     {
@@ -871,7 +866,6 @@ public abstract class MethodCompiler extends Assembler
      * @throws IOException
      * @see nameArgument
      * @see addVariable
-     * @throws IOException
      */
     public void ldc(String constant) throws IOException
     {
@@ -1047,7 +1041,9 @@ public abstract class MethodCompiler extends Assembler
         invoke(El.getConstructor(cls, parameters));
     }
     /**
-     * @param method
+     * @param cls
+     * @param name
+     * @param parameters
      * @throws IOException 
      */
     public void invokeMethod(Class<?> cls, String name, Class<?>... parameters) throws IOException
@@ -1087,10 +1083,8 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Invoke instance method; special handling for superclass, private, and instance initialization method invocations
      * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
-     * @param fullyQualifiedName in fully qualified form
-     * @param methodName
-     * @param isInterface
-     * @param returnType
+     * @param cls
+     * @param name
      * @param parameters
      * @throws IOException
      */
@@ -1102,11 +1096,7 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Invoke instance method; special handling for superclass, private, and instance initialization method invocations
      * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
-     * @param fullyQualifiedName in fully qualified form
-     * @param methodName
-     * @param isInterface
-     * @param returnType
-     * @param parameters
+     * @param method
      * @throws IOException
      */
     public void invokespecial(ExecutableElement method) throws IOException
@@ -1119,10 +1109,8 @@ public abstract class MethodCompiler extends Assembler
      * Invoke instance method; dispatch based on classIf method is interface
      * calls invokeinterface otherwise calls invokevirtual.
      * <p>Stack: ..., objectref, [arg1, [arg2 ...]] =&gt; ...
-     * @param fullyQualifiedName
-     * @param methodName
-     * @param isInterface
-     * @param returnType
+     * @param cls
+     * @param name
      * @param parameters
      * @throws IOException
      */
@@ -1153,7 +1141,9 @@ public abstract class MethodCompiler extends Assembler
     /**
      * Invoke a class (static) method
      * <p>Stack: ..., [arg1, [arg2 ...]] =&gt; ...
-     * @param method
+     * @param cls
+     * @param name
+     * @param parameters
      * @throws IOException
      */
     public void invokestatic(Class<?> cls, String name, Class<?>... parameters) throws IOException
@@ -1301,7 +1291,6 @@ public abstract class MethodCompiler extends Assembler
      * <p>throws SwitchException if target illegal.
      * @param list
      * @throws IOException
-     * @throws NoSuchMethodException
      */
     public void optimizedSwitch(LookupList list) throws IOException
     {
@@ -1320,7 +1309,6 @@ public abstract class MethodCompiler extends Assembler
      * @param def
      * @param list
      * @throws IOException
-     * @throws NoSuchMethodException
      */
     public void optimizedSwitch(String def, LookupList list) throws IOException
     {
@@ -1378,7 +1366,6 @@ public abstract class MethodCompiler extends Assembler
      * <p>Stack: ..., index =&gt; ...,
      * @param list
      * @throws IOException
-     * @throws NoSuchMethodException
      */
     public void lookupswitch(LookupList list) throws IOException
     {
@@ -1397,7 +1384,6 @@ public abstract class MethodCompiler extends Assembler
      * @param high
      * @param symbols
      * @throws IOException
-     * @throws NoSuchMethodException
      */
     public void tableswitch(int low, int high, List<String> symbols) throws IOException
     {
@@ -1410,7 +1396,6 @@ public abstract class MethodCompiler extends Assembler
      * @param high
      * @param symbols
      * @throws IOException
-     * @throws NoSuchMethodException
      */
     public void tableswitch(int low, int high, String... symbols) throws IOException
     {
@@ -1512,9 +1497,7 @@ public abstract class MethodCompiler extends Assembler
      * @param fromVariable
      * @param to
      * @throws IOException
-     * @throws NoSuchMethodException
-     * @throws NoSuchFieldException
-     * @throws ClassNotFoundException
+     * @throws org.vesalainen.bcc.IllegalConversionException
      */
     public void convert(String fromVariable, TypeMirror to) throws IOException, IllegalConversionException
     {
