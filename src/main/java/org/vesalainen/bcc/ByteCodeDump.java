@@ -604,6 +604,7 @@ public class ByteCodeDump extends OpCodeUtil
                 case IMPDEP2:
                     throw new UnsupportedOperationException("impdep2");
                 default:
+                    throw new UnsupportedOperationException("unknown code="+op);
 
             }
             out.println();
