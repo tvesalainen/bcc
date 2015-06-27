@@ -186,6 +186,11 @@ public class TypesImpl implements Types
                     default:
                         return false;
                 }
+            case ARRAY:
+            case BOOLEAN:
+            case CHAR:
+            case VOID:
+                return false;
             case DECLARED:
                 DeclaredType dt = (DeclaredType) sup;
                 TypeElement te = (TypeElement) dt.asElement();
@@ -214,10 +219,6 @@ public class TypesImpl implements Types
             case TYPEVAR:
                 TypeVariable tv = (TypeVariable) sup;
                 return isSubtype(sub, tv.getUpperBound());
-            case ARRAY:
-            case BOOLEAN:
-            case VOID:
-                return false;
             default:
                 throw new IllegalArgumentException(sup+" is unsuitable type");
         }
