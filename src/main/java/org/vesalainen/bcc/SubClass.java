@@ -577,7 +577,7 @@ public class SubClass extends ClassFile
                         treturn();
                     }
                 };
-                overrideMethod(c, constructor, constructor.getModifiers());
+                overrideMethod(c, constructor, Modifier.PUBLIC);
             }
         }
     }
