@@ -189,6 +189,7 @@ public class TypesImpl implements Types
             case ARRAY:
             case BOOLEAN:
             case CHAR:
+            case BYTE:
             case VOID:
                 return false;
             case DECLARED:
@@ -220,7 +221,7 @@ public class TypesImpl implements Types
                 TypeVariable tv = (TypeVariable) sup;
                 return isSubtype(sub, tv.getUpperBound());
             default:
-                throw new IllegalArgumentException(sup+" is unsuitable type");
+                throw new IllegalArgumentException("missing implementation for "+sup+"/"+sub);
         }
     }
 
