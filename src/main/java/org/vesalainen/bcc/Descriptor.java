@@ -147,7 +147,7 @@ public class Descriptor
             }
                 break;
             default:
-                throw new UnsupportedOperationException(type+" not supported");
+                throw new UnsupportedOperationException(type.getKind()+" not supported");
         }
     }
 
