@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.vesalainen</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0.5</version>
+        <version>1.8.0</version>
     </parent>    
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.vesalainen.bcc</groupId>
     <artifactId>bcc</artifactId>
-    <version>1.1.4</version>
+    <version>1.1.5</version>
     <packaging>jar</packaging>
     <name>Byte Code Compiler</name>
     <description>Byte Code Compiler</description>
