@@ -1040,7 +1040,8 @@ public class SubClass extends ClassFile
             }
             type = te.getSuperclass();
         }
-        throw new IllegalArgumentException("no actual type for type parameter "+typeParameter+" "+typeParameter.getEnclosingElement());
+        return Typ.getTypeFor(Object.class);
+        //throw new IllegalArgumentException("no actual type for type parameter "+typeParameter+" "+typeParameter.getEnclosingElement());
     }
 
     public class Method implements ExecutableElement, UpdateableElement
