@@ -62,6 +62,24 @@ public class ExecutableElementImpl extends ElementImpl implements ExecutableElem
     {
         return type;
     }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public TypeMirror getReceiverType()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public boolean isDefault()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     
     public static class MethodBuilder extends ConstructorBuilder
     {

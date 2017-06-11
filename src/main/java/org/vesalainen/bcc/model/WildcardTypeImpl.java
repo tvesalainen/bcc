@@ -17,7 +17,10 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.List;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
@@ -93,6 +96,24 @@ class WildcardTypeImpl implements WildcardType
     public <R, P> R accept(TypeVisitor<R, P> v, P p)
     {
         return v.visitWildcard(this, p);
+    }
+
+    @Override
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

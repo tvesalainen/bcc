@@ -16,6 +16,9 @@
  */
 package org.vesalainen.bcc;
 
+import java.lang.annotation.Annotation;
+import java.util.List;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVisitor;
@@ -43,6 +46,24 @@ public class ReturnAddress implements TypeMirror
     public String toString()
     {
         return "ReturnAddress";
+    }
+
+    @Override
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
 }

@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.util.Collections;
 import java.util.List;
@@ -108,6 +109,12 @@ public class PackageElementImpl extends ElementImpl implements PackageElement
     public TypeMirror asType()
     {
         return type;
+    }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

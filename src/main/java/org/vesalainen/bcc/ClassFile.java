@@ -784,6 +784,12 @@ public class ClassFile implements Writable, TypeElement
     {
         throw new UnsupportedOperationException("Not supported yet.");
     }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     /*
     public static void main(String... args)
     {
@@ -829,6 +835,24 @@ public class ClassFile implements Writable, TypeElement
         public <R, P> R accept(TypeVisitor<R, P> v, P p)
         {
             return v.visitDeclared(this, p);
+        }
+
+        @Override
+        public List<? extends AnnotationMirror> getAnnotationMirrors()
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         
     }

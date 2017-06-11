@@ -17,6 +17,7 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -53,6 +54,12 @@ public class TypeElementImpl extends ElementImpl implements TypeElement
     private TypeMirror superclass;
     private List<TypeParameterElement> typeParameters = new ArrayList<>();
     private Class<?> cls = null;
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
     public static class ClassBuilder
     {

@@ -1170,6 +1170,24 @@ public class SubClass extends ClassFile
         {
             this.name = name;
         }
+
+        @Override
+        public TypeMirror getReceiverType()
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public boolean isDefault()
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
         
     }
     public class Variable implements VariableElement, UpdateableElement
@@ -1265,6 +1283,12 @@ public class SubClass extends ClassFile
         public void setSimpleName(Name name)
         {
             this.name = name;
+        }
+
+        @Override
+        public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
         
     }

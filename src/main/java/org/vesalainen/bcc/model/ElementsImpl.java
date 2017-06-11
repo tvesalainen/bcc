@@ -211,6 +211,12 @@ public class ElementsImpl implements Elements
         return new NameImpl(cs);
     }
 
+    @Override
+    public boolean isFunctionalInterface(TypeElement type)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     public class NameImpl implements Name
     {
         private String name;

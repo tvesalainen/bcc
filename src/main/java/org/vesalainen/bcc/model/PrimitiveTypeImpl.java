@@ -17,6 +17,9 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
+import java.util.List;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeVisitor;
@@ -80,6 +83,24 @@ public class PrimitiveTypeImpl implements PrimitiveType
     public String toString()
     {
         return "PrimitiveTypeImpl{" + "kind=" + kind + '}';
+    }
+
+    @Override
+    public List<? extends AnnotationMirror> getAnnotationMirrors()
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

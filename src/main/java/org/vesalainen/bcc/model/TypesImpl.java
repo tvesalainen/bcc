@@ -17,11 +17,13 @@
 
 package org.vesalainen.bcc.model;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
@@ -540,6 +542,24 @@ public class TypesImpl implements Types
             return v.visitNull(this, p);
         }
 
+        @Override
+        public List<? extends AnnotationMirror> getAnnotationMirrors()
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
     }
     public static class NoTypeImpl implements NoType 
     {
@@ -559,6 +579,24 @@ public class TypesImpl implements Types
         public <R, P> R accept(TypeVisitor<R, P> v, P p)
         {
             return v.visitNoType(this, p);
+        }
+
+        @Override
+        public List<? extends AnnotationMirror> getAnnotationMirrors()
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A getAnnotation(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+        {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
 
     }

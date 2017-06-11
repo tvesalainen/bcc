@@ -210,4 +210,10 @@ public class VariableElementImpl extends ElementImpl implements VariableElement
         return true;
     }
 
+    @Override
+    public <A extends Annotation> A[] getAnnotationsByType(Class<A> annotationType)
+    {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }
