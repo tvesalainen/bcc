@@ -18,7 +18,7 @@ package org.vesalainen.bcc;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class SwitchException extends RuntimeException
 {

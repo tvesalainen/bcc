@@ -22,7 +22,7 @@ import java.io.IOException;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public abstract class ConstantInfo implements Writable
 {

@@ -72,7 +72,7 @@ import org.vesalainen.bcc.model.VariableElementImpl.VariableBuilder;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class SubClass extends ClassFile
 {

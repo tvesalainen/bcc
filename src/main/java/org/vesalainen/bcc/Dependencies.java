@@ -26,7 +26,7 @@ import java.util.TreeMap;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class Dependencies
 {

@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class Label
 {

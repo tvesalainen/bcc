@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class FloatASM extends Assembler implements TypeASM
 {

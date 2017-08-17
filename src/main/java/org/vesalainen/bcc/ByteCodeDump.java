@@ -21,7 +21,7 @@ import java.lang.reflect.Member;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class ByteCodeDump extends OpCodeUtil
 {

@@ -24,7 +24,7 @@ import java.util.Locale;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class LineNumberPrintStream extends BufferedOutputStream
 {

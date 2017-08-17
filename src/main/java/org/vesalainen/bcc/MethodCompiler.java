@@ -37,7 +37,7 @@ import org.vesalainen.bcc.model.UpdateableElement;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public abstract class MethodCompiler extends Assembler
 {

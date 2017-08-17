@@ -21,7 +21,7 @@ import java.util.Collections;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class LookupList extends ArrayList<LookupPair>
 {

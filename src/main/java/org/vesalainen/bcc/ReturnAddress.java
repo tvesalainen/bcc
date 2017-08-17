@@ -25,7 +25,7 @@ import javax.lang.model.type.TypeVisitor;
 
 /**
  * 
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class ReturnAddress implements TypeMirror
 {

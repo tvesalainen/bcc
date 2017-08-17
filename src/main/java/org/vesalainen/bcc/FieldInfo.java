@@ -35,7 +35,7 @@ import org.vesalainen.bcc.AccessFlags.FieldFlags;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class FieldInfo implements Writable, VariableElement
 {

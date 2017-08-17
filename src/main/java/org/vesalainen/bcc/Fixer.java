@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class Fixer
 {

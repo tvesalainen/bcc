@@ -74,7 +74,7 @@ import org.vesalainen.bcc.model.Typ;
 
 /**
  * ClassFile wraps java classfile
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  * TODO make thread safe
  */
 public class ClassFile implements Writable, TypeElement

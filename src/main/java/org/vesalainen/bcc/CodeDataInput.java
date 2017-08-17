@@ -21,7 +21,7 @@ import java.io.DataInputStream;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class CodeDataInput extends DataInputStream
 {

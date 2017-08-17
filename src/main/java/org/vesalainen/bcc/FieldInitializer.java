@@ -30,7 +30,7 @@ import org.vesalainen.bcc.model.El;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public abstract class FieldInitializer
 {

@@ -23,7 +23,7 @@ import java.io.IOException;
 
 /**
  *
- * @author tkv
+ * @author Timo Vesalainen <timo.vesalainen@iki.fi>
  */
 public class AttributeInfo implements Writable
 {
