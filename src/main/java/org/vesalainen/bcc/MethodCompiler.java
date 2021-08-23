@@ -106,7 +106,7 @@ public abstract class MethodCompiler extends Assembler
         ByteCodeVerifier ver = new ByteCodeVerifier(bb, exceptionTable, subClass, this);
         ver.verify();
         code.setCode(bb, exceptionTable);
-        code.setMax_locals(localVariables.size()+1);
+        code.setMax_locals(localSize()+1);
         code.setMax_stack(ver.getMaxStack());
         code.addLocalVariables(localVariables);
     }
